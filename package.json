@@ -1,0 +1,59 @@
+{
+  "name": "dsh-paste-image",
+  "version": "0.1.0",
+  "description": "Paste any image into DeepSeek Harness: converts XPM/BMP/TIFF/etc. and MIME-lying images to real PNG in the renderer.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "clipboard",
+    "paste",
+    "image",
+    "xpm",
+    "bmp",
+    "png",
+    "wayland"
+  ],
+  "private": false,
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "client.js",
+    "lib",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check client.js && node --check lib/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pengtang1024/dsh-paste-image.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pengtang1024/dsh-paste-image/issues"
+  },
+  "homepage": "https://github.com/pengtang1024/dsh-paste-image#readme",
+  "author": "pengtang1024",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

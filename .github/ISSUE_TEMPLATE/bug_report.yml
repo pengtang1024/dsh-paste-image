@@ -1,0 +1,83 @@
+name: Bug report
+description: 报告粘贴或拖拽图片时的异常
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请先确认已按安装说明重载页面（Ctrl+R），并在插件列表里看到 dsh-paste-image。
+
+        控制台里以 `[dsh-paste-image]` 开头的 `console.debug` 输出会说明文件声明的 MIME 与被转码后的真实格式，请一并贴上。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 实际发生了什么
+      description: 贴出原始报错提示，说明图片是否落地、是否被改写。
+      placeholder: 例如：粘贴微信截图后仍提示「仅支持 PNG、JPG、WebP、GIF」，控制台输出 ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望插件把这张图怎么处理。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 用某个工具截图或复制图片
+        2. 在 DSH 输入框按 Ctrl+V（或在输入区拖拽）
+        3. 看到 ...
+    validations:
+      required: true
+  - type: input
+    id: source-app
+    attributes:
+      label: 图片来源应用
+      description: 截图工具、浏览器或聊天软件的名称与版本。
+      placeholder: 例如：微信 4.x 截图、GNOME 截图、浏览器右键复制图片
+    validations:
+      required: false
+  - type: textarea
+    id: console-log
+    attributes:
+      label: 控制台日志
+      description: 粘贴前后与 dsh-paste-image 相关的输出，包含文件声明类型与转换结果。
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本
+      description: 客户端关于页或安装包版本号。
+      placeholder: 例如：0.x.y
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 操作系统与会话
+      description: 发行版、桌面环境、显示会话与浏览器内核版本。
+      placeholder: 例如：Ubuntu 26.04、GNOME 50、Wayland
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: dsh-paste-image 版本
+      description: 插件列表或安装来源中显示的版本。
+      placeholder: 例如：0.1.0
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息
+      description: 截图、GIF、其它线索。请勿提交凭据或隐私数据。
+    validations:
+      required: false

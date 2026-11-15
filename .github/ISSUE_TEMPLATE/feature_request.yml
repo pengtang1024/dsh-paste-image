@@ -1,0 +1,51 @@
+name: Feature request
+description: 为 dsh-paste-image 提一个改进建议
+title: '[Feature]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这个插件是纯客户端实现：在浏览器捕获阶段拦截 paste 与 drop，按魔数嗅探真实格式，用 canvas 重编 PNG 后交回原生附件通道。提案请尽量贴合这条链路。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景
+      description: 你遇到的具体问题或缺口，不要只写解决方案。
+      placeholder: 例如：某工具把 TIFF 截图放进剪贴板，目前会被原样透传并被原生通道拒绝
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望行为
+      description: 希望插件怎么做，最好给出输入与期望输出。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案
+      description: 你考虑过的其它做法，或现有绕行方式。
+    validations:
+      required: false
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 影响范围
+      description: 这个改动是否会改变原生通道收到的内容。
+      options:
+        - 仅文档或工具链
+        - 仅新增格式嗅探或解码分支
+        - 改变已放行格式的处理方式
+        - 影响合成 drop 事件或 composer 定位
+        - 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息
+      description: 样例图片、格式说明或参考实现。请勿提交凭据或隐私数据。
+    validations:
+      required: false

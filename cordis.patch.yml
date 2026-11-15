@@ -1,0 +1,5 @@
+# Mount the plugin on the Host side; the actual work happens in the renderer.
+- insert:
+    - id: paste-image
+      name: dsh-paste-image
+      config: {}
