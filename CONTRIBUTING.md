@@ -53,17 +53,17 @@ Do not claim a change is verified without the command output. If something is un
 
 ## Style
 
-- JavaScript is formatted with Prettier 3 using `semi: false`, `singleQuote: true` and `printWidth: 120`.
+- JavaScript is formatted with Prettier 3; the committed `.prettierrc.json` sets `semi: false`, `singleQuote: true` and `printWidth: 120`.
 - `client.js` is loaded as a classic script inside the renderer: no top-level `import`/`export`, keep the IIFE, and keep the `module.exports` test seam at the bottom.
 - Keep the code dependency-free and the decoders self-contained. Prefer a few clear functions over a framework.
-- Format Markdown before committing:
+- Format before committing:
 
 ```bash
-npx prettier@3 --write README.md README.zh.md CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md docs/*.md
-npx prettier@3 --check README.md README.zh.md CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md docs/*.md
+npx prettier@3 --write .
+npx prettier@3 --check .
 ```
 
-`LICENSE` has no file extension, so Prettier cannot infer a parser for it and it is excluded from the check.
+`.prettierignore` keeps `node_modules/` and `package-lock.json` out. `LICENSE` has no file extension, so Prettier skips it when run on the directory; it is plain MIT text.
 
 ## Pull requests
 
@@ -71,7 +71,7 @@ npx prettier@3 --check README.md README.zh.md CHANGELOG.md CONTRIBUTING.md SECUR
 2. Branch from `master`: `feat/...`, `fix/...` or `docs/...`.
 3. Keep commits focused and use `type(scope): summary` with `feat`, `fix`, `docs`, `test` or `chore`.
 4. In the description, cover what changed, why, and how you verified it — paste the commands and the relevant output. For event-path changes, describe the manual paste/drop check.
-5. CI runs `npm test` and `npm run check`. Keep both green.
+5. CI runs `node --check` on both entry files, `npx prettier@3 --check .` and `npm test` on Node 20 and 22. Keep all three green.
 6. Do not bump the version or edit `CHANGELOG.md` in a feature pull request; releases are cut by the maintainer.
 7. Do not commit generated files, binaries or editor state.
 
