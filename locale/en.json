@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Paste any image",
+    "description": "Paste or drop an image whose declared type is XPM, BMP or DIB, SVG, ICO, or simply wrong: the renderer sniffs the real bytes and hands the composer a PNG. Native PNG, JPEG, WebP and GIF pass through untouched. One paste takes up to 8 files, and converted images keep their aspect ratio at 4096 px on the long side. HEIC and TIFF are recognised but left as they are, because the plugin ships no decoder for them."
+  }
+}

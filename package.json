@@ -1,6 +1,6 @@
 {
   "name": "dsh-paste-image",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Paste any image into DeepSeek Harness: converts XPM/BMP/DIB/SVG/TIFF/etc. and MIME-lying images to real PNG in the renderer.",
   "keywords": [
     "dsh",
@@ -17,16 +17,20 @@
     "wayland"
   ],
   "private": false,
+  "icon": "./assets/icon-180.png",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "client.js",
     "lib",
+    "locale/*.json",
+    "assets/icon-180.png",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",

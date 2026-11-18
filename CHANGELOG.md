@@ -6,13 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-18
+
 ### Added
 
+- Plugin Manager display metadata: `locale/en.json` and `locale/zh.json` ship `meta.title` and `meta.description`, so plugin rows and the detail page describe the capability instead of falling back to the manifest name and README.
+- A package-root `icon` (`./assets/icon-180.png`) and a `./locale/*.json` export; the icon and locales now travel inside the npm tarball.
 - `.github/workflows/release.yml` publishes GitHub Releases to npm through OIDC trusted publishing, with no stored token.
 
 ### Changed
 
 - `dsh-paste-image@0.2.1` is the first npm release; both READMEs now lead with `dsh plugin --profile <profile> add dsh-paste-image` and keep the GitHub install as the no-registry alternative.
+
+### Tests
+
+- 20 tests: the four new ones assert both locale files carry usable `meta.title`/`meta.description`, the icon is a PNG under 256 KiB, and the locales plus icon are packaged and exported.
 
 ## [0.2.1] - 2026-11-18
 

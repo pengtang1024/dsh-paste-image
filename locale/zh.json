@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "粘贴任意图片",
+    "description": "粘贴或拖入 XPM、BMP/DIB、SVG、ICO 或 MIME 类型标错的图片：渲染进程按真实字节嗅探格式，再交给输入框一个 PNG。原生 PNG、JPEG、WebP、GIF 一字节不改地放行。一次最多 8 个文件，转换后的图保持比例、长边 4096 像素。HEIC 与 TIFF 只识别不解码，因为没有内置解码器。"
+  }
+}
