@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import {
   createDocument,
+  createEventDocument,
   makeBmp,
   makeBmp8,
   makeBmp16,
@@ -38,7 +39,40 @@ function load() {
   return context.module.exports
 }
 
+function loadWith(document) {
+  const context = vm.createContext({
+    module: { exports: {} },
+    document,
+    AbortController,
+    TextDecoder,
+    Blob,
+    File,
+    Uint8Array,
+    Uint8ClampedArray,
+    DataView,
+    Set,
+    Map,
+    Promise,
+    console,
+  })
+  vm.runInContext(readFileSync(clientPath, 'utf8'), context, { filename: 'client.js' })
+  return context.module.exports
+}
+
 const api = load()
+
+test('install 幂等且可卸载，一次粘贴只挂一条监听', () => {
+  const document = createEventDocument()
+  const client = loadWith(document)
+  const dispose = client.install()
+  assert.equal(document.listeners.length, 2)
+  assert.equal(client.install(), dispose)
+  assert.equal(document.listeners.length, 2)
+  dispose()
+  assert.equal(document.listeners.length, 0)
+  client.install()
+  assert.equal(document.listeners.length, 2)
+})
 
 test('sniff 识别常见图片魔数', () => {
   assert.equal(api.sniff(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])), 'image/png')

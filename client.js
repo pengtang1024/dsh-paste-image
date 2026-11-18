@@ -21,6 +21,8 @@
   var MAX_FILES = 8
   var MAX_PIXELS = 64 * 1024 * 1024
   var REROUTED = '__dshPasteImageRerouted'
+  var HANDLED = '__dshPasteImageHandled'
+  var INSTALLED = '__dshPasteImageInstalled'
   var BMP_HEADERS = { 12: true, 40: true, 52: true, 56: true, 64: true, 108: true, 124: true }
   var HEIC_BRANDS = { heic: true, heix: true, heis: true, heim: true, hevc: true, hevx: true, mif1: true, msf1: true }
   var BMP_BPPS = { 1: true, 4: true, 8: true, 16: true, 24: true, 32: true }
@@ -631,11 +633,22 @@
     composer().dispatchEvent(event)
   }
 
+  function claim(event) {
+    if (event[HANDLED]) return false
+    try {
+      Object.defineProperty(event, HANDLED, { value: true })
+    } catch (error) {
+      event[HANDLED] = true
+    }
+    return true
+  }
+
   async function handle(event, data) {
     if (!data || event[REROUTED]) return
     var files = Array.prototype.slice.call(data.files || [])
     if (files.length === 0 || files.length > MAX_FILES) return
     if (!files.some(isImageCandidate)) return
+    if (!claim(event)) return
     event.preventDefault()
     event.stopPropagation()
     var out = []
@@ -670,21 +683,31 @@
   }
 
   function install() {
+    if (typeof document === 'undefined') return function () {}
+    var installed = document[INSTALLED]
+    if (typeof installed === 'function') return installed
+    var controller = new AbortController()
+    var options = { capture: true, signal: controller.signal }
     document.addEventListener(
       'paste',
       function (event) {
         void handle(event, event.clipboardData)
       },
-      true,
+      options,
     )
     document.addEventListener(
       'drop',
       function (event) {
         void handle(event, event.dataTransfer)
       },
-      true,
+      options,
     )
-    return function () {}
+    var dispose = function () {
+      controller.abort()
+      delete document[INSTALLED]
+    }
+    Object.defineProperty(document, INSTALLED, { value: dispose, configurable: true })
+    return dispose
   }
 
   var api = {

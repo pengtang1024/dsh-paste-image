@@ -243,3 +243,28 @@ export function makeRle4Bmp(width, height, stream, palette) {
   bytes.set(stream, offset)
   return bytes
 }
+
+// 事件用文档桩：记录监听器，支持 AbortSignal 卸载，供 install() 幂等性测试使用。
+export function createEventDocument() {
+  const listeners = []
+  const document = {
+    listeners,
+    body: {},
+    querySelector() {
+      return null
+    },
+    addEventListener(type, listener, options) {
+      const signal = options && options.signal
+      const entry = { type, listener, signal }
+      listeners.push(entry)
+      if (signal) {
+        signal.addEventListener('abort', () => document.removeEventListener(type, listener), { once: true })
+      }
+    },
+    removeEventListener(type, listener) {
+      const index = listeners.findIndex((entry) => entry.type === type && entry.listener === listener)
+      if (index >= 0) listeners.splice(index, 1)
+    },
+  }
+  return document
+}

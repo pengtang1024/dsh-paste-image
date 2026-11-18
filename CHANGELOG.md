@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-18
+
+### Fixed
+
+- One paste could insert the same image several times: every copy of the client bundle that had been loaded added another document-level listener, and the old `install()` returned a no-op disposer so nothing was ever removed. Five loaded copies produced five identical attachments. `install()` is now idempotent, returns an abort-based disposer that removes both listeners, and each source paste/drop event is claimed once, so duplicate listeners can no longer convert and re-route the same event twice.
+
+### Tests
+
+- 21 tests: the new one installs twice, asserts a single paste/drop listener pair, disposes, and installs again.
+
 ## [0.2.2] - 2026-11-18
 
 ### Added
