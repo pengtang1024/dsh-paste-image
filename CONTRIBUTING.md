@@ -27,14 +27,14 @@ Reload the DSH window after installing. In current DSH builds a `file:` install 
 
 ## Project layout
 
-| Path                    | Purpose                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `client.js`             | All renderer logic: event capture, sniffing, decoding, PNG re-encoding and rerouting.              |
-| `lib/index.js`          | Host half. Intentionally empty (`export function apply() {}`); everything happens in the renderer. |
-| `cordis.patch.yml`      | Loader entry that mounts the plugin.                                                               |
-| `tests/client.test.mjs` | `node:test` suite; runs `client.js` in a `vm` context with a minimal DOM stub.                     |
-| `tests/helpers/dom.mjs` | The stub: fake canvas and image data, a BMP builder, and the globals `client.js` expects.          |
-| `docs/`                 | User documentation: implementation notes and troubleshooting.                                      |
+| Path                    | Purpose                                                                                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client.js`             | All renderer logic: event capture, sniffing, decoding, PNG re-encoding and rerouting.                                                                                       |
+| `lib/index.js`          | Host half. Intentionally empty (`export function apply() {}`); everything happens in the renderer.                                                                          |
+| `cordis.patch.yml`      | Loader entry that mounts the plugin.                                                                                                                                        |
+| `tests/client.test.mjs` | `node:test` suite; runs `client.js` in a `vm` context with a minimal DOM stub.                                                                                              |
+| `tests/helpers/dom.mjs` | The stub: fake canvas and image data, BMP builders, and the globals `client.js` expects.                                                                                    |
+| `docs/`                 | User documentation: [how it works](docs/how-it-works.md), [format support](docs/formats.md), [troubleshooting](docs/troubleshooting.md) and [releasing](docs/releasing.md). |
 
 ## Tests come with the change
 
@@ -51,6 +51,10 @@ npm run check
 
 Do not claim a change is verified without the command output. If something is untested, say so in the pull request.
 
+## Adding a format
+
+Format work touches more than the decoder. The full checklist lives in [docs/formats.md#adding-a-format](docs/formats.md#adding-a-format); in short: sniff it, decode it, route it in `toCanvas()`/`IMAGE_EXT`, add the four test cases (happy path, truncation, declared-type lie, sniff), then update `docs/formats.md`, both READMEs and `CHANGELOG.md`. Keep the decoder dependency-free — a new runtime dependency is a non-starter for this plugin.
+
 ## Style
 
 - JavaScript is formatted with Prettier 3; the committed `.prettierrc.json` sets `semi: false`, `singleQuote: true` and `printWidth: 120`.
@@ -59,8 +63,8 @@ Do not claim a change is verified without the command output. If something is un
 - Format before committing:
 
 ```bash
-npx prettier@3 --write .
-npx prettier@3 --check .
+npm run format        # npx --yes prettier@3 --write .
+npm run format:check  # npx --yes prettier@3 --check .
 ```
 
 `.prettierignore` keeps `node_modules/` and `package-lock.json` out. `LICENSE` has no file extension, so Prettier skips it when run on the directory; it is plain MIT text.

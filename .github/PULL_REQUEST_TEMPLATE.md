@@ -26,4 +26,5 @@
 
 - [ ] 未引入新的运行时依赖
 - [ ] 仍是纯客户端实现：无后台进程、不轮询剪贴板、不上传数据
-- [ ] 已知限制未被回退：XPM 仅 XPM3 文本、BMP 仅 24/32 位未压缩、HEIC/AVIF/SVG 依赖浏览器解码器、单次最多 8 张
+- [ ] 已知边界未被回退：XPM 仅 XPM3 文本、TIFF/HEIC 只识别不解码、2 位与 64 位 BMP 不支持、单次最多 8 张
+- [ ] 文档同步：`docs/formats.md`、两份 README、`CHANGELOG.md`（`[Unreleased]`）

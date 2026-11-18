@@ -1,6 +1,8 @@
 # dsh-paste-image
 
 [![CI](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml/badge.svg)](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
 Paste or drop almost any image into DeepSeek Harness — even when the clipboard says `image/xpm` or lies about the MIME type.
 
@@ -27,6 +29,8 @@ That whitelist breaks two things that happen all the time on Linux:
 All of this is client-side. There is no host process, no clipboard polling and no network request.
 
 ## Supported formats
+
+This table is the short version. The [format support reference](docs/formats.md) explains the decision pipeline, the full BMP variant grid, and what is intentionally out of scope.
 
 | Format                       | Typical declared type | What happens                                                                                                                          |
 | ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -72,7 +76,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite (14 tests at 0.2.0) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite (16 tests at 0.2.0) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 
@@ -106,8 +110,17 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 ## Documentation
 
 - [How it works](docs/how-it-works.md) — event flow, decoder internals and a function-by-function code map.
+- [Format support](docs/formats.md) — decision pipeline, format matrix, BMP variants and the checklist for adding a format.
 - [Troubleshooting](docs/troubleshooting.md) — common failures and how to read the logs.
-- [Contributing](CONTRIBUTING.md) — development setup, tests and style.
+- [Releasing](docs/releasing.md) — version policy and the maintainer release checklist.
+
+## Community
+
+- [Contributing](CONTRIBUTING.md) — setup, tests, style and what a format contribution needs.
+- [Code of Conduct](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
+- [Security policy](SECURITY.md) — private reporting, scope and supported versions.
+- [Changelog](CHANGELOG.md) and [releases](https://github.com/pengtang1024/dsh-paste-image/releases) — what changed and why.
+- [Issues](https://github.com/pengtang1024/dsh-paste-image/issues) — bug reports and format requests.
 
 ## License
 

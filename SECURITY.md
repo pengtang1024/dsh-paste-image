@@ -2,11 +2,12 @@
 
 ## Supported versions
 
-| Version | Supported |
-| ------- | --------- |
-| 0.1.x   | Yes       |
+| Version | Supported                                  |
+| ------- | ------------------------------------------ |
+| 0.2.x   | Yes — current release line                 |
+| 0.1.x   | No — upgrade to 0.2.x, which supersedes it |
 
-The plugin is pre-1.0; security fixes land in a new 0.1.x patch release.
+The plugin is pre-1.0, so security fixes land in a new patch release of the current minor version rather than being backported to older lines.
 
 ## Reporting a vulnerability
 

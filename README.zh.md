@@ -1,6 +1,8 @@
 # dsh-paste-image
 
 [![CI](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml/badge.svg)](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
 把几乎任何图片粘进或拖进 DeepSeek Harness —— 哪怕剪贴板声称它是 `image/xpm`，或者干脆把 MIME 类型写错了。
 
@@ -27,6 +29,8 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 全部逻辑都在客户端。没有宿主进程、不轮询剪贴板、不发网络请求。
 
 ## 支持的格式
+
+下表是简版；完整决策流程、BMP 变体网格以及明确不做的格式，见[格式支持参考](docs/formats.md)。
 
 | 格式                     | 常见声明类型    | 处理方式                                                                                                  |
 | ------------------------ | --------------- | --------------------------------------------------------------------------------------------------------- |
@@ -72,7 +76,7 @@ npm test
 npm run check
 ```
 
-`npm test` 跑 Node 测试（0.2.0 为 14 个用例）：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
+`npm test` 跑 Node 测试（0.2.0 为 16 个用例）：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
 
 再验证真实链路：
 
@@ -106,8 +110,17 @@ npm run check
 ## 文档
 
 - [实现原理](docs/how-it-works.md) —— 事件流、解码器内部实现、逐函数代码地图。
+- [格式支持](docs/formats.md) —— 决策流程、格式矩阵、BMP 变体与新增格式清单。
 - [常见问题](docs/troubleshooting.md) —— 典型故障与日志查看方法。
-- [贡献指南](CONTRIBUTING.md) —— 开发环境、测试与代码风格。
+- [发版流程](docs/releasing.md) —— 版本策略与维护者发布清单。
+
+## 社区
+
+- [贡献指南](CONTRIBUTING.md) —— 开发环境、测试、代码风格与格式贡献要求。
+- [行为准则](CODE_OF_CONDUCT.md) —— Contributor Covenant 2.1。
+- [安全策略](SECURITY.md) —— 私下报告、影响范围与支持版本。
+- [更新日志](CHANGELOG.md) 与[发布记录](https://github.com/pengtang1024/dsh-paste-image/releases) —— 改了什么、为什么改。
+- [Issues](https://github.com/pengtang1024/dsh-paste-image/issues) —— 缺陷报告与格式需求。
 
 ## 许可证
 

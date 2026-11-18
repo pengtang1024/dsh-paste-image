@@ -17,16 +17,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Magic-byte detection for AVIF, HEIC/HEIF, ICO/CUR, SVG and headerless DIBs.
 - MIME alias table so `image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml` and friends are treated as the canonical type.
 - `MAX_PIXELS` guard (64 Mi px) before a BMP/XPM canvas is allocated.
+- `docs/formats.md`: the decision pipeline, the full format matrix, the BMP variant grid and the checklist for adding a format.
+- `docs/releasing.md`: version policy, release checklist, npm publish steps and marketplace sync.
+- Open-source scaffolding: `.github/CODEOWNERS`, issue-template contact links, README badges, and a Community section linking contributing, conduct, security, changelog and releases.
 
 ### Changed
 
 - A native image with an empty declared type is re-wrapped with the sniffed type instead of being passed through and rejected by the host.
 - Row stride, palette entries, bit masks and alpha handling in the BMP decoder are shared by every pixel depth instead of being hard-coded for 24/32-bit.
+- BMP files using `BI_CMYK` compression (11/12/13) are rejected with `bmp: unsupported compression` instead of being decoded as RGB.
 
 ### Fixed
 
 - 32-bit BMPs whose encoder leaves the alpha channel at zero no longer export as a fully transparent PNG.
 - Palette BMP entries are loaded with the correct entry size (3 bytes for the OS/2 core header, 4 otherwise), and a zero alpha byte in a palette entry no longer makes that colour transparent.
+- `cordis.patch.yml` is now part of the published `files` list. GitHub (and future npm) installs used to omit the loader patch, so the bundle entry never mounted; CI checks the tarball for the file.
 
 ## [0.1.0] - 2026-11-15
 
