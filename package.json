@@ -27,6 +27,7 @@
   "files": [
     "client.js",
     "lib",
+    "cordis.patch.yml",
     "README.md",
     "README.zh.md",
     "LICENSE",
@@ -43,7 +44,13 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check client.js && node --check lib/index.js"
+    "check": "node --check client.js && node --check lib/index.js",
+    "format": "npx --yes prettier@3 --write .",
+    "format:check": "npx --yes prettier@3 --check .",
+    "prepublishOnly": "npm test && npm run check"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "repository": {
     "type": "git",

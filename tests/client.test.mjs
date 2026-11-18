@@ -186,3 +186,15 @@ test('normalize 给缺少 MIME 的原生图片补上正确类型', async () => {
   assert.equal(out.file.type, 'image/png')
   assert.equal(out.file.name, 'shot.png')
 })
+
+test('parseBmp 明确拒绝 BI_CMYK 而不是猜通道', () => {
+  const bmp = makeBmp(1, 1, [[255, 255, 255]])
+  new DataView(bmp.buffer).setUint32(30, 11, true) // BI_CMYK
+  assert.throws(() => api.decodeBmp(bmp), /bmp: unsupported compression 11/)
+})
+
+test('normalize 对拒绝的 BMP 变体抛错，调用方保留原文件', async () => {
+  const bmp = makeBmp(1, 1, [[255, 255, 255]])
+  new DataView(bmp.buffer).setUint32(30, 12, true) // BI_CMYKRLE8
+  await assert.rejects(api.normalize(new File([bmp], 'print.bmp', { type: 'image/bmp' })), /unsupported compression 12/)
+})

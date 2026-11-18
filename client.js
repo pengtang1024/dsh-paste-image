@@ -24,6 +24,7 @@
   var BMP_HEADERS = { 12: true, 40: true, 52: true, 56: true, 64: true, 108: true, 124: true }
   var HEIC_BRANDS = { heic: true, heix: true, heis: true, heim: true, hevc: true, hevx: true, mif1: true, msf1: true }
   var BMP_BPPS = { 1: true, 4: true, 8: true, 16: true, 24: true, 32: true }
+  var BMP_COMPRESSION = { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true }
 
   function ascii(bytes, start, len) {
     var out = ''
@@ -219,6 +220,8 @@
       info.compression = dv.getUint32(p + 16, true)
       info.imageSize = dv.getUint32(p + 20, true)
       info.clrUsed = dv.getUint32(p + 32, true)
+      // BI_CMYK and friends (11/12/13) are not decoded; refuse instead of guessing channel order.
+      if (!BMP_COMPRESSION[info.compression]) throw new Error('bmp: unsupported compression ' + info.compression)
     }
     if (!(info.width > 0) || info.height === 0) throw new Error('bmp: bad dimensions')
     if (info.width * Math.abs(info.height) > MAX_PIXELS) throw new Error('bmp: too large')

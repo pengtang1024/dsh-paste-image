@@ -33,6 +33,8 @@ jobs:
           node --check client.js
           node --check lib/index.js
       - name: Check formatting
-        run: npx --yes prettier@3 --check .
+        run: npm run format:check
       - name: Run tests
         run: npm test
+      - name: Check package payload
+        run: npm pack --dry-run --json | grep -q '"cordis.patch.yml"'
