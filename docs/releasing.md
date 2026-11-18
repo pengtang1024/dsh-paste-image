@@ -98,10 +98,12 @@ The package is on npm as `dsh-paste-image` since 0.2.1. Releases are published b
 3. Only GitHub-hosted runners are supported; self-hosted runners are rejected by the registry.
 4. Manual fallback, when the workflow is unavailable: `npm publish --registry=https://registry.npmjs.org --access public`. The account has `auth-and-writes` 2FA, so a granular token without bypass-2FA gets a 403. Tokens that _do_ bypass 2FA still cannot manage tokens, access, maintainers or trusted-publisher settings — those need an interactive challenge.
 
-Two traps worth remembering:
+Four traps worth remembering:
 
 - **The mirror cannot publish.** `registry.npmmirror.com` is read-only; always pass `--registry=https://registry.npmjs.org` (or set `publishConfig.registry`) when publishing by hand.
 - **Never leave a staged version behind.** `npm stage publish` defers 2FA to `npm stage approve`; an interrupted attempt leaves a `0.0.0-stage` version in the registry, and a bypass-2FA token cannot unpublish it.
+- **Trust permissions are not "on" by default.** `npm stage publish` is always allowed; direct publish and dist-tag management need the extra checkbox. `npm trust list <pkg> --registry=https://registry.npmjs.org` must print `permissions: publish, stage publish`. A `stage publish, manageDistTags` row still exchanges tokens successfully and then fails the upload with `403 OIDC permission denied for this action`.
+- **A trust row cannot be edited, only replaced.** `npm trust github … --allow-publish` against an existing row fails `409 ... a trusted publisher configuration that a token could also match already exists`. Revoke first (`npm trust revoke <pkg> --id=<id>`), then recreate with `--allow-publish`. Both commands need an interactive browser challenge, so a non-TTY shell cannot finish them.
 
 ## Hotfixes
 
