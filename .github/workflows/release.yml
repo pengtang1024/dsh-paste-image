@@ -35,8 +35,12 @@ jobs:
       - name: Syntax check
         run: npm run check
 
+      - name: OIDC preflight
+        run: |
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then echo "OIDC env: present"; else echo "OIDC env: MISSING"; fi
+
       # No NODE_AUTH_TOKEN: npm exchanges the GitHub OIDC token for a short-lived
       # registry credential. The trusted publisher must be configured on
       # npmjs.com first (package settings → Trusted Publisher → GitHub Actions).
       - name: Publish
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --loglevel=verbose
