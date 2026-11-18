@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml/badge.svg)](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
 把几乎任何图片粘进或拖进 DeepSeek Harness —— 哪怕剪贴板声称它是 `image/xpm`，或者干脆把 MIME 类型写错了。
@@ -52,7 +53,11 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 
 ## 安装
 
-未发布到 npm，从 GitHub 安装：
+```bash
+dsh plugin --profile <profile> add dsh-paste-image
+```
+
+包里是预构建产物，安装只从 npm 拉 8 个小文件。也可以直接从 GitHub 装、绕开 registry：
 
 ```bash
 dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image

@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml/badge.svg)](https://github.com/pengtang1024/dsh-paste-image/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
 Paste or drop almost any image into DeepSeek Harness — even when the clipboard says `image/xpm` or lies about the MIME type.
@@ -52,7 +53,11 @@ A file is considered at all when its MIME type starts with `image/` or its name 
 
 ## Install
 
-Not published to npm. Install from GitHub:
+```bash
+dsh plugin --profile <profile> add dsh-paste-image
+```
+
+The package ships prebuilt, so the install pulls eight small files through the npm registry. GitHub installs work too and skip the registry:
 
 ```bash
 dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image

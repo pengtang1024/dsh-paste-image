@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `.github/workflows/release.yml` publishes GitHub Releases to npm through OIDC trusted publishing, with no stored token.
+
+### Changed
+
+- `dsh-paste-image@0.2.1` is the first npm release; both READMEs now lead with `dsh plugin --profile <profile> add dsh-paste-image` and keep the GitHub install as the no-registry alternative.
+
 ## [0.2.1] - 2026-11-18
 
 ### Fixed

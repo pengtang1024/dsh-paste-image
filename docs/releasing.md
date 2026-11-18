@@ -20,7 +20,7 @@ Run all of this from a clean checkout of `master`:
 git switch master
 git pull --ff-only
 git status --porcelain          # must be empty
-npm test                        # 16 tests expected at 0.2.0
+npm test                        # 16 tests
 npm run check
 npm run format:check            # CI runs the same thing
 ```
@@ -91,21 +91,17 @@ Also confirm the GitHub Actions run for the newest `master` commit is green — 
 
 ## Publishing to npm
 
-The package is not on npm yet. When that changes:
+The package is on npm as `dsh-paste-image` since 0.2.1. Releases are published by CI from then on:
 
-1. Make sure `publishConfig` stays `{ "access": "public" }` and `prepublishOnly` still runs the tests.
-2. Authenticate once with `npm login`, or add an `NPM_TOKEN` repository secret and publish from CI on tag push:
+1. `.github/workflows/release.yml` publishes on `release: published` through **trusted publishing (OIDC)** — no `NPM_TOKEN`, no stored secret.
+2. Configure the trusted publisher once on npmjs.com (package → Settings → Trusted Publisher): provider `GitHub Actions`, organization `pengtang1024`, repository `dsh-paste-image`, workflow `release.yml`, environment empty. The configuration must complete its first successful publish within two days or it expires and has to be recreated.
+3. Only GitHub-hosted runners are supported; self-hosted runners are rejected by the registry.
+4. Manual fallback, when the workflow is unavailable: `npm publish --registry=https://registry.npmjs.org --access public`. The account has `auth-and-writes` 2FA, so a granular token without bypass-2FA gets a 403. Tokens that _do_ bypass 2FA still cannot manage tokens, access, maintainers or trusted-publisher settings — those need an interactive challenge.
 
-   ```yaml
-   - run: npm publish --provenance --access public
-     if: startsWith(github.ref, 'refs/tags/v')
-     env:
-       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-   ```
+Two traps worth remembering:
 
-3. After the first publish, add the npm install line to both READMEs and change the "Not published to npm" sentence. Keep the GitHub install documented — the marketplace indexes GitHub, not npm.
-
-Publishing is intentionally a manual step today: there is no automation that could publish a tag with a broken payload.
+- **The mirror cannot publish.** `registry.npmmirror.com` is read-only; always pass `--registry=https://registry.npmjs.org` (or set `publishConfig.registry`) when publishing by hand.
+- **Never leave a staged version behind.** `npm stage publish` defers 2FA to `npm stage approve`; an interrupted attempt leaves a `0.0.0-stage` version in the registry, and a bypass-2FA token cannot unpublish it.
 
 ## Hotfixes
 
