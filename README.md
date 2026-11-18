@@ -21,27 +21,30 @@ That whitelist breaks two things that happen all the time on Linux:
 
 1. **Capture.** `install()` registers `paste` and `drop` listeners on `document` in the capture phase, so the plugin sees the event before the composer does.
 2. **Sniff.** `handle()` reads the `File` objects from `clipboardData` or `dataTransfer`, and `sniff()` identifies the real format from magic bytes — not from the declared MIME type.
-3. **Re-encode.** `normalize()` lets native files through untouched. Everything else is decoded (dedicated XPM and BMP decoders, or the browser's own codec), drawn onto a canvas capped at 4096 px on the longest side, and exported as `image/png` with a `.png` file name.
+3. **Re-encode.** `normalize()` lets native files through untouched. Everything else is decoded (dedicated XPM, BMP/DIB and SVG paths, the browser's own codec for the rest), drawn onto a canvas capped at 4096 px on the longest side, and exported as `image/png` with a `.png` file name.
 4. **Reroute.** `handle()` dispatches a synthetic `drop` event carrying the new `File` at `[data-composer-card]`, which is the same path a real drag-and-drop takes. A `__dshPasteImageRerouted` marker stops the plugin from intercepting its own event.
 
 All of this is client-side. There is no host process, no clipboard polling and no network request.
 
 ## Supported formats
 
-| Format                                     | Typical declared type | What happens                                                                                                                          |
-| ------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| PNG                                        | `image/png`           | Passed through unchanged                                                                                                              |
-| JPEG / JFIF                                | `image/jpeg`          | Passed through unchanged                                                                                                              |
-| WebP                                       | `image/webp`          | Passed through unchanged                                                                                                              |
-| GIF                                        | `image/gif`           | Passed through unchanged                                                                                                              |
-| XPM (XPM3 text)                            | `image/xpm`           | Decoded by `decodeXpm()`, re-encoded as PNG                                                                                           |
-| BMP / DIB (24/32-bit, uncompressed)        | `image/bmp`           | Browser decode first, `decodeBmp()` as fallback, re-encoded as PNG                                                                    |
-| TIFF                                       | `image/tiff`          | Detected by magic bytes; decoded only if the browser ships a TIFF codec (Chromium does not), otherwise the original is passed through |
-| AVIF, ICO, CUR, SVG, HEIC, other `image/*` | `image/...`           | Decoded by the browser when it can, then re-encoded as PNG; otherwise the original is passed through                                  |
+| Format                       | Typical declared type | What happens                                                                                                                          |
+| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| PNG                          | `image/png`           | Passed through unchanged                                                                                                              |
+| JPEG / JFIF                  | `image/jpeg`          | Passed through unchanged                                                                                                              |
+| WebP                         | `image/webp`          | Passed through unchanged                                                                                                              |
+| GIF                          | `image/gif`           | Passed through unchanged                                                                                                              |
+| XPM (XPM3 text)              | `image/xpm`           | Decoded by `decodeXpm()`, re-encoded as PNG                                                                                           |
+| BMP / DIB                    | `image/bmp`           | Browser decode first, `decodeBmp()` fallback: 1/4/8/16/24/32-bit, RLE4/RLE8, BITFIELDS, OS/2 headers and headerless DIBs              |
+| SVG                          | `image/svg+xml`       | Rasterised through an `<img>` element, re-encoded as PNG                                                                              |
+| ICO / CUR                    | `image/x-icon`        | Browser decode first, then falls back to the largest PNG-compressed entry                                                             |
+| TIFF                         | `image/tiff`          | Detected by magic bytes; decoded only if the browser ships a TIFF codec (Chromium does not), otherwise the original is passed through |
+| AVIF                         | `image/avif`          | Decoded by Chromium, re-encoded as PNG                                                                                                |
+| HEIC / HEIF, other `image/*` | `image/...`           | Detected by magic bytes; decoded only when the browser has the codec (Chromium does not decode HEIC), otherwise passed through        |
 
-Pass-through only happens when the magic bytes match one of the four native types **and** the declared type agrees (or is empty). A file whose bytes are JPEG but which claims `image/png` is re-encoded as a real PNG, so the declared type can no longer lie.
+Pass-through only happens when the magic bytes match one of the four native types **and** the declared type agrees. A file whose bytes are JPEG but which claims `image/png` is re-encoded as a real PNG, so the declared type can no longer lie. A native file with no declared type at all is re-wrapped with the sniffed type instead of being re-encoded, and common alias spellings (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) count as agreement.
 
-A file is considered at all when its MIME type starts with `image/` or its name ends in `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur` or `.svg`. Non-image files in the same paste are forwarded untouched.
+A file is considered at all when its MIME type starts with `image/` or its name ends in `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` or `.heif`. Non-image files in the same paste are forwarded untouched.
 
 ## Install
 
@@ -69,7 +72,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite (5 tests at 0.1.0) covering magic-byte sniffing, candidate detection, the BMP decoder, the BMP-labelled-PNG conversion and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite (14 tests at 0.2.0) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 
@@ -86,8 +89,8 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 ## Limitations
 
 - **XPM:** XPM3 text format only. The parser reads the `c` colour key; other keys such as `m`, `g` and `s` are ignored. Colours are resolved by the browser's CSS parser, so palette names that are not valid CSS colours, such as the multi-word `light gray`, fall back to opaque black.
-- **BMP:** 24- or 32-bit, uncompressed (`BI_RGB`), `BITMAPINFOHEADER` or newer only. RLE, 1/4/8/16-bit images and OS/2 headers are not supported. For 32-bit files the fourth byte is taken as alpha, so files that leave it at zero can come out transparent.
-- **Other codecs:** AVIF, ICO, CUR, SVG and HEIC rely on the browser decoder; TIFF is detected but Chromium does not decode it. When the browser cannot decode a file, the original is passed through and the host rejects it as before.
+- **BMP:** 1/4/8/16/24/32-bit, `BI_RGB`, `BI_RLE8`, `BI_RLE4`, `BI_BITFIELDS` and `BI_ALPHABITFIELDS`, with core, extended, V4/V5 or OS/2 headers — plus headerless DIBs. 2-bit and 64-bit-per-pixel variants are not supported. For 32-bit files without a declared alpha mask, an all-zero alpha channel is treated as opaque instead of producing a fully transparent PNG.
+- **Other codecs:** SVG is rasterised in-house; ICO/CUR fall back to PNG-compressed entries; AVIF relies on the browser decoder. TIFF and HEIC are detected but Chromium ships no codec for them, so the original is passed through and the host rejects it as before. No third-party decoder is bundled.
 - **Size:** converted images are scaled down to at most 4096 px on the longest side. Native files passed through untouched are not resized.
 - **File count:** one paste or drop may contain at most 8 files. Larger batches are left entirely to the native path.
 - **Flattening:** a converted image becomes a single PNG frame. Animation, EXIF metadata and embedded colour profiles are not preserved.

@@ -31,13 +31,15 @@ There are two different failures behind the same message.
 - no file looks like an image — the MIME type does not start with `image/` and the file name has no recognized image extension;
 - the plugin is not loaded (see the previous section).
 
-A `.heic` file that arrives as `application/octet-stream` is not a candidate either: `heic` is not in the extension list, and its MIME type does not start with `image/`. Convert it to PNG before pasting.
+A `.heic` file still fails after the sniff: the plugin now recognizes `heic`/`heif` by extension and by the `ftyp` box, but Chromium ships no HEIC codec, so decoding throws and the original is forwarded. Convert it to PNG or JPEG before pasting.
 
 **The conversion failed.** In that case the console shows `keep original (...)` and the original bytes are forwarded, so the host rejects them exactly as before. The text after the colon is the decoder's reason:
 
-- `bmp: unsupported variant` — not a 24/32-bit uncompressed BMP (see below).
+- `bmp: unsupported bpp 2` / `bmp: unsupported header 16` — a BMP variant that is not implemented (2-bit pixels, unknown DIB header size; see below).
+- `bmp: too large` — the header claims more than 64 Mi pixels; the file is rejected before a canvas is allocated.
 - `xpm: bad header ...` or `xpm: no strings` — the XPM text is malformed (see below).
-- A browser decoder error — the format needs a codec this Chromium build does not have (TIFF and many HEIC builds are the usual cases).
+- `svg: decode failed` — the markup is not a valid SVG, or it references external images the browser refuses to load inside an `<img>`.
+- A browser decoder error — the format needs a codec this Chromium build does not have (TIFF and HEIC are the usual cases).
 
 If the console shows a successful `-> image/png` line and the composer still rejects the paste, the failure is downstream of the plugin: copy the full error text and the log line into an issue.
 
@@ -67,10 +69,16 @@ When decoding fails, the original file is forwarded and the host rejects it. Con
 
 ## BMP decoding fails or looks wrong
 
-- Only 24- or 32-bit, uncompressed (`BI_RGB`) BMP with a `BITMAPINFOHEADER` or newer is supported. 1/4/8/16-bit palette images, RLE compression and OS/2 headers throw `bmp: unsupported variant`.
+- Supported: 1/4/8/16/24/32-bit pixels, `BI_RGB`, `BI_RLE8`, `BI_RLE4`, `BI_BITFIELDS`, `BI_ALPHABITFIELDS`, header sizes 12/40/52/56/64/108/124, and headerless DIBs (`CF_DIB` shape). 2-bit and 64-bit-per-pixel files still throw.
 - The browser is tried first; the local `decodeBmp()` decoder is only a fallback. A browser that can decode the file never reaches the fallback.
-- For 32-bit files the fourth byte is copied as alpha. If the encoder left it at zero, the resulting PNG can appear fully transparent. Re-save the image as 24-bit BMP or as PNG and paste that.
-- Top-down BMPs (negative height) are handled; a corrupted header with a negative width is not.
+- `BI_JPEG` / `BI_PNG` BMPs are unwrapped: the embedded payload is handed to the browser decoder.
+- For 32-bit files without an alpha mask, the fourth byte is used as alpha **unless the whole channel is zero**, in which case the image is treated as opaque. A partially transparent 32-bit BMP keeps its real alpha.
+- Top-down BMPs (negative height) are handled, including the RLE paths; a corrupted header with a non-positive width is rejected.
+
+## SVG or icon pastes fail
+
+- SVG is rasterised through an `<img>` element. External `<image href>` references may fail because the object URL has no base URL; inline shapes and embedded data URLs work.
+- ICO/CUR is handed to the browser first. When that fails, only PNG-compressed entries are supported; DIB-only icons and cursors fall back to the original file and are rejected by the host.
 
 ## Watching the logs while you test
 

@@ -1,7 +1,7 @@
 {
   "name": "dsh-paste-image",
-  "version": "0.1.0",
-  "description": "Paste any image into DeepSeek Harness: converts XPM/BMP/TIFF/etc. and MIME-lying images to real PNG in the renderer.",
+  "version": "0.2.0",
+  "description": "Paste any image into DeepSeek Harness: converts XPM/BMP/DIB/SVG/TIFF/etc. and MIME-lying images to real PNG in the renderer.",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -11,6 +11,8 @@
     "image",
     "xpm",
     "bmp",
+    "dib",
+    "svg",
     "png",
     "wayland"
   ],
