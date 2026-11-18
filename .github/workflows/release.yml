@@ -16,14 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No registry-url: setup-node then writes no `_authToken` line, and npm
+      # can reach the OIDC exchange instead of sending a dummy token.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
 
       # Trusted publishing needs npm >= 11.5.1; the runner's bundled one may be older.
       - name: Upgrade npm
-        run: npm install --global npm@latest
+        run: |
+          npm install --global npm@latest
+          npm --version
+          npm config get registry
 
       - name: Test
         run: npm test
