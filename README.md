@@ -76,7 +76,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite (16 tests at 0.2.0) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite (16 tests at 0.2.1) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 

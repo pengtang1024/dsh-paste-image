@@ -76,7 +76,7 @@ npm test
 npm run check
 ```
 
-`npm test` 跑 Node 测试（0.2.0 为 16 个用例）：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
+`npm test` 跑 Node 测试（0.2.1 为 16 个用例）：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
 
 再验证真实链路：
 
