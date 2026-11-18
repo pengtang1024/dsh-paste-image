@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- One paste could insert the same image several times: every copy of the client bundle that had been loaded added another document-level listener, and the old `install()` returned a no-op disposer so nothing was ever removed. Five loaded copies produced five identical attachments. `install()` is now idempotent, returns an abort-based disposer that removes both listeners, and each source paste/drop event is claimed once, so duplicate listeners can no longer convert and re-route the same event twice.
+- One paste could insert the same image several times: every copy of the client bundle that had been loaded added another document-level listener, and the old `install()` returned a no-op disposer so nothing was ever removed. Five loaded copies produced five identical attachments. `install()` is now idempotent, returns a reference-counted, abort-based disposer that removes both listeners once the last holder releases them, and each source paste/drop event is claimed once, so duplicate listeners can no longer convert and re-route the same event twice.
 
 ### Tests
 

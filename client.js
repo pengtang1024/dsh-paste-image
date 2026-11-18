@@ -684,30 +684,37 @@
 
   function install() {
     if (typeof document === 'undefined') return function () {}
-    var installed = document[INSTALLED]
-    if (typeof installed === 'function') return installed
-    var controller = new AbortController()
-    var options = { capture: true, signal: controller.signal }
-    document.addEventListener(
-      'paste',
-      function (event) {
-        void handle(event, event.clipboardData)
-      },
-      options,
-    )
-    document.addEventListener(
-      'drop',
-      function (event) {
-        void handle(event, event.dataTransfer)
-      },
-      options,
-    )
-    var dispose = function () {
-      controller.abort()
-      delete document[INSTALLED]
+    var record = document[INSTALLED]
+    if (!record) {
+      var controller = new AbortController()
+      var options = { capture: true, signal: controller.signal }
+      document.addEventListener(
+        'paste',
+        function (event) {
+          void handle(event, event.clipboardData)
+        },
+        options,
+      )
+      document.addEventListener(
+        'drop',
+        function (event) {
+          void handle(event, event.dataTransfer)
+        },
+        options,
+      )
+      record = {
+        refs: 0,
+        release: function () {
+          record.refs -= 1
+          if (record.refs > 0) return
+          controller.abort()
+          delete document[INSTALLED]
+        },
+      }
+      Object.defineProperty(document, INSTALLED, { value: record, configurable: true })
     }
-    Object.defineProperty(document, INSTALLED, { value: dispose, configurable: true })
-    return dispose
+    record.refs += 1
+    return record.release
   }
 
   var api = {

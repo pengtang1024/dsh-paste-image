@@ -61,14 +61,16 @@ function loadWith(document) {
 
 const api = load()
 
-test('install 幂等且可卸载，一次粘贴只挂一条监听', () => {
+test('install 幂等且按引用计数卸载，一次粘贴只挂一条监听', () => {
   const document = createEventDocument()
   const client = loadWith(document)
-  const dispose = client.install()
+  const first = client.install()
   assert.equal(document.listeners.length, 2)
-  assert.equal(client.install(), dispose)
+  assert.equal(client.install(), first)
   assert.equal(document.listeners.length, 2)
-  dispose()
+  first()
+  assert.equal(document.listeners.length, 2)
+  first()
   assert.equal(document.listeners.length, 0)
   client.install()
   assert.equal(document.listeners.length, 2)
