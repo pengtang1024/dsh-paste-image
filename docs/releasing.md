@@ -20,7 +20,7 @@ Run all of this from a clean checkout of `master`:
 git switch master
 git pull --ff-only
 git status --porcelain          # must be empty
-npm test                        # 14 tests expected at 0.2.0
+npm test                        # 16 tests expected at 0.2.0
 npm run check
 npm run format:check            # CI runs the same thing
 ```
