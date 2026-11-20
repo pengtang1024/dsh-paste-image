@@ -66,7 +66,7 @@ The plugin is deliberately dependency-free, so a new format is either a small pa
 2. **Decode it.** Write a `decode<Format>()` that returns RGBA pixel data for `canvasOf()`, or return a drawable image for the `<img>` path. Validate every length before reading, cap the pixel count with `MAX_PIXELS`, and throw a short `format: reason` error on anything unexpected.
 3. **Route it.** Add the type to `toCanvas()` (or to `NATIVE_TYPES` if it should pass through) and, if it is not a native type, to the extension list in `IMAGE_EXT`.
 4. **Test it.** Extend `tests/helpers/dom.mjs` with a builder if the bytes are non-trivial, and add cases to `tests/client.test.mjs` for: sniffing, the happy path, a truncated file, and the "declared type lies" case.
-5. **Document it.** Update the matrix above, the table and limitations in both READMEs, and the `Pass-through` paragraph if the rules changed.
+5. **Document it.** Update the matrix above, the table and limitations in `README.md` and every translation, and the `Pass-through` paragraph if the rules changed.
 6. **Release-note it.** Add an entry under `[Unreleased]` in `CHANGELOG.md`; the maintainer folds it into the next version.
 
 Run `npm test`, `npm run check` and `npm run format:check` before opening the pull request; `CONTRIBUTING.md` has the full workflow.

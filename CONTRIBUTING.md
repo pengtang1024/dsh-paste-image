@@ -32,6 +32,8 @@ Reload the DSH window after installing. In current DSH builds a `file:` install 
 | `client.js`             | All renderer logic: event capture, sniffing, decoding, PNG re-encoding and rerouting.                                                                                       |
 | `lib/index.js`          | Host half. Intentionally empty (`export function apply() {}`); everything happens in the renderer.                                                                          |
 | `cordis.patch.yml`      | Loader entry that mounts the plugin.                                                                                                                                        |
+| `locale/`               | Display metadata for the eight languages the DSH interface ships: title, description and the detail document shown in Plugin Manager.                                       |
+| `README*.md`            | English README plus one full translation per supported language; each `meta.detail` points at its own translation.                                                          |
 | `tests/client.test.mjs` | `node:test` suite; runs `client.js` in a `vm` context with a minimal DOM stub.                                                                                              |
 | `tests/helpers/dom.mjs` | The stub: fake canvas and image data, BMP builders, and the globals `client.js` expects.                                                                                    |
 | `docs/`                 | User documentation: [how it works](docs/how-it-works.md), [format support](docs/formats.md), [troubleshooting](docs/troubleshooting.md) and [releasing](docs/releasing.md). |
@@ -45,7 +47,7 @@ npm test
 npm run check
 ```
 
-- `npm test` runs `node --test tests/*.test.mjs`. Add cases for new formats, new guards or changed pass-through rules. The current suite covers magic-byte sniffing, candidate detection, the BMP decoder, converting BMP bytes declared as PNG, and native pass-through.
+- `npm test` runs `node --test tests/*.test.mjs`. Add cases for new formats, new guards or changed pass-through rules. The current suite covers magic-byte sniffing, candidate detection, the BMP decoder, converting BMP bytes declared as PNG, native pass-through, and the locale metadata shown for every language.
 - `npm run check` runs `node --check` on `client.js` and `lib/index.js`.
 - For anything that touches the event path, also test manually: install the plugin locally, reload, then paste a screenshot and drop a file. Confirm the composer receives the attachment and that the Console (Verbose level) shows the expected `[dsh-paste-image]` line.
 
@@ -53,7 +55,20 @@ Do not claim a change is verified without the command output. If something is un
 
 ## Adding a format
 
-Format work touches more than the decoder. The full checklist lives in [docs/formats.md#adding-a-format](docs/formats.md#adding-a-format); in short: sniff it, decode it, route it in `toCanvas()`/`IMAGE_EXT`, add the four test cases (happy path, truncation, declared-type lie, sniff), then update `docs/formats.md`, both READMEs and `CHANGELOG.md`. Keep the decoder dependency-free — a new runtime dependency is a non-starter for this plugin.
+Format work touches more than the decoder. The full checklist lives in [docs/formats.md#adding-a-format](docs/formats.md#adding-a-format); in short: sniff it, decode it, route it in `toCanvas()`/`IMAGE_EXT`, add the four test cases (happy path, truncation, declared-type lie, sniff), then update `docs/formats.md`, every README and `CHANGELOG.md`. Keep the decoder dependency-free — a new runtime dependency is a non-starter for this plugin.
+
+## Translations
+
+The plugin ships display metadata and READMEs in every language the DSH interface supports: English (`en`), Simplified Chinese (`zh`), Japanese (`ja`), Spanish (`es`), French (`fr`), German (`de`), Russian (`ru`) and Portuguese (`pt`). English is the source of truth; every other file is a full translation of `README.md`.
+
+When you change a user-visible fact in `README.md` — a format, a limit, an install step, a version number — update all eight translations in the same pull request. A translation does not need to be perfect prose, but it must not change meaning, add claims, or drop a limitation.
+
+What to update:
+
+1. `README.<language>.md` — the full translation. Keep the eight-language switcher line, badges, code fences, commands, paths, URLs and inline code identical to English; translate prose, headings and table headers/cells.
+2. `locale/<language>.json` — `meta.title` (3–80 characters), `meta.description` (over 40 characters, same facts and limits as `locale/en.json`) and `meta.detail`, which must name that language's README (`README.md` for English, `README.<language>.md` otherwise).
+
+To add a language, first check that the DSH interface ships it; a locale file nobody can select is dead weight. Then add `README.<language>.md`, `locale/<language>.json`, include the language in the switcher line of every README, and extend `LOCALES` in `tests/locale.test.mjs`. The test fails when a locale file, detail document or cross-README link is missing.
 
 ## Style
 

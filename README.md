@@ -5,13 +5,13 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
+[English](README.md) · [简体中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+
 Paste or drop almost any image into DeepSeek Harness — even when the clipboard says `image/xpm` or lies about the MIME type.
 
 ## Why this exists
 
-The DSH desktop client (Electron/Chromium) accepts exactly four attachment types: `image/png`, `image/jpeg`, `image/webp` and `image/gif`. Anything else gives you the red rejection:
-
-> 仅支持 PNG、JPG、WebP、GIF
+The DSH desktop client (Electron/Chromium) accepts exactly four attachment types: `image/png`, `image/jpeg`, `image/webp` and `image/gif`. Anything else is rejected with a red error that lists only PNG, JPG, WebP and GIF.
 
 That whitelist breaks two things that happen all the time on Linux:
 
@@ -57,7 +57,7 @@ A file is considered at all when its MIME type starts with `image/` or its name 
 dsh plugin --profile <profile> add dsh-paste-image
 ```
 
-The package ships prebuilt, so the install pulls eight small files through the npm registry. GitHub installs work too and skip the registry:
+The package ships prebuilt — renderer bundle, host entry, loader patch, display metadata and documentation — so the install pulls it straight from the npm registry.
 
 ```bash
 dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image
@@ -81,7 +81,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite (21 tests at 0.2.3) covering magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs and native pass-through. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite: magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs, native pass-through, and the display metadata shipped for each language. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 
@@ -112,6 +112,12 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 - Image bytes are read only from the paste or drop event, decoded locally, and handed back to the same window.
 - The decoders are small, but they do process untrusted input. If you find a crash or a parsing bug, see [SECURITY.md](SECURITY.md).
 
+## Languages
+
+The plugin ships display metadata for every language the DSH interface supports — English, Simplified Chinese, Japanese, Spanish, French, German, Russian and Portuguese. Each `locale/<language>.json` carries the localized title and description, and points its detail page at the matching README in this repository, so Plugin Manager and its detail page speak the same language as the app.
+
+Translations are source files next to the code, not generated text. The test suite checks that every advertised language has a locale file, a detail document, and links to the other READMEs. To fix or add a translation, see [Contributing](CONTRIBUTING.md#translations).
+
 ## Documentation
 
 - [How it works](docs/how-it-works.md) — event flow, decoder internals and a function-by-function code map.
@@ -121,7 +127,7 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 
 ## Community
 
-- [Contributing](CONTRIBUTING.md) — setup, tests, style and what a format contribution needs.
+- [Contributing](CONTRIBUTING.md) — setup, tests, style, translations and what a format contribution needs.
 - [Code of Conduct](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
 - [Security policy](SECURITY.md) — private reporting, scope and supported versions.
 - [Changelog](CHANGELOG.md) and [releases](https://github.com/pengtang1024/dsh-paste-image/releases) — what changed and why.

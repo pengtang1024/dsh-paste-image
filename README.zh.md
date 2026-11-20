@@ -5,6 +5,8 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
+[English](README.md) · [简体中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+
 把几乎任何图片粘进或拖进 DeepSeek Harness —— 哪怕剪贴板声称它是 `image/xpm`，或者干脆把 MIME 类型写错了。
 
 ## 为什么需要它
@@ -57,7 +59,7 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 dsh plugin --profile <profile> add dsh-paste-image
 ```
 
-包里是预构建产物，安装只从 npm 拉 8 个小文件。也可以直接从 GitHub 装、绕开 registry：
+包里是预构建产物——渲染端 bundle、宿主入口、加载补丁、展示元数据和多语言文档——安装直接从 npm registry 拉取。也可以直接从 GitHub 装、绕开 registry：
 
 ```bash
 dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image
@@ -81,7 +83,7 @@ npm test
 npm run check
 ```
 
-`npm test` 跑 Node 测试（0.2.3 为 21 个用例）：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
+`npm test` 跑 Node 测试：魔数嗅探、候选判定、各个 BMP 变体、BMP 冒充 PNG 的转码、无头 DIB、原生 PNG 放行，以及每个语种的展示元数据。`npm run check` 对 `client.js` 和 `lib/index.js` 做语法检查。
 
 再验证真实链路：
 
@@ -112,6 +114,12 @@ npm run check
 - 图片字节只从 paste 或 drop 事件读取，本地解码后交回同一窗口。
 - 解码器很小，但确实在渲染进程里处理不可信输入。发现崩溃或解析问题请见 [SECURITY.md](SECURITY.md)。
 
+## 多语言
+
+插件为 DSH 界面支持的全部语言提供展示元数据——英语、简体中文、日语、西班牙语、法语、德语、俄语和葡萄牙语。每种语言的 `locale/<语言>.json` 各自携带本地化的标题与简介，并把详情页指向本仓库对应语言的 README，因此插件管理器与插件详情页显示的语言与界面一致。
+
+翻译是随代码一起维护的源文件，不是运行时机器翻译。测试会检查每个已声明语言都有 locale 文件、详情文档，并且 README 之间互相链接。要修正或新增翻译，见[贡献指南](CONTRIBUTING.md#translations)。
+
 ## 文档
 
 - [实现原理](docs/how-it-works.md) —— 事件流、解码器内部实现、逐函数代码地图。
@@ -121,7 +129,7 @@ npm run check
 
 ## 社区
 
-- [贡献指南](CONTRIBUTING.md) —— 开发环境、测试、代码风格与格式贡献要求。
+- [贡献指南](CONTRIBUTING.md) —— 开发环境、测试、代码风格、翻译与格式贡献要求。
 - [行为准则](CODE_OF_CONDUCT.md) —— Contributor Covenant 2.1。
 - [安全策略](SECURITY.md) —— 私下报告、影响范围与支持版本。
 - [更新日志](CHANGELOG.md) 与[发布记录](https://github.com/pengtang1024/dsh-paste-image/releases) —— 改了什么、为什么改。

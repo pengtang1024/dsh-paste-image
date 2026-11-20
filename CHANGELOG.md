@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-20
+
+### Added
+
+- Display metadata for every language the DSH interface supports. `locale/en.json`, `locale/zh.json`, `locale/ja.json`, `locale/es.json`, `locale/fr.json`, `locale/de.json`, `locale/ru.json` and `locale/pt.json` each carry a localized `meta.title`, `meta.description` and a `meta.detail` pointing at that language's README, so plugin rows and the detail page read in the app's language instead of falling back to the manifest name and English text.
+- Complete README translations: `README.zh.md` rewritten to track the English source, plus new `README.ja.md`, `README.es.md`, `README.fr.md`, `README.de.md`, `README.ru.md` and `README.pt.md`. Every file opens with the same eight-language switcher, keeps commands, code fences, paths, links and format tokens intact, and ends with a Languages section.
+- A Translations section in `CONTRIBUTING.md`: English is the source of truth, what to update when a user-visible fact changes, and how to add a language by extending `LOCALES` in the test suite.
+
+### Changed
+
+- `files` publishes `README*.md` instead of two hard-coded READMEs, and `package.json` gains the `i18n`, `localization` and `multilingual` keywords.
+- The English README no longer quotes a Chinese-only error string; the error is described in prose so every translation carries the same English-derived text.
+- The release checklist in `docs/releasing.md` now checks that every language still has a locale file and a README, and the package payload inspection expects all eight locales and every translated README.
+
+### Tests
+
+- 36 tests: for each of the eight languages, the suite asserts one locale file with a usable title, a description between 40 and 600 characters, and a `meta.detail` that names that language's README; every README must start with `# dsh-paste-image` and link to all eight translations. The icon and packaging checks now expect `README*.md` and every locale file.
+
 ## [0.2.3] - 2026-11-18
 
 ### Fixed

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Coller n'importe quelle image",
+    "description": "Collez ou déposez une image dont le type déclaré est XPM, BMP ou DIB, SVG, ICO, ou tout simplement erroné : le processus de rendu identifie les octets réels et remet à la zone de saisie un fichier PNG. Les PNG, JPEG, WebP et GIF natifs passent tels quels. Un collage accepte jusqu'à 8 fichiers, et les images converties conservent leurs proportions, avec 4096 px sur le côté le plus long. HEIC et TIFF sont reconnus mais laissés en l'état, car le plugin ne fournit aucun décodeur pour eux.",
+    "detail": "README.fr.md"
+  }
+}

@@ -20,7 +20,7 @@ Run all of this from a clean checkout of `master`:
 git switch master
 git pull --ff-only
 git status --porcelain          # must be empty
-npm test                        # 21 tests
+npm test                        # suite must pass
 npm run check
 npm run format:check            # CI runs the same thing
 ```
@@ -37,13 +37,12 @@ Also confirm the GitHub Actions run for the newest `master` commit is green — 
 
 2. **Promote the changelog.** Move the items under `## [Unreleased]` into a new `## [0.3.0] - YYYY-MM-DD` section and leave `## [Unreleased]` empty at the top. Keep the Keep-a-Changelog structure: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
-3. **Update the version in prose.** The READMEs mention the test count and version in the "Verify it works" section:
+3. **Check the translations.** English is the source of truth. If the release changes a user-visible fact — a format, a limit, an install step — update every `README.<language>.md`, every `locale/<language>.json` description, and the marketplace entry in the same release commit. The suite fails when a language loses its README, its `meta.detail` target or a cross-README link:
 
    ```bash
-   grep -rn "tests at\|个用例" README.md README.zh.md
+   ls README*.md locale/*.json
+   npm test
    ```
-
-   Adjust both files; nothing else in the docs should carry a version number.
 
 4. **Format and verify.**
 
@@ -85,9 +84,9 @@ Also confirm the GitHub Actions run for the newest `master` commit is green — 
 
   Open that profile, paste an image, then remove the profile.
 
-- **Inspect the package payload.** `npm pack --dry-run` prints the file list; it must contain `client.js`, `lib/`, `cordis.patch.yml`, both READMEs, `LICENSE` and `CHANGELOG.md`, and nothing from `tests/` or `docs/`.
+- **Inspect the package payload.** `npm pack --dry-run` prints the file list; it must contain `client.js`, `lib/`, `cordis.patch.yml`, all eight locales, every translated README, `LICENSE` and `CHANGELOG.md`, and nothing from `tests/` or `docs/`.
 
-- **Update the marketplace entry.** The plugin-market submission lives in a different repository: [`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml). If a release changes the supported-format list, update `description.en` / `description.zh` in the same pull request that mentions the new formats. The catalog regenerates nightly after the marketplace pull request merges.
+- **Update the marketplace entry.** The plugin-market submission lives in a different repository: [`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml). If a release changes the supported-format list, update `description.en` / `description.zh` in the same pull request that mentions the new formats. The catalog schema only carries those two languages; the eight-language text lives in the plugin's `locale/` directory and is read after installation. The catalog regenerates nightly after the marketplace pull request merges.
 
 ## Publishing to npm
 
