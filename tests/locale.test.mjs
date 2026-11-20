@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -11,7 +11,8 @@ const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const LOCALES = ['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'zh']
 
 function readmeFor(locale) {
-  return locale === 'en' ? 'README.md' : `README.${locale}.md`
+  if (locale === 'zh') return 'README.md'
+  return locale === 'en' ? 'README.en.md' : `README.${locale}.md`
 }
 
 for (const locale of LOCALES) {
@@ -59,4 +60,25 @@ test('locale files and their export are declared', () => {
   assert.ok(manifest.files.includes('locale/*.json'), 'files omits the locale files')
   assert.ok(manifest.files.includes('README*.md'), 'files omits the translated READMEs')
   assert.equal(manifest.exports['./locale/*.json'], './locale/*.json')
+})
+
+test('relative links in documentation point at files that exist', () => {
+  const files = readdirSync(root)
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => name)
+  for (const dir of ['docs', 'docs/en']) {
+    for (const name of readdirSync(join(root, dir))) {
+      if (name.endsWith('.md')) files.push(`${dir}/${name}`)
+    }
+  }
+
+  for (const file of files) {
+    const text = readFileSync(join(root, file), 'utf8')
+    for (const [, target] of text.matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (/^(https?:|mailto:|#)/.test(target)) continue
+      const path = target.split('#')[0]
+      if (!path) continue
+      assert.ok(existsSync(resolve(root, dirname(file), decodeURI(path))), `${file} links to missing ${target}`)
+    }
+  }
 })

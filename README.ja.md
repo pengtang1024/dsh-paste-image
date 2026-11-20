@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[English](README.md) · [简体中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
 
 DeepSeek Harness には、ほぼどんな画像でも貼り付けたりドロップしたりできます。クリップボードが `image/xpm` と言っていても、MIME タイプを偽っていても構いません。
 
@@ -31,7 +31,7 @@ DSH デスクトップクライアント（Electron/Chromium）が受け付け�
 
 ## 対応フォーマット
 
-この表は簡易版です。[フォーマット対応リファレンス](docs/formats.md) では、判定パイプライン、BMP バリアントの全一覧、意図的に対象外としている範囲を説明しています。
+この表は簡易版です。[フォーマット対応リファレンス](docs/en/formats.md) では、判定パイプライン、BMP バリアントの全一覧、意図的に対象外としている範囲を説明しています。
 
 | 形式                            | 宣言される代表的なタイプ | 動作                                                                                                                                         |
 | ------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,27 +110,27 @@ npm run check
 - すべてレンダラー内で動作します。プラグインはネットワークリクエストを送らず、何もアップロードせず、何も保存しません。
 - バックグラウンドプロセスも、クリップボードのポーリングも、DSH のホストコードへの変更もありません。
 - 画像のバイト列は貼り付けまたはドロップのイベントからのみ読み取り、ローカルでデコードして、同じウィンドウに戻します。
-- デコーダーは小規模ですが、信頼できない入力を処理します。クラッシュやパースのバグを見つけた場合は [SECURITY.md](SECURITY.md) を参照してください。
+- デコーダーは小規模ですが、信頼できない入力を処理します。クラッシュやパースのバグを見つけた場合は [SECURITY.md](SECURITY.en.md) を参照してください。
 
 ## 言語
 
 プラグインは、DSH インターフェースが対応するすべての言語（英語、簡体字中国語、日本語、スペイン語、フランス語、ドイツ語、ロシア語、ポルトガル語）の表示メタデータを同梱しています。各 `locale/<language>.json` はローカライズされたタイトルと説明を持ち、詳細ページをこのリポジトリの対応する README に向けているため、Plugin Manager とその詳細ページもアプリと同じ言語で表示されます。
 
-翻訳は生成されたテキストではなく、コードの隣にあるソースファイルです。テストスイートは、告知しているすべての言語について、ロケールファイル、詳細ドキュメント、他の README へのリンクが揃っているかを検証します。翻訳の修正や追加については [コントリビューション](CONTRIBUTING.md#translations) を参照してください。
+翻訳は生成されたテキストではなく、コードの隣にあるソースファイルです。テストスイートは、告知しているすべての言語について、ロケールファイル、詳細ドキュメント、他の README へのリンクが揃っているかを検証します。翻訳の修正や追加については [コントリビューション](CONTRIBUTING.en.md#translations) を参照してください。
 
 ## ドキュメント
 
-- [仕組み](docs/how-it-works.md) — イベントフロー、デコーダーの内部、関数ごとのコードマップ。
-- [フォーマット対応](docs/formats.md) — 判定パイプライン、フォーマットマトリクス、BMP バリアント、フォーマット追加時のチェックリスト。
-- [トラブルシューティング](docs/troubleshooting.md) — よくある失敗とログの読み方。
-- [リリース](docs/releasing.md) — バージョンポリシーとメンテナー向けリリースチェックリスト。
+- [仕組み](docs/en/how-it-works.md) — イベントフロー、デコーダーの内部、関数ごとのコードマップ。
+- [フォーマット対応](docs/en/formats.md) — 判定パイプライン、フォーマットマトリクス、BMP バリアント、フォーマット追加時のチェックリスト。
+- [トラブルシューティング](docs/en/troubleshooting.md) — よくある失敗とログの読み方。
+- [リリース](docs/en/releasing.md) — バージョンポリシーとメンテナー向けリリースチェックリスト。
 
 ## コミュニティ
 
-- [コントリビューション](CONTRIBUTING.md) — セットアップ、テスト、スタイル、翻訳、フォーマット貢献に必要なもの。
+- [コントリビューション](CONTRIBUTING.en.md) — セットアップ、テスト、スタイル、翻訳、フォーマット貢献に必要なもの。
 - [行動規範](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1。
-- [セキュリティポリシー](SECURITY.md) — 非公開での報告、対象範囲、サポート対象バージョン。
-- [変更履歴](CHANGELOG.md) と [リリース](https://github.com/pengtang1024/dsh-paste-image/releases) — 何が変わったのか、その理由。
+- [セキュリティポリシー](SECURITY.en.md) — 非公開での報告、対象範囲、サポート対象バージョン。
+- [変更履歴](CHANGELOG.en.md) と [リリース](https://github.com/pengtang1024/dsh-paste-image/releases) — 何が変わったのか、その理由。
 - [Issues](https://github.com/pengtang1024/dsh-paste-image/issues) — バグ報告とフォーマットのリクエスト。
 
 ## ライセンス

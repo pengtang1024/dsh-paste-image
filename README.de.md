@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[English](README.md) · [简体中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
 
 Fügen Sie fast jedes Bild in DeepSeek Harness ein oder ziehen Sie es hinein – selbst wenn die Zwischenablage `image/xpm` meldet oder beim MIME-Typ lügt.
 
@@ -31,7 +31,7 @@ All das läuft clientseitig. Es gibt keinen Host-Prozess, kein Polling der Zwisc
 
 ## Unterstützte Formate
 
-Diese Tabelle ist die Kurzfassung. Die [Format-Referenz](docs/formats.md) erklärt die Entscheidungskette, die vollständige BMP-Variantenmatrix und was bewusst nicht abgedeckt ist.
+Diese Tabelle ist die Kurzfassung. Die [Format-Referenz](docs/en/formats.md) erklärt die Entscheidungskette, die vollständige BMP-Variantenmatrix und was bewusst nicht abgedeckt ist.
 
 | Format                          | Üblicher deklarierter Typ | Was passiert                                                                                                                                       |
 | ------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,27 +110,27 @@ Schlägt die Konvertierung fehl, behält das Plugin die Originaldatei und protok
 - Alles läuft im Renderer. Das Plugin stellt keine Netzwerkanfragen, lädt nichts hoch und speichert nichts.
 - Es gibt keinen Hintergrundprozess, kein Polling der Zwischenablage und keine Änderung am DSH-Host-Code.
 - Bild-Bytes werden ausschließlich aus dem Paste- oder Drop-Ereignis gelesen, lokal decodiert und an dasselbe Fenster zurückgegeben.
-- Die Decoder sind klein, verarbeiten aber nicht vertrauenswürdige Eingaben. Wenn Sie einen Absturz oder einen Parsing-Fehler finden, sehen Sie in [SECURITY.md](SECURITY.md) nach.
+- Die Decoder sind klein, verarbeiten aber nicht vertrauenswürdige Eingaben. Wenn Sie einen Absturz oder einen Parsing-Fehler finden, sehen Sie in [SECURITY.md](SECURITY.en.md) nach.
 
 ## Sprachen
 
 Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche unterstützt – Englisch, vereinfachtes Chinesisch, Japanisch, Spanisch, Französisch, Deutsch, Russisch und Portugiesisch. Jede Datei `locale/<language>.json` enthält den lokalisierten Titel und die Beschreibung und verweist mit ihrer Detailseite auf das passende README in diesem Repository, sodass der Plugin Manager und seine Detailseite dieselbe Sprache sprechen wie die App.
 
-Übersetzungen sind Quelldateien neben dem Code, kein generierter Text. Die Testsuite prüft, dass jede angekündigte Sprache eine Locale-Datei, ein Detaildokument und Links zu den anderen READMEs hat. Wie Sie eine Übersetzung korrigieren oder hinzufügen, steht unter [Mitwirken](CONTRIBUTING.md#translations).
+Übersetzungen sind Quelldateien neben dem Code, kein generierter Text. Die Testsuite prüft, dass jede angekündigte Sprache eine Locale-Datei, ein Detaildokument und Links zu den anderen READMEs hat. Wie Sie eine Übersetzung korrigieren oder hinzufügen, steht unter [Mitwirken](CONTRIBUTING.en.md#translations).
 
 ## Dokumentation
 
-- [So funktioniert es](docs/how-it-works.md) – Ereignisfluss, Decoder-Interna und eine Code-Landkarte Funktion für Funktion.
-- [Formatunterstützung](docs/formats.md) – Entscheidungskette, Formatmatrix, BMP-Varianten und die Checkliste zum Hinzufügen eines Formats.
-- [Fehlerbehebung](docs/troubleshooting.md) – häufige Fehler und wie man die Logs liest.
-- [Veröffentlichen](docs/releasing.md) – Versionsrichtlinie und die Release-Checkliste für Maintainer.
+- [So funktioniert es](docs/en/how-it-works.md) – Ereignisfluss, Decoder-Interna und eine Code-Landkarte Funktion für Funktion.
+- [Formatunterstützung](docs/en/formats.md) – Entscheidungskette, Formatmatrix, BMP-Varianten und die Checkliste zum Hinzufügen eines Formats.
+- [Fehlerbehebung](docs/en/troubleshooting.md) – häufige Fehler und wie man die Logs liest.
+- [Veröffentlichen](docs/en/releasing.md) – Versionsrichtlinie und die Release-Checkliste für Maintainer.
 
 ## Community
 
-- [Mitwirken](CONTRIBUTING.md) – Einrichtung, Tests, Stil, Übersetzungen und was ein Format-Beitrag braucht.
+- [Mitwirken](CONTRIBUTING.en.md) – Einrichtung, Tests, Stil, Übersetzungen und was ein Format-Beitrag braucht.
 - [Verhaltenskodex](CODE_OF_CONDUCT.md) – Contributor Covenant 2.1.
-- [Sicherheitsrichtlinie](SECURITY.md) – vertrauliche Meldung, Umfang und unterstützte Versionen.
-- [Changelog](CHANGELOG.md) und [Releases](https://github.com/pengtang1024/dsh-paste-image/releases) – was sich geändert hat und warum.
+- [Sicherheitsrichtlinie](SECURITY.en.md) – vertrauliche Meldung, Umfang und unterstützte Versionen.
+- [Changelog](CHANGELOG.en.md) und [Releases](https://github.com/pengtang1024/dsh-paste-image/releases) – was sich geändert hat und warum.
 - [Issues](https://github.com/pengtang1024/dsh-paste-image/issues) – Fehlerberichte und Formatwünsche.
 
 ## Lizenz

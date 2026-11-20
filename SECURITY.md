@@ -1,48 +1,48 @@
-# Security Policy
+# 安全策略
 
-## Supported versions
+## 支持的版本
 
-| Version | Supported                                  |
-| ------- | ------------------------------------------ |
-| 0.2.x   | Yes — current release line                 |
-| 0.1.x   | No — upgrade to 0.2.x, which supersedes it |
+| 版本  | 是否支持                             |
+| ----- | ------------------------------------ |
+| 0.2.x | 是 —— 当前发布线                     |
+| 0.1.x | 否 —— 请升级到 0.2.x，后者已取代前者 |
 
-The plugin is pre-1.0, so security fixes land in a new patch release of the current minor version rather than being backported to older lines.
+插件尚未发布 1.0，因此安全修复会随当前次版本的一个新补丁版本发布，而不会向后移植到更早的版本线。
 
-## Reporting a vulnerability
+## 报告漏洞
 
-Please report privately. Use GitHub's private vulnerability reporting: open the repository's **Security** tab and choose **Report a vulnerability**. If that flow is unavailable, contact the maintainer [@pengtang1024](https://github.com/pengtang1024) on GitHub and ask for a private channel — do not open a public issue with exploit details.
+请私下报告。使用 GitHub 的私密漏洞报告：打开仓库的 **Security** 标签页，选择 **Report a vulnerability**。如果该流程不可用，请在 GitHub 上联系维护者 [@pengtang1024](https://github.com/pengtang1024) 索取私密渠道 —— 不要在公开 issue 中披露漏洞利用细节。
 
-A good report includes:
+一份好的报告应包含：
 
-- DSH version and how the plugin was installed.
-- OS and desktop session.
-- The affected format or decoder (XPM, BMP, sniffing, the reroute path).
-- A minimal reproducer: the file or the exact bytes, plus the steps.
-- The Console output at Verbose level, including any `[dsh-paste-image]` line.
+- DSH 版本，以及插件的安装方式。
+- 操作系统与桌面会话。
+- 受影响的格式或解码器（XPM、BMP、嗅探、回投路径）。
+- 一份最小复现材料：文件或确切的字节，以及复现步骤。
+- Verbose 级别下的 Console 输出，包含所有 `[dsh-paste-image]` 行。
 
-You can expect an acknowledgement on a best-effort basis, a fix in a patch release when the report is confirmed, and credit in the release notes unless you prefer otherwise.
+我们会在尽力而为的范围内确认收到报告；报告得到确认后，修复会随某个补丁版本发布；除非你另有偏好，我们会在发行说明中致谢。
 
-## Scope
+## 适用范围
 
-`dsh-paste-image` runs entirely in the DSH renderer. It has no network access, no background process, no clipboard polling and does not modify DSH host code. Its whole job is: read a file from a `paste` or `drop` event, decode it locally, re-encode it as PNG, and dispatch a synthetic `drop` event in the same window.
+`dsh-paste-image` 完全运行在 DSH 渲染进程中。它不访问网络、没有后台进程、不轮询剪贴板，也不修改 DSH 宿主代码。它的全部工作就是：从 `paste` 或 `drop` 事件中读取文件，在本地解码，重新编码为 PNG，然后在同一窗口内派发一个合成的 `drop` 事件。
 
-In scope:
+范围内：
 
-- Crashes, hangs or memory exhaustion caused by a crafted XPM or BMP file.
-- Parser bugs that produce wrong pixels in a way that could mislead a user.
-- Bypasses of the documented limits (8 files per event, 4096 px longest side for converted images).
-- Ways to make the plugin read or transmit data beyond the pasted or dropped file.
+- 由特制 XPM 或 BMP 文件导致的崩溃、卡死或内存耗尽。
+- 解析器缺陷导致像素错误，并可能误导用户。
+- 绕过文档所述限制（每次事件 8 个文件、转换后的图片最长边 4096 px）。
+- 使插件读取或传输超出所粘贴或拖入文件范围的数据的方法。
 
-Out of scope:
+范围外：
 
-- Vulnerabilities in DSH itself, in Electron/Chromium, or in the operating system.
-- Attacks that already require control of the renderer or the ability to install a plugin; such code already has full page privileges.
-- Social-engineering reports and denial-of-service through enormous but ordinary files that the browser itself cannot handle.
+- DSH 本身、Electron/Chromium 或操作系统中的漏洞。
+- 已经需要控制渲染进程或具备安装插件能力的攻击；这类代码本就拥有完整的页面权限。
+- 社会工程类报告，以及浏览器本身就无法处理的、超大但普通的文件所造成的拒绝服务。
 
-## Design notes
+## 设计说明
 
-- The plugin reads bytes only from the event's `clipboardData.files` or `dataTransfer.files`.
-- Decoding happens with the browser's own codecs plus two small local parsers; nothing is sent anywhere.
-- Converted files are new in-memory `File` objects. Nothing is written to disk and nothing persists after the page unloads.
-- There are no third-party runtime dependencies.
+- 插件只从事件的 `clipboardData.files` 或 `dataTransfer.files` 读取字节。
+- 解码使用浏览器自带的编解码器，外加两个本地的小型解析器；任何数据都不会被发送出去。
+- 转换后的文件是新的内存内 `File` 对象。不会写入磁盘，页面卸载后也不会留存任何内容。
+- 没有第三方运行时依赖。

@@ -1,117 +1,117 @@
-# Troubleshooting
+# 故障排查
 
-The plugin has no UI. Every success and every failure is written to the browser console, so the first step is always the same: open DevTools, enable the Verbose level and filter for `[dsh-paste-image]`.
+插件没有界面。每一次成功和每一次失败都会写入浏览器控制台，所以第一步永远相同：打开 DevTools，启用 Verbose 级别，并按 `[dsh-paste-image]` 过滤。
 
-- DevTools: `Ctrl+Shift+I` (`Cmd+Option+I` on macOS).
-- Console → the level dropdown → tick **Verbose**. `console.debug` messages are hidden at the default level.
-- Filter box: `dsh-paste-image`.
+- DevTools：`Ctrl+Shift+I`（macOS 上为 `Cmd+Option+I`）。
+- Console → 级别下拉菜单 → 勾选 **Verbose**。在默认级别下，`console.debug` 消息是隐藏的。
+- 过滤框：`dsh-paste-image`。
 
-| Message                                                 | Meaning                                                          |
-| ------------------------------------------------------- | ---------------------------------------------------------------- |
-| `[dsh-paste-image] image/xpm -> image/png 1440x900`     | Converted successfully; the composer receives a PNG.             |
-| `[dsh-paste-image] keep original (image/bmp): bmp: ...` | Conversion failed; the original file was passed on unchanged.    |
-| No message at all                                       | The event never reached the plugin, or the plugin is not loaded. |
+| 消息                                                    | 含义                                     |
+| ------------------------------------------------------- | ---------------------------------------- |
+| `[dsh-paste-image] image/xpm -> image/png 1440x900`     | 转换成功；输入框收到的是一张 PNG。       |
+| `[dsh-paste-image] keep original (image/bmp): bmp: ...` | 转换失败；原始文件被原样传递下去。       |
+| 完全没有消息                                            | 事件从未到达插件，或者插件根本没有加载。 |
 
-## Nothing happens after installing
+## 安装后没有任何反应
 
-1. **Reload the page.** The client module is injected when the renderer loads. Installing the package does not hot-inject it, so before a reload — or a hard reload if you had the page open during install — the plugin has no listeners and does nothing. Use `Ctrl+R` (`Cmd+R`) or reload from the app menu.
-2. **Check that the plugin is actually in the profile.** On Linux the profile directory is `~/.dsh/profiles/<profile>/`. Its `package.json` should list `dsh-paste-image` in `dependencies`, and `node_modules/dsh-paste-image/client.js` should exist. If either is missing, the `add` command targeted another profile or failed silently; re-run it and watch its output.
-3. **Re-run the install after editing a local checkout.** Current DSH builds copy a `file:` install into the profile; edits in your checkout are not picked up by a reload alone. Re-run `dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image` and reload.
-4. **Use an absolute path.** A relative `file:` path is resolved in the profile directory, not in your shell's working directory.
-5. **Look for module-loading errors.** If the module fails to load, the console shows an error at load time, before any paste. Reload with the console open and read the first red line.
-6. **Check the composer target.** In the console, run `document.querySelector('[data-composer-card]')`. If it returns `null`, the plugin can still convert images but can only dispatch the synthetic drop on `document.body`; a composer that has moved away from that attribute will not receive it. That means the DSH build changed its composer markup — please report it.
+1. **重新加载页面。** 客户端模块是在渲染进程加载时注入的。安装软件包并不会热注入它，所以在重新加载之前（如果你在安装时一直开着页面，则需要强制重新加载），插件没有任何监听器，什么也不做。使用 `Ctrl+R`（`Cmd+R`），或从应用菜单重新加载。
+2. **确认插件确实在 profile 里。** 在 Linux 上，profile 目录是 `~/.dsh/profiles/<profile>/`。它的 `package.json` 应该在 `dependencies` 中列出 `dsh-paste-image`，并且 `node_modules/dsh-paste-image/client.js` 应该存在。两者缺一，说明 `add` 命令指向了别的 profile，或者静默失败了；请重新执行并留意它的输出。
+3. **编辑本地检出后要重新执行安装。** 当前的 DSH 构建会把 `file:` 安装复制到 profile 中；你在检出目录里的修改不会仅靠一次重新加载就被采用。请重新执行 `dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image` 并重新加载。
+4. **使用绝对路径。** 相对的 `file:` 路径是在 profile 目录中解析的，而不是在你 shell 的工作目录中。
+5. **查找模块加载错误。** 如果模块加载失败，控制台会在加载时、任何粘贴发生之前就显示错误。请开着控制台重新加载，并读取第一条红色的行。
+6. **检查输入框目标。** 在控制台中运行 `document.querySelector('[data-composer-card]')`。如果它返回 `null`，插件仍然可以转换图片，但只能向 `document.body` 派发合成的 drop 事件；已经不再使用该属性的输入框收不到这个事件。这意味着 DSH 构建改动了输入框的标记结构——请反馈给我们。
 
-## The red "仅支持 PNG、JPG、WebP、GIF" error is still there
+## 仍然出现红色的“仅支持 PNG、JPG、WebP、GIF”错误
 
-There are two different failures behind the same message.
+同一条消息背后有两种不同的失败。
 
-**The event was never intercepted.** The plugin returns early, without touching the event, when:
+**事件从未被拦截。** 出现以下情况时，插件会提前返回，完全不碰该事件：
 
-- the paste or drop contains zero files or more than 8 files (`MAX_FILES`);
-- no file looks like an image — the MIME type does not start with `image/` and the file name has no recognized image extension;
-- the plugin is not loaded (see the previous section).
+- 粘贴或拖放的内容不含任何文件，或文件数超过 8 个（`MAX_FILES`）；
+- 没有任何文件看起来像图片——MIME 类型不以 `image/` 开头，并且文件名没有可识别的图片扩展名；
+- 插件没有加载（见上一节）。
 
-A `.heic` file still fails after the sniff: the plugin now recognizes `heic`/`heif` by extension and by the `ftyp` box, but Chromium ships no HEIC codec, so decoding throws and the original is forwarded. Convert it to PNG or JPEG before pasting.
+`.heic` 文件在嗅探之后仍然会失败：插件现在会通过扩展名和 `ftyp` box 识别 `heic`/`heif`，但 Chromium 并不附带 HEIC 编解码器，因此解码会抛错，原始文件被转发出去。请先把它转换成 PNG 或 JPEG 再粘贴。
 
-**The conversion failed.** In that case the console shows `keep original (...)` and the original bytes are forwarded, so the host rejects them exactly as before. The text after the colon is the decoder's reason:
+**转换失败。** 这种情况下控制台会显示 `keep original (...)`，原始字节被转发，宿主会像以前一样拒绝它们。冒号后面的文本是解码器给出的原因：
 
-- `bmp: unsupported bpp 2` / `bmp: unsupported header 16` — a BMP variant that is not implemented (2-bit pixels, unknown DIB header size; see below).
-- `bmp: too large` — the header claims more than 64 Mi pixels; the file is rejected before a canvas is allocated.
-- `xpm: bad header ...` or `xpm: no strings` — the XPM text is malformed (see below).
-- `svg: decode failed` — the markup is not a valid SVG, or it references external images the browser refuses to load inside an `<img>`.
-- A browser decoder error — the format needs a codec this Chromium build does not have (TIFF and HEIC are the usual cases).
+- `bmp: unsupported bpp 2` / `bmp: unsupported header 16`——未实现的 BMP 变体（2 位像素、未知的 DIB 头大小；见下文）。
+- `bmp: too large`——文件头声称的像素数超过 64 Mi；文件在分配 canvas 之前就被拒绝。
+- `xpm: bad header ...` 或 `xpm: no strings`——XPM 文本格式错误（见下文）。
+- `svg: decode failed`——标记不是有效的 SVG，或者它引用了浏览器拒绝在 `<img>` 内加载的外部图片。
+- 浏览器解码器报错——该格式需要此 Chromium 构建没有的编解码器（常见的是 TIFF 和 HEIC）。
 
-If the console shows a successful `-> image/png` line and the composer still rejects the paste, the failure is downstream of the plugin: copy the full error text and the log line into an issue.
+如果控制台显示了成功的 `-> image/png` 行，但输入框仍然拒绝粘贴，那么失败发生在插件下游：请把完整错误文本和日志行复制到 issue 中。
 
-## Large images fail
+## 大图片失败
 
-- Converted images are scaled down so their longest side is at most **4096 px** (aspect ratio preserved, dimensions rounded). A 6000 px screenshot therefore arrives as a 4096 px PNG. That is intentional, not a bug.
-- Native PNG, JPEG, WebP and GIF files are passed through untouched and are **not** resized. If the host rejects such a file, its size or pixel dimensions are the host's limit, not the plugin's.
-- Memory matters. Decoding draws the image into a canvas: a 4096×4096 canvas is roughly 64 MiB of RGBA before the PNG is encoded. Pasting several large images at once multiplies that. If the renderer slows down or crashes, paste fewer images at a time or convert them to smaller PNGs first.
-- An image whose longest side is already under 4096 is not upscaled or downscaled.
+- 转换后的图片会被缩小，使其最长边不超过 **4096 px**（保持宽高比，尺寸取整）。因此一张 6000 px 的截图会以 4096 px 的 PNG 送达。这是有意为之，不是 bug。
+- 原生 PNG、JPEG、WebP 和 GIF 文件会原样透传，**不会**被调整尺寸。如果宿主拒绝这样的文件，那是宿主在大小或像素尺寸上的限制，而不是插件的限制。
+- 内存很关键。解码会把图片绘制到 canvas 中：一个 4096×4096 的 canvas 在编码成 PNG 之前大约占用 64 MiB 的 RGBA 数据。一次粘贴多张大图会让这个占用成倍增长。如果渲染进程变慢或崩溃，请减少单次粘贴的图片数量，或先把它们转换成更小的 PNG。
+- 最长边本来就小于 4096 的图片不会被放大或缩小。
 
-## XPM decoding fails
+## XPM 解码失败
 
-Supported input is **XPM3 text**: the `/* XPM */` header, then quoted strings for the `width height ncolors chars-per-pixel` line, the colour table and the pixel rows. Typical console reasons:
+支持的输入是 **XPM3 文本**：`/* XPM */` 头，然后是 `width height ncolors chars-per-pixel` 行、颜色表和像素行所对应的带引号字符串。控制台中常见的原因：
 
-- `xpm: no strings` — the file contains no quoted strings; it is probably not XPM text or it was truncated.
-- `xpm: bad header <line>` — the first string is not a valid `width height ncolors` header, or one of the numbers is zero.
+- `xpm: no strings`——文件中没有带引号的字符串；它大概不是 XPM 文本，或者被截断了。
+- `xpm: bad header <line>`——第一个字符串不是有效的 `width height ncolors` 头，或者其中某个数字为零。
 
-Colour notes:
+颜色说明：
 
-- Only the `c` colour key is read. `m` (mono), `g` (grayscale), `g4` and `s` (symbolic) are ignored, so an image that relies on them may come out black or transparent.
-- `None` (capital N) is transparent. Lower-case `none` is not a valid CSS colour and falls back to opaque black.
-- Values are resolved by the browser's CSS colour parser. `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` and single-word CSS colour names work. Names that are not valid CSS colours, including two-word names such as `light gray`, fail and become opaque black.
-- A colour the browser cannot parse becomes opaque black.
-- A pixel whose key is missing from the colour table becomes transparent.
+- 只读取 `c` 颜色键。`m`（单色）、`g`（灰度）、`g4` 和 `s`（符号色）都会被忽略，因此依赖它们的图片可能显示为黑色或透明。
+- `None`（大写 N）表示透明。小写的 `none` 不是有效的 CSS 颜色，会回退为不透明黑色。
+- 颜色值由浏览器的 CSS 颜色解析器解析。`#rgb`、`#rgba`、`#rrggbb`、`#rrggbbaa` 以及单词形式的 CSS 颜色名可用。不是有效 CSS 颜色的名称（包括 `light gray` 这样的双词名称）会失败并变成不透明黑色。
+- 浏览器无法解析的颜色会变成不透明黑色。
+- 键不在颜色表中的像素会变成透明。
 
-When decoding fails, the original file is forwarded and the host rejects it. Convert the image to PNG with any image viewer and paste the PNG instead.
+解码失败时，原始文件会被转发，宿主会拒绝它。请用任意图片查看器把图片转换成 PNG，然后改为粘贴 PNG。
 
-## BMP decoding fails or looks wrong
+## BMP 解码失败或结果异常
 
-- Supported: 1/4/8/16/24/32-bit pixels, `BI_RGB`, `BI_RLE8`, `BI_RLE4`, `BI_BITFIELDS`, `BI_ALPHABITFIELDS`, header sizes 12/40/52/56/64/108/124, and headerless DIBs (`CF_DIB` shape). 2-bit and 64-bit-per-pixel files still throw.
-- The browser is tried first; the local `decodeBmp()` decoder is only a fallback. A browser that can decode the file never reaches the fallback.
-- `BI_JPEG` / `BI_PNG` BMPs are unwrapped: the embedded payload is handed to the browser decoder.
-- For 32-bit files without an alpha mask, the fourth byte is used as alpha **unless the whole channel is zero**, in which case the image is treated as opaque. A partially transparent 32-bit BMP keeps its real alpha.
-- Top-down BMPs (negative height) are handled, including the RLE paths; a corrupted header with a non-positive width is rejected.
+- 支持：1/4/8/16/24/32 位像素，`BI_RGB`、`BI_RLE8`、`BI_RLE4`、`BI_BITFIELDS`、`BI_ALPHABITFIELDS`，头大小 12/40/52/56/64/108/124，以及无头 DIB（`CF_DIB` 形态）。2 位和每像素 64 位的文件仍会抛错。
+- 优先尝试浏览器；本地的 `decodeBmp()` 解码器只是回退方案。能解码该文件的浏览器永远不会走到回退路径。
+- `BI_JPEG` / `BI_PNG` 的 BMP 会被拆包：内嵌的负载交给浏览器解码器处理。
+- 对于不带 alpha 掩码的 32 位文件，第四个字节会被用作 alpha，**除非整个通道都为零**——此时图片会被当作不透明处理。部分透明的 32 位 BMP 会保留其真实的 alpha。
+- 自顶向下的 BMP（负高度）会被处理，包括 RLE 路径；宽度非正的损坏头会被拒绝。
 
-## SVG or icon pastes fail
+## SVG 或图标粘贴失败
 
-- SVG is rasterised through an `<img>` element. External `<image href>` references may fail because the object URL has no base URL; inline shapes and embedded data URLs work.
-- ICO/CUR is handed to the browser first. When that fails, only PNG-compressed entries are supported; DIB-only icons and cursors fall back to the original file and are rejected by the host.
+- SVG 通过 `<img>` 元素栅格化。外部的 `<image href>` 引用可能失败，因为 object URL 没有 base URL；内联图形和内嵌的 data URL 可用。
+- ICO/CUR 会先交给浏览器。浏览器处理失败时，只支持 PNG 压缩的条目；纯 DIB 的图标和光标会回退到原始文件，并被宿主拒绝。
 
-## Watching the logs while you test
+## 测试时观察日志
 
-1. Open the console before pasting.
-2. Set the level to Verbose and filter `[dsh-paste-image]`.
-3. Paste or drop one image.
-4. Read the line:
+1. 在粘贴之前打开控制台。
+2. 将级别设为 Verbose，并过滤 `[dsh-paste-image]`。
+3. 粘贴或拖放一张图片。
+4. 读取输出行：
 
 ```text
 [dsh-paste-image] <declared type> -> image/png <width>x<height>
 [dsh-paste-image] keep original (<declared type>): <reason>
 ```
 
-The declared type is what the source application claimed. `(no type)` means the file arrived without a MIME type. Seeing `image/xpm -> image/png` confirms that both detection and conversion worked.
+声明类型是源应用所声称的类型。`(no type)` 表示文件到达时没有 MIME 类型。看到 `image/xpm -> image/png` 就说明检测和转换都成功了。
 
-If nothing is printed at all, the plugin either is not loaded or did not consider the event an image paste. Re-check the install, the reload and the file count.
+如果完全没有输出，那么插件要么没有加载，要么没有把该事件当作图片粘贴来处理。请重新检查安装、重新加载和文件数量。
 
-## Uninstalling
+## 卸载
 
 ```bash
 dsh plugin --profile <profile> remove dsh-paste-image
 ```
 
-Then reload the page. The listeners are attached to `document` and live until the page reloads, so the plugin can keep intercepting pastes for the current session even after the package is removed; reload to actually unload it. A checkout you installed with `file:` stays on disk; removing the plugin does not delete it.
+然后重新加载页面。监听器绑定在 `document` 上，会一直存活到页面重新加载，所以即使包已经被移除，插件在当前会话中仍可能继续拦截粘贴；只有重新加载才能真正卸载它。用 `file:` 安装的本地检出仍会留在磁盘上；移除插件不会删除它。
 
-## Before filing an issue
+## 提交 issue 之前
 
-Include:
+请包含：
 
-- DSH version and the install method (GitHub package or a local `file:` path).
-- OS, desktop session, and the application that produced the image.
-- The full `[dsh-paste-image]` lines at Verbose level, and the exact red error text.
-- Whether the input was a paste, a drop, or both.
-- A sample file if it contains nothing private.
+- DSH 版本和安装方式（GitHub 包或本地 `file:` 路径）。
+- 操作系统、桌面会话，以及生成该图片的应用程序。
+- Verbose 级别下完整的 `[dsh-paste-image]` 行，以及确切的红色错误文本。
+- 输入是粘贴、拖放，还是两者都有。
+- 如果其中不含隐私内容，请附上示例文件。
 
-Do not attach screenshots or files containing personal data.
+不要附加包含个人数据的截图或文件。

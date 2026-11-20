@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[English](README.md) · [简体中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
 
 Collez ou déposez presque n'importe quelle image dans DeepSeek Harness — même quand le presse-papiers annonce `image/xpm` ou ment sur le type MIME.
 
@@ -31,7 +31,7 @@ Tout cela se passe côté client. Il n'y a ni processus hôte, ni interrogation 
 
 ## Formats pris en charge
 
-Ce tableau est la version courte. La [référence des formats pris en charge](docs/formats.md) détaille le pipeline de décision, la grille complète des variantes BMP et ce qui est volontairement hors périmètre.
+Ce tableau est la version courte. La [référence des formats pris en charge](docs/en/formats.md) détaille le pipeline de décision, la grille complète des variantes BMP et ce qui est volontairement hors périmètre.
 
 | Format                        | Type déclaré courant | Ce qui se passe                                                                                                                                                       |
 | ----------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,27 +110,27 @@ Si la conversion échoue, le plugin conserve le fichier d'origine et journalise 
 - Tout s'exécute dans le processus de rendu. Le plugin n'émet aucune requête réseau, ne téléverse rien et ne stocke rien.
 - Aucun processus en arrière-plan, aucune interrogation du presse-papiers, aucune modification du code hôte de DSH.
 - Les octets de l'image sont lus uniquement depuis l'événement de collage ou de dépôt, décodés localement, puis renvoyés à la même fenêtre.
-- Les décodeurs sont compacts, mais ils traitent bel et bien des entrées non fiables. Si vous rencontrez un plantage ou un bug d'analyse, consultez [SECURITY.md](SECURITY.md).
+- Les décodeurs sont compacts, mais ils traitent bel et bien des entrées non fiables. Si vous rencontrez un plantage ou un bug d'analyse, consultez [SECURITY.md](SECURITY.en.md).
 
 ## Langues
 
 Le plugin fournit des métadonnées d'affichage pour chaque langue prise en charge par l'interface DSH — anglais, chinois simplifié, japonais, espagnol, français, allemand, russe et portugais. Chaque fichier `locale/<language>.json` porte le titre et la description localisés, et fait pointer sa page de détail vers le README correspondant de ce dépôt, afin que le Plugin Manager et sa page de détail parlent la même langue que l'application.
 
-Les traductions sont des fichiers source à côté du code, pas du texte généré. La suite de tests vérifie que chaque langue annoncée dispose d'un fichier de locale, d'un document de détail et de liens vers les autres README. Pour corriger ou ajouter une traduction, voir [Contribuer](CONTRIBUTING.md#translations).
+Les traductions sont des fichiers source à côté du code, pas du texte généré. La suite de tests vérifie que chaque langue annoncée dispose d'un fichier de locale, d'un document de détail et de liens vers les autres README. Pour corriger ou ajouter une traduction, voir [Contribuer](CONTRIBUTING.en.md#translations).
 
 ## Documentation
 
-- [Fonctionnement](docs/how-it-works.md) — flux d'événements, internes des décodeurs et carte du code fonction par fonction.
-- [Prise en charge des formats](docs/formats.md) — pipeline de décision, matrice des formats, variantes BMP et la liste de contrôle pour ajouter un format.
-- [Dépannage](docs/troubleshooting.md) — échecs courants et comment lire les journaux.
-- [Publication](docs/releasing.md) — politique de version et liste de contrôle de publication pour les mainteneurs.
+- [Fonctionnement](docs/en/how-it-works.md) — flux d'événements, internes des décodeurs et carte du code fonction par fonction.
+- [Prise en charge des formats](docs/en/formats.md) — pipeline de décision, matrice des formats, variantes BMP et la liste de contrôle pour ajouter un format.
+- [Dépannage](docs/en/troubleshooting.md) — échecs courants et comment lire les journaux.
+- [Publication](docs/en/releasing.md) — politique de version et liste de contrôle de publication pour les mainteneurs.
 
 ## Communauté
 
-- [Contribuer](CONTRIBUTING.md) — installation, tests, style, traductions et ce qu'exige une contribution de format.
+- [Contribuer](CONTRIBUTING.en.md) — installation, tests, style, traductions et ce qu'exige une contribution de format.
 - [Code de conduite](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
-- [Politique de sécurité](SECURITY.md) — signalement privé, périmètre et versions prises en charge.
-- [Changelog](CHANGELOG.md) et [releases](https://github.com/pengtang1024/dsh-paste-image/releases) — ce qui a changé et pourquoi.
+- [Politique de sécurité](SECURITY.en.md) — signalement privé, périmètre et versions prises en charge.
+- [Changelog](CHANGELOG.en.md) et [releases](https://github.com/pengtang1024/dsh-paste-image/releases) — ce qui a changé et pourquoi.
 - [Issues](https://github.com/pengtang1024/dsh-paste-image/issues) — rapports de bugs et demandes de formats.
 
 ## Licence

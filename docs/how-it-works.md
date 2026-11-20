@@ -1,6 +1,6 @@
-# How it works
+# 工作原理
 
-This document walks through `client.js` top to bottom. Line references point into the current file; the code map at the end is a quick index.
+本文自上而下带读 `client.js`。行号引用都指向当前文件；文末的代码地图是一份快速索引。
 
 ```text
 paste / drop (capture phase)
@@ -34,9 +34,9 @@ paste / drop (capture phase)
   reroute(files) -> synthetic DragEvent('drop') on [data-composer-card]
 ```
 
-## 1. Capture phase
+## 1. 捕获阶段
 
-[`install()`](../client.js#L669-L679) adds two listeners on `document`:
+[`install()`](../client.js#L669-L679) 在 `document` 上挂两个监听器：
 
 ```js
 document.addEventListener(
@@ -55,44 +55,44 @@ document.addEventListener(
 )
 ```
 
-The `true` flag is the whole point: capture runs from `document` down to the target, so the plugin sees the event before the composer's own bubble-phase handler. If the plugin converted the file, it can therefore `preventDefault()` before the composer ever reads `clipboardData`.
+`true` 这个标志就是全部要点：捕获阶段从 `document` 一路向下传到目标，因此插件会在输入框自身的冒泡阶段处理函数之前看到事件。如果插件转换了文件，它就能在输入框读取 `clipboardData` 之前调用 `preventDefault()`。
 
-## 2. Guards and dispatch
+## 2. 前置校验与分发
 
-[`handle()`](../client.js#L631-L667) is the dispatcher. It bails out early in three cases:
+[`handle()`](../client.js#L631-L667) 是分发器。它在三种情况下提前退出：
 
-- `event[REROUTED]` is set ([line 23](../client.js#L23)); if it is set, the plugin returns immediately. Without this flag the plugin's own capture listener would see its synthetic event and recurse.
-- The batch has zero files or more than `MAX_FILES = 8` files ([line 21](../client.js#L22)). The check happens _before_ `preventDefault()`, so a batch of nine images is left entirely to the native path instead of being partially converted.
-- No file is an image candidate ([`isImageCandidate()`](../client.js#L610-L615)): the declared type must start with `image/`, or the name must end in one of the extensions in [`IMAGE_EXT`](../client.js#L19). A plain-text paste never matches, so it is never touched.
+- 已设置 `event[REROUTED]`（[第 23 行](../client.js#L23)）；一旦设置，插件立即返回。没有这个标志，插件自己的捕获监听器会再次看到自己派发的合成事件，从而递归。
+- 这一批文件数为零，或多于 `MAX_FILES = 8` 个（[第 21 行](../client.js#L22)）。这个检查发生在 `preventDefault()` _之前_，所以一次九个图片的批次会整体交给原生路径，而不会被部分转换。
+- 没有任何文件是图片候选（[`isImageCandidate()`](../client.js#L610-L615)）：声明类型必须以 `image/` 开头，或者文件名以 [`IMAGE_EXT`](../client.js#L19) 中的某个扩展名结尾。纯文本粘贴永远不匹配，因此永远不会被处理。
 
-Each candidate is converted inside its own `try/catch`; failures keep the original file (see [section 11](#11-failure-handling-and-logging)).
+每个候选文件都在各自的 `try/catch` 里转换；失败时保留原文件（见[第 11 节](#11-失败处理与日志)）。
 
-## 3. Magic-byte detection
+## 3. 魔数检测
 
-[`sniff()`](../client.js#L72-L106) reads the first bytes of the file and returns a MIME-like string, or `null` when it does not recognize the format:
+[`sniff()`](../client.js#L72-L106) 读取文件开头的若干字节，返回一个类似 MIME 的字符串；无法识别格式时返回 `null`：
 
-| Signature                                                          | Result         |
-| ------------------------------------------------------------------ | -------------- |
-| `89 50 4E 47 0D 0A 1A 0A`                                          | `image/png`    |
-| `FF D8 FF`                                                         | `image/jpeg`   |
-| `GIF` at offset 0                                                  | `image/gif`    |
-| `RIFF` at 0 and `WEBP` at 8                                        | `image/webp`   |
-| `BM`                                                               | `image/bmp`    |
-| A `BITMAP*HEADER` size at offset 0 with plausible width/height/bpp | `image/bmp`    |
-| `II 2A 00` or `MM 00 2A` (little/big-endian TIFF)                  | `image/tiff`   |
-| `/* XPM */` at offset 0, case-insensitive                          | `image/xpm`    |
-| `ftyp` at 4 and an `avif`/`avis` brand at 8                        | `image/avif`   |
-| `ftyp` at 4 and a HEIC/HEIF brand at 8                             | `image/heic`   |
-| `00 00 01 00` (icon) or `00 00 02 00` (cursor)                     | `image/x-icon` |
-| A leading `<` with `<svg` inside the first 1 KiB                   | `image/svg`    |
+| 签名                                                | 结果           |
+| --------------------------------------------------- | -------------- |
+| `89 50 4E 47 0D 0A 1A 0A`                           | `image/png`    |
+| `FF D8 FF`                                          | `image/jpeg`   |
+| 偏移 0 处的 `GIF`                                   | `image/gif`    |
+| 偏移 0 处的 `RIFF`，偏移 8 处的 `WEBP`              | `image/webp`   |
+| `BM`                                                | `image/bmp`    |
+| 偏移 0 处的 `BITMAP*HEADER` 长度，且宽/高/位深合理  | `image/bmp`    |
+| `II 2A 00` 或 `MM 00 2A`（小端/大端 TIFF）          | `image/tiff`   |
+| 偏移 0 处的 `/* XPM */`，大小写不敏感               | `image/xpm`    |
+| 偏移 4 处的 `ftyp`，偏移 8 处为 `avif`/`avis` brand | `image/avif`   |
+| 偏移 4 处的 `ftyp`，偏移 8 处为 HEIC/HEIF brand     | `image/heic`   |
+| `00 00 01 00`（图标）或 `00 00 02 00`（光标）       | `image/x-icon` |
+| 开头为 `<`，且前 1 KiB 内含 `<svg`                  | `image/svg`    |
 
-The headerless-DIB row is the shape Windows code sees as `CF_DIB`: a bare `BITMAPINFOHEADER` (or OS/2 core header) with no 14-byte `BITMAPFILEHEADER` in front. [`dibHeaderSize()`](../client.js#L43-L63) validates the header size against `BMP_HEADERS`, the width/height sign and the bit depth before letting it through, so random binaries that happen to start with `0x28` are not classified as images.
+无文件头的 DIB 那一行，就是 Windows 代码里看到的 `CF_DIB` 形态：一个裸的 `BITMAPINFOHEADER`（或 OS/2 core header），前面没有 14 字节的 `BITMAPFILEHEADER`。[`dibHeaderSize()`](../client.js#L43-L63) 会先用 `BMP_HEADERS` 校验头长度，再校验宽高的符号和位深，通过之后才放行，所以碰巧以 `0x28` 开头的随机二进制文件不会被判定为图片。
 
-The helpers are deliberately tiny: [`ascii()`](../client.js#L28-L32) turns a byte range into a string for the text signatures, [`unit32()`](../client.js#L34-L36) reads a little-endian `uint32` for the DIB probe, and the rest are direct comparisons.
+这些辅助函数刻意做得很小：[`ascii()`](../client.js#L28-L32) 把一段字节转成字符串供文本签名使用，[`unit32()`](../client.js#L34-L36) 为 DIB 探测按小端读取 `uint32`，其余的则是直接比较。
 
-## 4. The pass-through rule
+## 4. 原样透传规则
 
-[`normalize()`](../client.js#L581-L606) is where the decision is made:
+[`normalize()`](../client.js#L581-L606) 是做出判断的地方：
 
 ```js
 var kind = sniff(bytes)
@@ -111,83 +111,83 @@ if (kind && NATIVE_SET.has(kind)) {
 }
 ```
 
-Returning `null` means "no conversion"; `handle()` keeps the original `File`. This is why a real screenshot keeps its exact bytes, metadata and animation: PNG, JPEG, WebP and GIF are never re-encoded when the declaration matches.
+返回 `null` 表示「不转换」；`handle()` 会保留原始的 `File`。这正是真实截图能保持完全相同的字节、元数据与动画的原因：当声明与嗅探结果一致时，PNG、JPEG、WebP 和 GIF 从不会被重新编码。
 
-Two details are new in 0.2.0:
+0.2.0 里有两处新细节：
 
-- **MIME aliases.** [`aliasMime()`](../client.js#L38-L40) maps the spellings applications actually emit onto the canonical type — `image/jpg`, `image/pjpeg`, `image/x-png`, `image/x-bmp`, `image/x-ms-bmp`, `image/vnd.microsoft.icon`, `image/x-xpixmap`, `image/xpm`, `image/svg+xml`. Without it, a perfectly good `image/jpg` JPEG would be decoded and re-encoded for nothing.
-- **Missing declaration.** A `File` with an empty `type` used to be passed through unchanged, and the host then rejected it because the whitelist follows the label. Now the bytes are re-wrapped in a `File` that carries the sniffed type, so the file is accepted without a re-encode.
+- **MIME 别名。** [`aliasMime()`](../client.js#L38-L40) 把应用实际发出的各种拼写映射到规范类型——`image/jpg`、`image/pjpeg`、`image/x-png`、`image/x-bmp`、`image/x-ms-bmp`、`image/vnd.microsoft.icon`、`image/x-xpixmap`、`image/xpm`、`image/svg+xml`。没有它，一个完好的 `image/jpg` JPEG 会被白白解码再重新编码。
+- **缺失声明。** `type` 为空的 `File` 过去会被原样透传，然后被宿主拒绝，因为白名单跟着标签走。现在会把字节重新包进一个带嗅探类型的 `File`，从而在不重新编码的情况下被接受。
 
-The declared type only has veto power here. A file whose bytes are JPEG but which claims `image/png` fails the `declared === kind` test, so it is converted into a real PNG. Likewise a BMP declared as PNG is converted, because the host's whitelist and the host's decoder both follow the label.
+这里的声明类型只有否决权。字节是 JPEG 却声称 `image/png` 的文件通不过 `declared === kind` 检查，于是会被转换成真正的 PNG。同理，声明为 PNG 的 BMP 也会被转换，因为宿主的白名单和宿主的解码器都跟着标签走。
 
-When a conversion happens, the file name is rebuilt: the last extension is replaced with `.png`, so `shot.xpm` becomes `shot.png`, and `wechat.png` (which actually contained BMP bytes) stays `wechat.png`. A retyped native file keeps its own extension instead (`.jpg` for JPEG, `.webp`, `.gif`).
+发生转换时会重建文件名：最后一个扩展名被替换成 `.png`，因此 `shot.xpm` 变成 `shot.png`，而 `wechat.png`（实际装着 BMP 字节）仍是 `wechat.png`。被重标类型的原生文件则保留自己的扩展名（JPEG 是 `.jpg`，以及 `.webp`、`.gif`）。
 
-## 5. Decoding
+## 5. 解码
 
-[`toCanvas()`](../client.js#L545-L574) picks the decoding route:
+[`toCanvas()`](../client.js#L545-L574) 选择解码路径：
 
-- `image/xpm` goes straight to [`decodeXpm()`](../client.js#L144-L185), because no browser decodes XPM.
-- `image/svg` goes to [`loadSvg()`](../client.js#L475-L498), which loads the markup through an `<img>` element and draws the intrinsic size onto a canvas. Chromium does not implement `createImageBitmap()` for SVG blobs, so this is the only route that works in every Chromium build.
-- Everything else is handed to `createImageBitmap(new Blob([bytes], { type }))`, where `type` is the sniffed format when known, otherwise the declared type (after alias mapping), otherwise `application/octet-stream`. Using the sniffed format is what makes a mislabelled BMP decode correctly: the blob is re-typed from the bytes.
-- If `createImageBitmap` rejects and the sniffed format is BMP, the plugin first checks for an **embedded** JPEG or PNG payload (compression `BI_JPEG`/`BI_PNG`) and decodes that; if there is none, [`decodeBmp()`](../client.js#L346-L445) runs as a fallback.
-- If `createImageBitmap` rejects and the sniffed format is `image/x-icon`, [`icoPngEntry()`](../client.js#L500-L522) picks the largest PNG-compressed entry out of the icon directory and decodes that. DIB-only icons stay unsupported.
-- Any other decode error is rethrown. `handle()` catches it, keeps the original file and logs the reason.
+- `image/xpm` 直接交给 [`decodeXpm()`](../client.js#L144-L185)，因为没有浏览器解码 XPM。
+- `image/svg` 交给 [`loadSvg()`](../client.js#L475-L498)，它通过 `<img>` 元素加载标记，并把固有尺寸绘制到 canvas 上。Chromium 没有为 SVG blob 实现 `createImageBitmap()`，所以这是每个 Chromium 构建都能用的唯一路径。
+- 其余全部交给 `createImageBitmap(new Blob([bytes], { type }))`，其中 `type` 在已知时是嗅探出的格式，否则是声明类型（别名映射之后），再否则是 `application/octet-stream`。使用嗅探出的格式正是标错类型的 BMP 能正确解码的原因：blob 会按字节被重新标注类型。
+- 如果 `createImageBitmap` 拒绝，且嗅探格式是 BMP，插件会先检查有没有**内嵌**的 JPEG 或 PNG 数据（压缩方式 `BI_JPEG`/`BI_PNG`）并解码它；如果没有，就运行 [`decodeBmp()`](../client.js#L346-L445) 作为回退。
+- 如果 `createImageBitmap` 拒绝，且嗅探格式是 `image/x-icon`，[`icoPngEntry()`](../client.js#L500-L522) 会从图标目录里挑出最大的 PNG 压缩条目并解码它。仅含 DIB 的图标仍然不支持。
+- 其它任何解码错误都会被重新抛出。`handle()` 捕获它，保留原文件并记录原因。
 
-[`canvasOf()`](../client.js#L526-L535) then normalizes the size: `scale = min(1, MAX_SIDE / max(width, height))` with `MAX_SIDE = 4096` ([line 20](../client.js#L21)), dimensions rounded and never below 1, and the source drawn into the scaled canvas. Small images pass through unscaled.
+[`canvasOf()`](../client.js#L526-L535) 随后规范化尺寸：`scale = min(1, MAX_SIDE / max(width, height))`，其中 `MAX_SIDE = 4096`（[第 20 行](../client.js#L21)），宽高取整且不小于 1，然后把源图绘制到缩放后的 canvas 上。小图不缩放，直接通过。
 
-[`toPngBlob()`](../client.js#L537-L543) wraps `canvas.toBlob(callback, 'image/png')` in a Promise and rejects when the callback receives `null`. The resulting blob becomes a new in-memory `File`.
+[`toPngBlob()`](../client.js#L537-L543) 把 `canvas.toBlob(callback, 'image/png')` 包进 Promise，并在回调收到 `null` 时拒绝。得到的 blob 成为一个新的内存内 `File`。
 
-## 6. The XPM decoder
+## 6. XPM 解码器
 
-XPM is C source text, so [`decodeXpm()`](../client.js#L144-L185) starts by extracting every double-quoted string with [`xpmStrings()`](../client.js#L110-L119) and unescaping quotes, backslashes, newlines and tabs. A leading UTF-8 BOM is stripped first.
+XPM 是 C 源码文本，所以 [`decodeXpm()`](../client.js#L144-L185) 先用 [`xpmStrings()`](../client.js#L110-L119) 提取每个双引号字符串，并对引号、反斜杠、换行和制表符做反转义。开头的 UTF-8 BOM 会先被剥掉。
 
-The first string is the header: `width height ncolors chars-per-pixel`. The width, height and colour count must all be positive; `chars-per-pixel` defaults to 1 when omitted. A header larger than `MAX_PIXELS` pixels is rejected before any buffer is allocated.
+第一个字符串是头部：`width height ncolors chars-per-pixel`。宽、高和颜色数都必须为正；省略时 `chars-per-pixel` 默认为 1。像素数超过 `MAX_PIXELS` 的头部会在分配任何缓冲区之前被拒绝。
 
-The next `ncolors` strings are the palette. Each line begins with the pixel key (the first `chars-per-pixel` characters); the rest is scanned for a `c` colour specification. The extractor accepts one or two whitespace-separated tokens, which is enough for `#RRGGBB` and for names that contain a space. [`resolveColor()`](../client.js#L121-L142) then resolves the value with a 1×1 canvas: it assigns the string to `fillStyle`, reads the pixel back through `getImageData()`, and therefore accepts exactly what the browser's CSS colour parser accepts — `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` and single-word CSS colour names. Palette names that are not also CSS colours, such as the two-word `light gray`, are rejected by `fillStyle` and become opaque black. The literal `None` becomes fully transparent; any other rejected value makes `resolveColor()` return `null`, and that palette entry also falls back to opaque black.
+接下来的 `ncolors` 个字符串是调色板。每一行以像素键开头（前 `chars-per-pixel` 个字符）；其余部分被扫描以寻找 `c` 颜色说明。提取器接受一个或两个以空白分隔的 token，这足以覆盖 `#RRGGBB` 和带空格的名称。[`resolveColor()`](../client.js#L121-L142) 随后用 1×1 canvas 解析该值：把字符串赋给 `fillStyle`，再通过 `getImageData()` 读回像素，因此它接受的正好是浏览器 CSS 颜色解析器所接受的内容——`#rgb`、`#rgba`、`#rrggbb`、`#rrggbbaa` 以及单词形式的 CSS 颜色名。不是 CSS 颜色的调色板名，例如两个词的 `light gray`，会被 `fillStyle` 拒绝并变成不透明黑色。字面量 `None` 变成完全透明；其它被拒绝的值会让 `resolveColor()` 返回 `null`，该调色板条目同样回退为不透明黑色。
 
-Pixel rows start at `strings[1 + ncolors]`. Each row is sliced into `chars-per-pixel` chunks, looked up in the palette, and written into an `ImageData` buffer. An unknown key or a short row yields transparent pixels.
+像素行从 `strings[1 + ncolors]` 开始。每行被切成 `chars-per-pixel` 个块，在调色板里查找，然后写入 `ImageData` 缓冲区。未知的键或过短的行会产生透明像素。
 
-Not supported: XPM1/XPM2 header layouts, colour keys other than `c` (`m`, `g`, `g4`, `s` are ignored), and palette colour names that are not valid CSS colours — including multi-word names such as `light gray`, which come out black.
+不支持：XPM1/XPM2 头部布局、除 `c` 以外的颜色键（`m`、`g`、`g4`、`s` 会被忽略），以及不是合法 CSS 颜色的调色板颜色名——包括 `light gray` 这类多词名称，它们会输出成黑色。
 
-## 7. The BMP / DIB decoder
+## 7. BMP / DIB 解码器
 
-BMP is a family, not a format, so 0.2.0 splits the work in two: [`parseBmp()`](../client.js#L189-L244) validates the header and computes the layout, and [`decodeBmp()`](../client.js#L346-L445) turns pixels into RGBA.
+BMP 是一个家族而不是一种格式，所以 0.2.0 把工作拆成两部分：[`parseBmp()`](../client.js#L189-L244) 校验头部并计算布局，[`decodeBmp()`](../client.js#L346-L445) 把像素转换成 RGBA。
 
-`parseBmp()` accepts:
+`parseBmp()` 接受：
 
-- The 14-byte `BITMAPFILEHEADER` when the file starts with `BM`, or a **headerless DIB** when it does not. For DIBs the pixel offset is derived from the header size, the optional bit masks and the palette size instead of being read from byte 10.
-- Header sizes `12` (OS/2 `BITMAPCOREHEADER`), `40` (`BITMAPINFOHEADER`), `52` (`BITMAPV2INFOHEADER`), `56` (`BITMAPV3INFOHEADER`), `64` (OS/2 v2), `108` (`BITMAPV4HEADER`) and `124` (`BITMAPV5HEADER`).
-- Bit depths 1, 4, 8, 16, 24 and 32.
-- Compression `0` (`BI_RGB`), `1` (`BI_RLE8`), `2` (`BI_RLE4`), `3` (`BI_BITFIELDS`) and `6` (`BI_ALPHABITFIELDS`).
-- Bit masks for 16- and 32-bit files, taken from the header for V4/V5 and from the 12 (or 16) bytes after a 40-byte header otherwise. A mask of zero for a `BI_RGB` 16-bit file falls back to the standard RGB555 layout (`0x7C00 / 0x03E0 / 0x001F`).
-- A negative height (top-down bitmap); every row loop reads `topDown ? y : height - 1 - y`, including the RLE paths.
+- 文件以 `BM` 开头时的 14 字节 `BITMAPFILEHEADER`，否则按**无文件头 DIB** 处理。对 DIB 来说，像素偏移由头部长度、可选的位掩码和调色板大小推导，而不是从第 10 个字节读取。
+- 头部长度 `12`（OS/2 `BITMAPCOREHEADER`）、`40`（`BITMAPINFOHEADER`）、`52`（`BITMAPV2INFOHEADER`）、`56`（`BITMAPV3INFOHEADER`）、`64`（OS/2 v2）、`108`（`BITMAPV4HEADER`）和 `124`（`BITMAPV5HEADER`）。
+- 位深 1、4、8、16、24 和 32。
+- 压缩方式 `0`（`BI_RGB`）、`1`（`BI_RLE8`）、`2`（`BI_RLE4`）、`3`（`BI_BITFIELDS`）和 `6`（`BI_ALPHABITFIELDS`）。
+- 16 位和 32 位文件的位掩码：V4/V5 从头里取，否则取 40 字节头之后的 12（或 16）个字节。对 `BI_RGB` 的 16 位文件，掩码为零时回退到标准 RGB555 布局（`0x7C00 / 0x03E0 / 0x001F`）。
+- 负的高度（自上而下的位图）；每一处行循环都读取 `topDown ? y : height - 1 - y`，包括 RLE 路径。
 
-`decodeBmp()` then converts:
+`decodeBmp()` 随后转换：
 
-- **Indexed depths** (`1/4/8`): the palette is read from [`bmpPalette()`](../client.js#L261-L274), with 3-byte entries for the core header and 4-byte `RGBQUAD` entries otherwise; the alpha byte is only used when non-zero, because most palette BMPs leave it at `0`.
-- **16-bit**: each channel is extracted with [`maskValue()`](../client.js#L255-L259) and scaled to 0–255.
-- **24-bit**: BGR channels with the standard `floor((bpp * width + 31) / 32) * 4` row stride.
-- **32-bit**: `BI_RGB` copies `BGRA`; the alpha heuristic below applies. Masked 32-bit uses the `r/g/b` masks and the alpha mask when the file declares one.
-- **RLE4 / RLE8**: [`decodeRleBmp()`](../client.js#L284-L344) walks the opcode stream — encoded runs, absolute mode with word padding, `delta`, end-of-line and end-of-bitmap — and writes through [`putIndexed()`](../client.js#L276-L282) with the same bottom-up mapping as the uncompressed paths.
-- **Embedded payloads** (`BI_JPEG`/`BI_PNG`): [`bmpEmbedded()`](../client.js#L447-L461) extracts the payload and lets the browser decode it.
+- **索引位深**（`1/4/8`）：调色板由 [`bmpPalette()`](../client.js#L261-L274) 读取，core header 用 3 字节条目，否则用 4 字节 `RGBQUAD` 条目；alpha 字节仅在非零时使用，因为多数调色板 BMP 把它留成 `0`。
+- **16 位**：每个通道用 [`maskValue()`](../client.js#L255-L259) 提取并缩放到 0–255。
+- **24 位**：BGR 通道，采用标准的 `floor((bpp * width + 31) / 32) * 4` 行跨度。
+- **32 位**：`BI_RGB` 复制 `BGRA`；下面的 alpha 启发式规则适用。带掩码的 32 位使用 `r/g/b` 掩码，以及文件声明了 alpha 掩码时的 alpha 掩码。
+- **RLE4 / RLE8**：[`decodeRleBmp()`](../client.js#L284-L344) 遍历操作码流——编码行程、带字填充的绝对模式、`delta`、行结束和位图结束——并通过 [`putIndexed()`](../client.js#L276-L282) 写出，使用与未压缩路径相同的自下而上映射。
+- **内嵌数据**（`BI_JPEG`/`BI_PNG`）：[`bmpEmbedded()`](../client.js#L447-L461) 提取数据并交给浏览器解码。
 
-Two guards keep a malformed file from taking the renderer down: any image wider than `MAX_PIXELS = 64 Mi pixels` total is rejected before allocation, and every row read checks the file length before touching bytes.
+两道防护避免畸形文件把渲染进程拖垮：总像素超过 `MAX_PIXELS = 64 Mi pixels` 的图片会在分配内存之前被拒绝，并且每次读行都会在触碰字节之前检查文件长度。
 
-The 32-bit alpha heuristic closes a long-standing footgun: when **every** pixel's fourth byte is zero, the plugin treats the bitmap as opaque instead of exporting a fully transparent PNG. Files that do carry alpha (some pixels non-zero) keep it.
+32 位 alpha 启发式规则堵住了一个长期存在的坑：当**每个**像素的第四个字节都是零时，插件把位图当作不透明，而不是导出一张完全透明的 PNG。真正带 alpha 的文件（有像素非零）则保留它。
 
-## 8. SVG and icon fallbacks
+## 8. SVG 与图标回退
 
-[`loadSvg()`](../client.js#L475-L498) decodes the blob as UTF-8, wraps it in an object URL and waits for an `Image` to load. [`svgSize()`](../client.js#L465-L473) provides the intrinsic size — `<svg width="…" height="…">` first, `viewBox` as a fallback, `300×150` as the last resort — so an SVG that only carries a `viewBox` does not collapse to the browser's default box. The object URL is revoked on both the success and the failure path.
+[`loadSvg()`](../client.js#L475-L498) 把 blob 按 UTF-8 解码，包进一个 object URL，然后等待 `Image` 加载完成。[`svgSize()`](../client.js#L465-L473) 提供固有尺寸——优先 `<svg width="…" height="…">`，其次 `viewBox`，最后兜底 `300×150`——这样只带 `viewBox` 的 SVG 不会塌成浏览器的默认盒子。object URL 在成功和失败两条路径上都会被撤销。
 
-[`icoPngEntry()`](../client.js#L500-L522) reads the icon directory, filters to entries whose payload sniffed as PNG, and keeps the largest one by declared area. Cursors (`type = 2`) and DIB-only icons return `null`; the original error is then rethrown and the file is passed through.
+[`icoPngEntry()`](../client.js#L500-L522) 读取图标目录，筛选出负载嗅探为 PNG 的条目，保留声明面积最大的那个。光标（`type = 2`）和仅含 DIB 的图标返回 `null`；随后原始错误被重新抛出，文件被原样透传。
 
-## 9. Size clamp and PNG export
+## 9. 尺寸钳制与 PNG 导出
 
-[`canvasOf()`](../client.js#L526-L535) accepts an optional explicit size, because an `ImageBitmap` exposes `width`/`height` while an `HTMLImageElement` exposes `naturalWidth`/`naturalHeight`. Everything else is the same clamp as before.
+[`canvasOf()`](../client.js#L526-L535) 接受一个可选的显式尺寸，因为 `ImageBitmap` 暴露 `width`/`height`，而 `HTMLImageElement` 暴露 `naturalWidth`/`naturalHeight`。其余部分与之前的钳制相同。
 
-## 10. Rerouting
+## 10. 重路由
 
-[`reroute()`](../client.js#L621-L629) builds the bridge back into the composer:
+[`reroute()`](../client.js#L621-L629) 搭建回到输入框的桥：
 
 ```js
 var dt = new DataTransfer()
@@ -199,28 +199,28 @@ Object.defineProperty(event, REROUTED, { value: true })
 composer().dispatchEvent(event)
 ```
 
-[`composer()`](../client.js#L617-L619) resolves `document.querySelector('[data-composer-card]')` and falls back to `document.body`. Dispatching a real `drop` event means the plugin does not need to know any private composer API: it reuses the same attachment path as a manual drag-and-drop. The `REROUTED` property is defined non-enumerably so it does not leak into anything that inspects the event.
+[`composer()`](../client.js#L617-L619) 解析 `document.querySelector('[data-composer-card]')`，并回退到 `document.body`。派发一个真正的 `drop` 事件意味着插件不需要了解任何私有的输入框 API：它复用与手动拖放相同的附件路径。`REROUTED` 属性被定义为不可枚举，因此不会泄漏到任何检查该事件的地方。
 
-## 11. Failure handling and logging
+## 11. 失败处理与日志
 
-Conversion runs per file inside a `try/catch` ([`handle()`, lines 631–667](../client.js#L631-L667)). On success the plugin logs:
+转换按文件在 `try/catch` 内运行（[`handle()`，第 631–667 行](../client.js#L631-L667)）。成功时插件记录：
 
 ```text
 [dsh-paste-image] image/xpm -> image/png 1440x900
 [dsh-paste-image] (no type) -> image/png
 ```
 
-The left side is the declared type, or `(no type)` when the `File` had none. On failure it logs:
+左侧是声明类型，`File` 没有类型时是 `(no type)`。失败时它记录：
 
 ```text
 [dsh-paste-image] keep original (image/bmp): bmp: unsupported bpp 2
 ```
 
-and pushes the original `File` into the outgoing batch. One bad file never blocks the others, and the synthetic drop still happens — which is why a failed conversion ends with the host's original red error rather than silence. Both messages use `console.debug`, so the browser console must be set to the Verbose level to show them.
+并把原始的 `File` 推入待发送批次。一个坏文件永远不会阻塞其它文件，合成 drop 仍然会发生——这就是为什么一次失败的转换最终表现为宿主原本的红色报错，而不是静默。两条消息都用 `console.debug`，所以浏览器控制台必须设到 Verbose 级别才能看到。
 
-## 12. Module registration
+## 12. 模块注册
 
-The file is a classic script wrapped in an IIFE. At the bottom ([lines 696–711](../client.js#L696-L711)) it registers itself with the DSH client module loader:
+该文件是包在 IIFE 里的经典脚本。在底部（[第 696–711 行](../client.js#L696-L711)）它把自己注册到 DSH 客户端模块加载器：
 
 ```js
 window.__ModuleLoader__.load({
@@ -239,44 +239,44 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics. The fallback `install()` keeps the module usable in environments without an effect scope. In a Node test there is no `window`, so the registration block is skipped and the file exports [`api`](../client.js#L701-L711) through `module.exports` for the test suite.
+`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断。回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。Node 测试里没有 `window`，所以注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L701-L711) 供测试套件使用。
 
-## Code map
+## 代码地图
 
-| Concern                   | Function / entry        | Location                                |
-| ------------------------- | ----------------------- | --------------------------------------- |
-| Format signatures         | `sniff()`               | [client.js:72](../client.js#L72-L106)   |
-| DIB header probe          | `dibHeaderSize()`       | [client.js:43](../client.js#L43-L63)    |
-| SVG head probe            | `looksLikeSvg()`        | [client.js:65](../client.js#L65-L70)    |
-| Byte-to-string helper     | `ascii()`               | [client.js:28](../client.js#L28-L32)    |
-| MIME alias table          | `aliasMime()`           | [client.js:38](../client.js#L38-L40)    |
-| XPM string extraction     | `xpmStrings()`          | [client.js:110](../client.js#L110-L119) |
-| CSS colour resolution     | `resolveColor()`        | [client.js:121](../client.js#L121-L142) |
-| XPM decoding              | `decodeXpm()`           | [client.js:144](../client.js#L144-L185) |
-| BMP header parsing        | `parseBmp()`            | [client.js:189](../client.js#L189-L244) |
-| Bit-mask channels         | `maskChannel()`         | [client.js:246](../client.js#L246-L253) |
-| Palette loading           | `bmpPalette()`          | [client.js:261](../client.js#L261-L274) |
-| RLE4 / RLE8 decoding      | `decodeRleBmp()`        | [client.js:284](../client.js#L284-L344) |
-| BMP pixel decoding        | `decodeBmp()`           | [client.js:346](../client.js#L346-L445) |
-| Embedded JPEG/PNG payload | `bmpEmbedded()`         | [client.js:447](../client.js#L447-L461) |
-| SVG size / rasterisation  | `loadSvg()`             | [client.js:475](../client.js#L475-L498) |
-| PNG entry inside an icon  | `icoPngEntry()`         | [client.js:500](../client.js#L500-L522) |
-| Size clamp                | `canvasOf()`            | [client.js:526](../client.js#L526-L535) |
-| PNG export                | `toPngBlob()`           | [client.js:537](../client.js#L537-L543) |
-| Decode routing            | `toCanvas()`            | [client.js:545](../client.js#L545-L574) |
-| Pass-through / conversion | `normalize()`           | [client.js:581](../client.js#L581-L606) |
-| Candidate test            | `isImageCandidate()`    | [client.js:610](../client.js#L610-L615) |
-| Composer target           | `composer()`            | [client.js:617](../client.js#L617-L619) |
-| Synthetic drop            | `reroute()`             | [client.js:621](../client.js#L621-L629) |
-| Guards and dispatch       | `handle()`              | [client.js:631](../client.js#L631-L667) |
-| Event listeners           | `install()`             | [client.js:669](../client.js#L669-L679) |
-| Module entry              | `__ModuleLoader__.load` | [client.js:696](../client.js#L696-L711) |
+| 关注点               | 函数 / 入口             | 位置                                    |
+| -------------------- | ----------------------- | --------------------------------------- |
+| 格式签名             | `sniff()`               | [client.js:72](../client.js#L72-L106)   |
+| DIB 头部探测         | `dibHeaderSize()`       | [client.js:43](../client.js#L43-L63)    |
+| SVG 头部探测         | `looksLikeSvg()`        | [client.js:65](../client.js#L65-L70)    |
+| 字节转字符串辅助函数 | `ascii()`               | [client.js:28](../client.js#L28-L32)    |
+| MIME 别名表          | `aliasMime()`           | [client.js:38](../client.js#L38-L40)    |
+| XPM 字符串提取       | `xpmStrings()`          | [client.js:110](../client.js#L110-L119) |
+| CSS 颜色解析         | `resolveColor()`        | [client.js:121](../client.js#L121-L142) |
+| XPM 解码             | `decodeXpm()`           | [client.js:144](../client.js#L144-L185) |
+| BMP 头部解析         | `parseBmp()`            | [client.js:189](../client.js#L189-L244) |
+| 位掩码通道           | `maskChannel()`         | [client.js:246](../client.js#L246-L253) |
+| 调色板加载           | `bmpPalette()`          | [client.js:261](../client.js#L261-L274) |
+| RLE4 / RLE8 解码     | `decodeRleBmp()`        | [client.js:284](../client.js#L284-L344) |
+| BMP 像素解码         | `decodeBmp()`           | [client.js:346](../client.js#L346-L445) |
+| 内嵌 JPEG/PNG 数据   | `bmpEmbedded()`         | [client.js:447](../client.js#L447-L461) |
+| SVG 尺寸 / 光栅化    | `loadSvg()`             | [client.js:475](../client.js#L475-L498) |
+| 图标内的 PNG 条目    | `icoPngEntry()`         | [client.js:500](../client.js#L500-L522) |
+| 尺寸钳制             | `canvasOf()`            | [client.js:526](../client.js#L526-L535) |
+| PNG 导出             | `toPngBlob()`           | [client.js:537](../client.js#L537-L543) |
+| 解码路由             | `toCanvas()`            | [client.js:545](../client.js#L545-L574) |
+| 透传 / 转换          | `normalize()`           | [client.js:581](../client.js#L581-L606) |
+| 候选判定             | `isImageCandidate()`    | [client.js:610](../client.js#L610-L615) |
+| 输入框目标           | `composer()`            | [client.js:617](../client.js#L617-L619) |
+| 合成 drop            | `reroute()`             | [client.js:621](../client.js#L621-L629) |
+| 前置校验与分发       | `handle()`              | [client.js:631](../client.js#L631-L667) |
+| 事件监听器           | `install()`             | [client.js:669](../client.js#L669-L679) |
+| 模块入口             | `__ModuleLoader__.load` | [client.js:696](../client.js#L696-L711) |
 
-## Design notes
+## 设计说明
 
-- **Bytes over labels.** MIME types are supplied by the source application; magic bytes are supplied by the image encoder. Trusting the bytes is the only way to handle both "unsupported but honest" and "supported but lying".
-- **Capture and synchronous cancel.** The composer must never see the raw unsupported file, and `preventDefault()` is only effective while the event is being dispatched.
-- **PNG as the output.** It is on the whitelist, lossless for the pixels that were decoded, and every Chromium build can encode it through `canvas.toBlob`.
-- **Synthetic drop instead of a private API.** Reusing the native drop path keeps the plugin compatible with composer changes that do not touch `[data-composer-card]`.
-- **No host process.** A paste is a UI event. A renderer listener is enough; a host-side clipboard daemon would add a process, permissions and polling for no benefit.
-- **No third-party decoder.** TIFF and HEIC are detected but not decoded: shipping a codec would either bloat the single script the module loader injects or add a runtime fetch to a plugin that is otherwise offline-only. BMP, XPM and SVG cover the formats this plugin was written for, and the browser keeps covering the rest.
+- **字节优先于标签。** MIME 类型由来源应用提供；魔数由图片编码器提供。信任字节是同时处理「不支持但诚实」和「支持但在撒谎」的唯一办法。
+- **捕获阶段与同步取消。** 输入框绝不能看到未受支持的原始文件，而 `preventDefault()` 只在事件派发期间有效。
+- **以 PNG 作为输出。** 它在白名单里，对已解码的像素无损，而且每个 Chromium 构建都能通过 `canvas.toBlob` 编码它。
+- **用合成 drop 而不是私有 API。** 复用原生 drop 路径，使插件在不触碰 `[data-composer-card]` 的输入框改动下仍然兼容。
+- **无宿主进程。** 粘贴是 UI 事件。一个渲染进程监听器就够了；宿主侧的剪贴板守护进程只会多出一个进程、权限和轮询，毫无收益。
+- **无第三方解码器。** TIFF 和 HEIC 只检测不解码：内置一个编解码器要么让模块加载器注入的单个脚本膨胀，要么给一个本来完全离线的插件增加运行时拉取。BMP、XPM 和 SVG 覆盖了这个插件为之而写的格式，其余交给浏览器继续覆盖。
