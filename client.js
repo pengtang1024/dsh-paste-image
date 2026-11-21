@@ -17,9 +17,102 @@
     'image/svg+xml': 'image/svg',
   }
   var IMAGE_EXT = /\.(png|jpe?g|jfif|gif|webp|bmp|dib|tiff?|xpm|avif|ico|cur|svg|heic|heif)$/i
-  var MAX_SIDE = 4096
-  var MAX_FILES = 8
   var MAX_PIXELS = 64 * 1024 * 1024
+
+  // ---------- 运行时设置 ----------
+  // 默认值就是引入配置页之前的行为：开启、最多 8 个文件、长边 4096、四种格式全转换、转换日志开。
+  // 只存在浏览器 localStorage 里（隐私模式或被禁用时退回内存），Host 侧不参与。
+  var SETTINGS_KEY = 'dsh-paste-image.settings.v1'
+  var SETTINGS_DEFAULTS = {
+    enabled: true,
+    maxFiles: 8,
+    maxSide: 4096,
+    convertXpm: true,
+    convertBmp: true,
+    convertSvg: true,
+    convertIco: true,
+    logConversions: true,
+  }
+  var SETTINGS_RANGES = { maxFiles: [1, 8], maxSide: [512, 8192] }
+  var SETTINGS_FLAGS = ['enabled', 'convertXpm', 'convertBmp', 'convertSvg', 'convertIco', 'logConversions']
+  // 文件头嗅探出的类型 -> 对应的转换开关；未列出的类型（PNG/JPEG/GIF/WebP/TIFF 等）不受开关约束。
+  var CONVERT_FLAGS = {
+    'image/xpm': 'convertXpm',
+    'image/bmp': 'convertBmp',
+    'image/svg': 'convertSvg',
+    'image/x-icon': 'convertIco',
+  }
+
+  function copySettings(source) {
+    var out = {}
+    Object.keys(SETTINGS_DEFAULTS).forEach(function (key) {
+      out[key] = source && typeof source[key] !== 'undefined' ? source[key] : SETTINGS_DEFAULTS[key]
+    })
+    return out
+  }
+
+  // 布尔值强制布尔化；整数先取整再夹到区间内，非数字（NaN/Infinity/对象）保留原值，
+  // 这样界面里清空输入框不会把已保存的值打成 0。
+  function sanitizeSettings(patch, base) {
+    var next = copySettings(base)
+    if (!patch || typeof patch !== 'object') return next
+    SETTINGS_FLAGS.forEach(function (flag) {
+      if (typeof patch[flag] !== 'undefined') next[flag] = Boolean(patch[flag])
+    })
+    Object.keys(SETTINGS_RANGES).forEach(function (name) {
+      if (typeof patch[name] === 'undefined') return
+      var value = Number(patch[name])
+      if (!Number.isFinite(value)) return
+      var range = SETTINGS_RANGES[name]
+      next[name] = Math.min(range[1], Math.max(range[0], Math.round(value)))
+    })
+    return next
+  }
+
+  function readStoredSettings() {
+    try {
+      if (typeof localStorage === 'undefined' || !localStorage) return null
+      var raw = localStorage.getItem(SETTINGS_KEY)
+      return raw ? JSON.parse(raw) : null
+    } catch (error) {
+      return null
+    }
+  }
+
+  function writeStoredSettings(value) {
+    try {
+      if (typeof localStorage === 'undefined' || !localStorage) return false
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(value))
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  var settings = sanitizeSettings(readStoredSettings(), SETTINGS_DEFAULTS)
+
+  function getSettings() {
+    return copySettings(settings)
+  }
+
+  function applySettings(patch) {
+    settings = sanitizeSettings(patch, settings)
+    writeStoredSettings(settings)
+    return copySettings(settings)
+  }
+
+  function resetSettings() {
+    settings = copySettings(SETTINGS_DEFAULTS)
+    writeStoredSettings(settings)
+    return copySettings(settings)
+  }
+
+  // 用户在配置页关掉某种格式的转换后，该类型的粘贴必须原样交给合成器：返回 null 即“别动这个文件”。
+  function conversionAllowed(kind) {
+    var flag = CONVERT_FLAGS[kind]
+    return !flag || settings[flag] !== false
+  }
+
   // 头探测长度：所有魔数、DIB 头（<=124B）与 SVG 文本探测（1024B）都落在这一段内。
   var HEAD_PROBE = 1024
   var REROUTED = '__dshPasteImageRerouted'
@@ -547,7 +640,7 @@
   function canvasOf(source, width, height) {
     var w = width || source.width || source.naturalWidth || 1
     var h = height || source.height || source.naturalHeight || 1
-    var scale = Math.min(1, MAX_SIDE / Math.max(w, h))
+    var scale = Math.min(1, settings.maxSide / Math.max(w, h))
     var canvas = document.createElement('canvas')
     canvas.width = Math.max(1, Math.round(w * scale))
     canvas.height = Math.max(1, Math.round(h * scale))
@@ -655,6 +748,8 @@
     var declared = aliasMime((file.type || '').toLowerCase())
     var head = await readHead(file)
     var kind = head ? sniff(head.bytes) : null
+    // 该格式的转换被关掉：头部已经能定性，直接放行原文件，连整份字节都不读。
+    if (kind && !conversionAllowed(kind)) return null
     // 原生类型且声明一致：本来就要原样放行，读 1KB 头就够了，整个文件不必进内存。
     if (head && kind && NATIVE_SET.has(kind) && declared === kind) return null
     var bytes
@@ -664,6 +759,7 @@
       bytes = new Uint8Array(await file.arrayBuffer())
       kind = sniff(bytes)
     }
+    if (kind && !conversionAllowed(kind)) return null
     if (kind && NATIVE_SET.has(kind)) {
       if (declared === kind) return null
       if (!declared) {
@@ -727,10 +823,12 @@
   }
 
   async function handle(event, data) {
+    // 总开关只停本插件的转换/拦截，不卸载监听：配置页保存后立刻生效，也不影响原生粘贴路径。
+    if (!settings.enabled) return
     if (!data || event[REROUTED]) return
     if (!canReroute()) return
     var files = Array.prototype.slice.call(data.files || [])
-    if (files.length === 0 || files.length > MAX_FILES) return
+    if (files.length === 0 || files.length > settings.maxFiles) return
     if (!files.some(isImageCandidate)) return
     if (!claim(event)) return
     event.preventDefault()
@@ -745,7 +843,7 @@
       try {
         var converted = await normalize(file)
         out.push(converted ? converted.file : file)
-        if (converted)
+        if (converted && settings.logConversions)
           console.debug(
             '[dsh-paste-image] ' +
               converted.from +
@@ -755,12 +853,13 @@
           )
       } catch (error) {
         out.push(file)
-        console.debug(
-          '[dsh-paste-image] keep original (' +
-            (file.type || 'no type') +
-            '): ' +
-            (error && error.message ? error.message : String(error)),
-        )
+        if (settings.logConversions)
+          console.debug(
+            '[dsh-paste-image] keep original (' +
+              (file.type || 'no type') +
+              '): ' +
+              (error && error.message ? error.message : String(error)),
+          )
       }
     }
     reroute(out)
@@ -808,19 +907,267 @@
     normalize: normalize,
     isImageCandidate: isImageCandidate,
     install: install,
+    getSettings: getSettings,
+    applySettings: applySettings,
+    resetSettings: resetSettings,
   }
 
   if (typeof window !== 'undefined' && window.__ModuleLoader__ && typeof window.__ModuleLoader__.load === 'function') {
     window.__ModuleLoader__.load({
       id: 'dsh-paste-image',
-      factory: function () {
+      factory: function (require) {
+        // react 只在这里取：Node vm 测试没有 window，也就不会走到这；顶层绝不能 require。
+        var React = null
+        try {
+          React = require('react')
+        } catch (error) {
+          React = null
+        }
+
+        var NS = 'dsh-paste-image:settings'
+        var DICTIONARIES = {
+          zh: {
+            summary: '图片粘贴转换',
+            summaryEnabled: '已启用',
+            summaryDisabled: '已停用',
+            enabled: '启用插件',
+            maxFiles: '单次最大文件数',
+            maxSide: '长边上限 (px)',
+            convertXpm: '转换 XPM',
+            convertBmp: '转换 BMP / DIB',
+            convertSvg: '转换 SVG',
+            convertIco: '转换 ICO / CUR',
+            logConversions: '控制台转换日志',
+            save: '保存',
+            reset: '恢复默认',
+            saved: '已保存',
+            saveFailed: '保存失败',
+            note: '设置只保存在这个浏览器里，保存后立即生效；恢复默认会写回全部默认值。',
+          },
+          en: {
+            summary: 'Image paste conversion',
+            summaryEnabled: 'enabled',
+            summaryDisabled: 'disabled',
+            enabled: 'Enable plugin',
+            maxFiles: 'Max files per paste',
+            maxSide: 'Long-edge limit (px)',
+            convertXpm: 'Convert XPM',
+            convertBmp: 'Convert BMP / DIB',
+            convertSvg: 'Convert SVG',
+            convertIco: 'Convert ICO / CUR',
+            logConversions: 'Log conversions to console',
+            save: 'Save',
+            reset: 'Restore defaults',
+            saved: 'Saved',
+            saveFailed: 'Save failed',
+            note: 'Settings live in this browser only and take effect immediately. Restoring writes every default back.',
+          },
+        }
+
+        function createPage() {
+          var styles = {
+            summary: { color: 'var(--dsw-alias-label-secondary)', fontSize: '13px', lineHeight: '20px' },
+            page: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              color: 'var(--dsw-alias-label-primary)',
+              fontSize: '13px',
+            },
+            row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' },
+            checkRow: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+            check: { margin: '0', accentColor: 'var(--dsw-alias-brand-primary)' },
+            input: {
+              width: '140px',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              border: '1px solid var(--dsw-alias-border-l2)',
+              background: 'var(--dsw-alias-bg-layer-1)',
+              color: 'var(--dsw-alias-label-primary)',
+              fontSize: '13px',
+            },
+            buttons: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+            button: {
+              padding: '5px 14px',
+              borderRadius: '6px',
+              border: '1px solid var(--dsw-alias-border-l2)',
+              background: 'var(--dsw-alias-bg-layer-1)',
+              color: 'var(--dsw-alias-label-primary)',
+              fontSize: '13px',
+              cursor: 'pointer',
+            },
+            ok: { color: 'var(--dsw-alias-state-success-primary)', fontSize: '12px' },
+            error: { color: 'var(--dsw-alias-state-error-primary)', fontSize: '12px' },
+            note: { color: 'var(--dsw-alias-label-tertiary)', fontSize: '12px', lineHeight: '18px' },
+          }
+
+          function fallbackText(key) {
+            return key
+          }
+
+          // 表单只在“保存”时写：draft 是本地状态，离开页面即丢弃。
+          function SettingsForm(props) {
+            var t = props && typeof props.t === 'function' ? props.t : fallbackText
+            var draftState = React.useState(function () {
+              return api.getSettings()
+            })
+            var draft = draftState[0]
+            var setDraft = draftState[1]
+            var statusState = React.useState('')
+            var status = statusState[0]
+            var setStatus = statusState[1]
+
+            var update = function (key, value) {
+              setDraft(function (current) {
+                var next = {}
+                Object.keys(current).forEach(function (name) {
+                  next[name] = current[name]
+                })
+                next[key] = value
+                return next
+              })
+              setStatus('')
+            }
+
+            var save = function () {
+              try {
+                setDraft(api.applySettings(draft))
+                setStatus('saved')
+              } catch (error) {
+                setStatus('saveFailed')
+              }
+            }
+
+            var reset = function () {
+              try {
+                setDraft(api.resetSettings())
+                setStatus('saved')
+              } catch (error) {
+                setStatus('saveFailed')
+              }
+            }
+
+            var checkbox = function (key) {
+              return React.createElement(
+                'label',
+                { key: key, style: styles.checkRow },
+                React.createElement('input', {
+                  key: 'input',
+                  type: 'checkbox',
+                  style: styles.check,
+                  checked: draft[key] === true,
+                  onChange: function (event) {
+                    update(key, event.target.checked)
+                  },
+                }),
+                React.createElement('span', { key: 'text' }, t(key)),
+              )
+            }
+
+            var number = function (key, min, max, step) {
+              return React.createElement(
+                'label',
+                { key: key, style: styles.row },
+                React.createElement('span', { key: 'text' }, t(key)),
+                React.createElement('input', {
+                  key: 'input',
+                  type: 'number',
+                  min: min,
+                  max: max,
+                  step: step,
+                  value: String(draft[key]),
+                  onChange: function (event) {
+                    if (event.target.value === '') return
+                    var value = Number(event.target.value)
+                    if (Number.isFinite(value)) update(key, value)
+                  },
+                  style: styles.input,
+                }),
+              )
+            }
+
+            var statusNode = status
+              ? React.createElement(
+                  'span',
+                  { key: 'status', style: status === 'saved' ? styles.ok : styles.error },
+                  t(status),
+                )
+              : null
+
+            return React.createElement(
+              'div',
+              { style: styles.page },
+              checkbox('enabled'),
+              number('maxFiles', 1, 8, 1),
+              number('maxSide', 512, 8192, 256),
+              checkbox('convertXpm'),
+              checkbox('convertBmp'),
+              checkbox('convertSvg'),
+              checkbox('convertIco'),
+              checkbox('logConversions'),
+              React.createElement(
+                'div',
+                { key: 'actions', style: styles.buttons },
+                React.createElement(
+                  'button',
+                  { key: 'save', type: 'button', style: styles.button, onClick: save },
+                  t('save'),
+                ),
+                React.createElement(
+                  'button',
+                  { key: 'reset', type: 'button', style: styles.button, onClick: reset },
+                  t('reset'),
+                ),
+                statusNode,
+              ),
+              React.createElement('div', { key: 'note', style: styles.note }, t('note')),
+            )
+          }
+
+          // view/t 都可能缺：summary 给插件行卡片用，其余（含 undefined）按完整表单渲染。
+          return function Page(props) {
+            var t = props && typeof props.t === 'function' ? props.t : fallbackText
+            var view = props && props.view
+            if (view === 'summary') {
+              var effective = api.getSettings()
+              return React.createElement(
+                'div',
+                { style: styles.summary },
+                t('summary') + ' · ' + t(effective.enabled ? 'summaryEnabled' : 'summaryDisabled'),
+              )
+            }
+            return React.createElement(SettingsForm, { t: t })
+          }
+        }
+
+        var Page = React ? createPage() : null
+
         return {
           apply: function (ctx) {
-            if (ctx && typeof ctx.effect === 'function') {
-              ctx.effect(install, 'paste-image')
+            if (!ctx || typeof ctx.effect !== 'function') {
+              install()
               return
             }
-            install()
+            // 监听器只挂一次；总开关交给 settings.enabled 在 handle 里判断，不来回卸载。
+            ctx.effect(install, 'paste-image')
+            if (Page && ctx.locale && typeof ctx.locale.register === 'function') {
+              ctx.effect(function () {
+                return ctx.locale.register(NS, DICTIONARIES)
+              }, 'paste-image: settings dictionaries')
+            }
+            if (
+              Page &&
+              ctx.slots &&
+              typeof ctx.slots.inject === 'function' &&
+              typeof ctx.slots.register === 'function'
+            ) {
+              ctx.slots.inject('plugins.row.config', function () {
+                return ctx.slots.register(
+                  { name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS },
+                  Page,
+                )
+              })
+            }
           },
         }
       },

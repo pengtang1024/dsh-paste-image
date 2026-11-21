@@ -81,7 +81,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite: magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs, native pass-through, and the display metadata shipped for each language. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite: magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs, native pass-through, the settings page and its runtime settings, and the display metadata shipped for each language. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 
@@ -95,13 +95,32 @@ Then check the real flow:
 
 If conversion fails, the plugin keeps the original file and logs `keep original (...)` instead.
 
+## Configuration
+
+The plugin ships a runtime settings page under **Settings → Plugins → dsh-paste-image → Configure**. The plugin row also shows a one-line summary (enabled / disabled), and the page behind it is the full form. The defaults match the behaviour before this page existed:
+
+| Field                | Default | Range / behaviour                                                                                                     |
+| -------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| Enable plugin        | On      | When off, `handle()` returns immediately and paste/drop goes fully native (listeners stay, so re-enabling is instant) |
+| Max files per paste  | 8       | 1–8; a larger batch is handed to the native path as a whole                                                           |
+| Long-edge limit (px) | 4096    | 512–8192; applies only to converted images, native pass-through is not resized                                        |
+| Convert XPM          | On      | When off, `image/xpm` is not converted and goes to the native channel untouched                                       |
+| Convert BMP / DIB    | On      | When off, BMP/DIB (including bytes that are BMP but declare PNG) pass through untouched                               |
+| Convert SVG          | On      | When off, SVG is not rasterised and goes to the native channel untouched                                              |
+| Convert ICO / CUR    | On      | When off, icons are not converted and go to the native channel untouched                                              |
+| Log conversions      | On      | When off, the `[dsh-paste-image] ...` `console.debug` lines are not printed                                           |
+
+Only **Save** writes and applies the values; edits stay an in-page draft and are discarded when you leave the page. **Restore defaults** writes every default in the table back and applies them immediately too. Number inputs are rounded and clamped to their range (clearing a field does not overwrite the stored value with 0).
+
+Settings live only in this browser, under the `localStorage` key `dsh-paste-image.settings.v1`: nothing is uploaded, nothing is written to the host, and nothing syncs across browsers or profiles. In private mode or when `localStorage` is unavailable they fall back to memory and return to the defaults after a reload. Saved settings apply immediately — no reload needed, and the next paste uses them.
+
 ## Limitations
 
 - **XPM:** XPM3 text format only. The parser reads the `c` colour key; other keys such as `m`, `g` and `s` are ignored. Colours are resolved by the browser's CSS parser, so palette names that are not valid CSS colours, such as the multi-word `light gray`, fall back to opaque black.
 - **BMP:** 1/4/8/16/24/32-bit, `BI_RGB`, `BI_RLE8`, `BI_RLE4`, `BI_BITFIELDS` and `BI_ALPHABITFIELDS`, with core, extended, V4/V5 or OS/2 headers — plus headerless DIBs. 2-bit and 64-bit-per-pixel variants are not supported. For 32-bit files without a declared alpha mask, an all-zero alpha channel is treated as opaque instead of producing a fully transparent PNG.
 - **Other codecs:** SVG is rasterised in-house; ICO/CUR fall back to PNG-compressed entries; AVIF relies on the browser decoder. TIFF and HEIC are detected but Chromium ships no codec for them, so the original is passed through and the host rejects it as before. No third-party decoder is bundled.
-- **Size:** converted images are scaled down to at most 4096 px on the longest side. Native files passed through untouched are not resized.
-- **File count:** one paste or drop may contain at most 8 files. Larger batches are left entirely to the native path.
+- **Size:** converted images are scaled down to at most 4096 px on the longest side by default; adjust it under [Configuration](#configuration). Native files passed through untouched are not resized.
+- **File count:** one paste or drop may contain at most 8 files by default; adjust it under [Configuration](#configuration). Larger batches are left entirely to the native path.
 - **Flattening:** a converted image becomes a single PNG frame. Animation, EXIF metadata and embedded colour profiles are not preserved.
 - **Scope:** only the `paste` and `drop` paths are covered. The file picker and other insertion paths keep their native behaviour.
 
@@ -130,7 +149,7 @@ The plugin targets the renderer APIs modern Chromium/Electron provides: `File`/`
 | `canvas.toBlob`              | `toPngBlob()` falls back to `toDataURL()` plus base64→`Blob` decoding                                                            |
 | `DataTransfer` / `DragEvent` | `handle()` returns before claiming the event or calling `preventDefault()`, so the browser's native paste/drop path is untouched |
 
-File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 61 tests (41 client/locale + 20 compatibility) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, and the three fallbacks above. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
+File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 79 tests (41 client/locale + 20 compatibility + 18 settings page/runtime settings) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, the three fallbacks above, and the settings page's registration contract and behaviour. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
 
 ## Security and privacy
 

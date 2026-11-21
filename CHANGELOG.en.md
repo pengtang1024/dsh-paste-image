@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+### Added
+
+- Configuration page: registered into the Plugin Manager's `plugins.row.config` slot (`key = dsh-paste-image#paste-image`) and reachable through Settings → Plugins → dsh-paste-image → Configure. The plugin row shows a one-line status summary; the page offers six checkboxes (enabled, XPM / BMP-DIB / SVG / ICO-CUR conversion switches, console logging), two number inputs (max files per paste, 1–8; long edge, 512–8192), Save and Restore defaults.
+- Runtime settings: new `getSettings()` / `applySettings()` / `resetSettings()`, with defaults equal to 0.3.1 behaviour. `normalize()` reads the conversion switches, `canvasOf()` reads the long-edge limit, and `handle()` reads the master switch and the file-count limit, while `logConversions` gates the log lines. Saved changes apply immediately without a reload; disabling a format hands that format to the native channel untouched, and disabling the master switch keeps the listeners registered while paste and drop go fully native.
+- Persistence: settings are stored per browser under the `localStorage` key `dsh-paste-image.settings.v1` — nothing uploaded, nothing written to the host. When `localStorage` is unavailable or holds corrupt data, the plugin falls back to the defaults or an in-memory copy and paste keeps working.
+- Tests: 18 new cases in `tests/settings.test.mjs` covering defaults, range clamping, persistence and corrupt-storage fallback, restore defaults, behaviour wiring and the page registration contract; the suite grows from 61 to 79 tests.
+
 ## [0.3.1] - 2026-11-21
 
 ### Performance

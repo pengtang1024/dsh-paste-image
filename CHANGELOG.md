@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+### 新增
+
+- 配置页面：注册到插件管理器的 `plugins.row.config` 槽位（`key = dsh-paste-image#paste-image`），入口是“设置 → 插件 → dsh-paste-image → 配置”。插件行显示一行状态摘要，页面提供 6 个复选框（启用、XPM / BMP-DIB / SVG / ICO-CUR 转换开关、控制台日志）、2 个数字输入（单次最大文件数 1–8、长边 512–8192）、保存与恢复默认。
+- 运行时设置：新增 `getSettings()` / `applySettings()` / `resetSettings()`，默认值等同于 0.3.1 的行为；`normalize()` 读取转换开关，`canvasOf()` 读取长边上限，`handle()` 读取总开关与文件数上限，日志由 `logConversions` 控制。保存后立即生效，无需重载页面；关掉某种格式后该格式原样交给原生通道，关掉总开关后监听器保留、粘贴与拖拽完全走原生路径。
+- 持久化：设置按浏览器保存在 `localStorage` 的 `dsh-paste-image.settings.v1` 键下，不上传、不写宿主；`localStorage` 不可用或内容损坏时回退到默认值/内存，不影响粘贴。
+- 测试：新增 18 个用例（`tests/settings.test.mjs`），覆盖默认值、范围钳制、持久化与损坏回退、恢复默认、行为接线与页面注册契约；测试总数从 61 增加到 79。
+
 ## [0.3.1] - 2026-11-21
 
 ### 性能
