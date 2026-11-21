@@ -20,13 +20,13 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 - **截图被声明成 XPM。** 部分截图工具（尤其是 Ubuntu/Wayland 上）会把图片以 `image/xpm` 类型放进剪贴板。像素本身没问题，但这个类型不在白名单里，粘贴直接被拒。
 - **BMP 字节披着 PNG 的皮。** 有些应用交上来的是 BMP（或 TIFF）数据，却声明成 `image/png`。声明类型过了白名单检查，后面解码失败，还是同一个红字。
 
-`dsh-paste-image` 在渲染进程里把这两类问题一起解决：看真实字节、解出剪贴板里真正的内容、重编码成 PNG，再交回原生附件通道。
+`dsh-paste-image` 在渲染进程里把这两类问题一起解决：看真实字节、解出剪贴板里真正的内容、重编码为所选输出格式（默认 PNG），再交回原生附件通道。
 
 ## 工作原理
 
 1. **捕获。** `install()` 在 `document` 上以捕获阶段挂 `paste` 和 `drop` 监听，确保先于输入框自己的处理逻辑看到事件。
 2. **嗅探。** `handle()` 从 `clipboardData` 或 `dataTransfer` 取出 `File`，`sniff()` 按魔数判断真实格式 —— 不看声明的 MIME 类型。
-3. **重编码。** `normalize()` 对四种原生格式原样放行；其余先解码（XPM、BMP/DIB、SVG 走自带路径，其它交给浏览器），画到画布上（最长边超过 4096 会被缩放），再导出为 `image/png`，文件名改成 `.png`。
+3. **重编码。** `normalize()` 对四种原生格式原样放行；其余先解码（XPM、BMP/DIB、SVG 走自带路径，其它交给浏览器），画到画布上（最长边超过 4096 会被缩放），再按所选输出格式（默认 PNG）导出；扩展名随实际编码 MIME（.png/.jpg/.webp）。
 4. **回投。** `handle()` 在 `[data-composer-card]` 上派发一个携带新 `File` 的合成 `drop` 事件，和真实拖拽走同一条路径；`__dshPasteImageRerouted` 标记防止插件截获自己的事件。
 
 全部逻辑都在客户端。没有宿主进程、不轮询剪贴板、不发网络请求。
@@ -41,15 +41,15 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 | JPEG / JFIF              | `image/jpeg`    | 原样放行，不改写                                                                                          |
 | WebP                     | `image/webp`    | 原样放行，不改写                                                                                          |
 | GIF                      | `image/gif`     | 原样放行，不改写                                                                                          |
-| XPM（XPM3 文本）         | `image/xpm`     | 由 `decodeXpm()` 解码，重编码为 PNG                                                                       |
+| XPM（XPM3 文本）         | `image/xpm`     | 由 `decodeXpm()` 解码，按所选输出格式重编码（默认 PNG）                                                   |
 | BMP / DIB                | `image/bmp`     | 先交给浏览器解码，失败则用 `decodeBmp()` 兜底：1/4/8/16/24/32 位、RLE4/RLE8、BITFIELDS、OS/2 头与无头 DIB |
-| SVG                      | `image/svg+xml` | 通过 `<img>` 元素光栅化，重编码为 PNG                                                                     |
+| SVG                      | `image/svg+xml` | 通过 `<img>` 元素光栅化，按所选输出格式重编码（默认 PNG）                                                 |
 | ICO / CUR                | `image/x-icon`  | 先交给浏览器解码，失败则取最大的 PNG 压缩条目                                                             |
 | TIFF                     | `image/tiff`    | 能按魔数识别；仅当浏览器自带 TIFF 解码器时才解码（Chromium 没有），否则原样放行                           |
-| AVIF                     | `image/avif`    | Chromium 能解码，重编码为 PNG                                                                             |
+| AVIF                     | `image/avif`    | Chromium 能解码，按所选输出格式重编码（默认 PNG）                                                         |
 | HEIC / HEIF 等 `image/*` | `image/...`     | 能按魔数识别；浏览器有对应解码器才解码（Chromium 不解 HEIC），否则原样放行                                |
 
-只有在「魔数属于四种原生格式」**且**「声明类型与之一致」时才原样放行。字节是 JPEG 却声称 `image/png` 的文件会被重编码成真正的 PNG，声明类型从此骗不了人。声明类型为空的原生文件会按嗅探结果重新包一层 `File`（不重编码）；`image/jpg`、`image/x-png`、`image/x-bmp`、`image/x-xpixmap`、`image/svg+xml` 等常见别名视为一致。
+只有在「魔数属于四种原生格式」**且**「声明类型与之一致」时才原样放行。字节是 JPEG 却声称 `image/png` 的文件会被重编码为所选输出格式（默认 PNG），声明类型从此骗不了人。声明类型为空的原生文件会按嗅探结果重新包一层 `File`（不重编码）；`image/jpg`、`image/x-png`、`image/x-bmp`、`image/x-xpixmap`、`image/svg+xml` 等常见别名视为一致。
 
 一个文件会被纳入处理，条件是 MIME 类型以 `image/` 开头，或文件名以 `.png`、`.jpg`、`.jpeg`、`.jfif`、`.gif`、`.webp`、`.bmp`、`.dib`、`.tif`、`.tiff`、`.xpm`、`.avif`、`.ico`、`.cur`、`.svg`、`.heic`、`.heif` 结尾。同一次粘贴里的非图片文件会原样转发。
 
@@ -106,6 +106,8 @@ npm run check
 | 启用插件       | 开     | 关掉后 `handle()` 直接返回，粘贴与拖拽完全走原生路径（监听器保留，重新打开立即恢复） |
 | 单次最大文件数 | 8      | 1–8；超过这个数量的批次整批交回原生路径                                              |
 | 长边上限 (px)  | 4096   | 512–8192；只约束转码后的图片，原生放行的文件不缩放                                   |
+| 输出格式       | PNG    | PNG / JPEG / WebP；转码产物的编码格式                                                |
+| 质量           | 0.92   | 0.1–1，仅 JPEG / WebP 生效；选 PNG 时该输入框禁用                                    |
 | 转换 XPM       | 开     | 关掉后 `image/xpm` 不再转码，原样交给原生通道                                        |
 | 转换 BMP / DIB | 开     | 关掉后 BMP/DIB（包括字节是 BMP、声明是 PNG 的文件）原样放行                          |
 | 转换 SVG       | 开     | 关掉后 SVG 不再光栅化，原样交给原生通道                                              |
@@ -113,6 +115,8 @@ npm run check
 | 控制台转换日志 | 开     | 关掉后不再打印 `[dsh-paste-image] ...` 的 `console.debug` 日志                       |
 
 点**保存**才会写入并立即生效；表单项的改动只是页面内的草稿，离开页面即丢弃。**恢复默认**把上表全部默认值写回并同样立即生效。数字输入会取整并夹到范围内（清空输入框不会把已保存的值打成 0）。
+
+默认输出 PNG：PNG 无损；JPEG 体积更小，但编码前会把透明像素合成到白底；WebP 同时保留透明与较小体积。浏览器不支持所选编码器时按实际编码类型回退，识别不了就回到 PNG——上面的格式表里没切换格式时，转码产物仍按默认 PNG 输出。
 
 设置只保存在当前浏览器的 `localStorage` 里，键名是 `dsh-paste-image.settings.v1`：不上传、不写宿主，也不跨浏览器或 profile 同步。隐私模式或 `localStorage` 不可用时退回内存，重载页面后回到默认值。保存后无需重载页面，下一次粘贴就按新设置处理。
 
@@ -123,7 +127,7 @@ npm run check
 - **其它编解码器：** SVG 由插件自己光栅化；ICO/CUR 会回退到 PNG 压缩条目；AVIF 依赖浏览器解码器。TIFF 和 HEIC 能被识别，但 Chromium 没有对应解码器，会原样放行、宿主仍然拒绝。插件不捆绑任何第三方解码库。
 - **尺寸：** 转码后的图片最长边默认缩到不超过 4096 px，可在[配置](#配置)里调整；原生放行的文件不做任何缩放。
 - **数量：** 一次粘贴或拖入默认最多 8 个文件，可在[配置](#配置)里调整；超过就整批交回原生路径。
-- **扁平化：** 转码结果是一帧 PNG，动画、EXIF 元数据和内嵌色彩配置都不会保留。
+- **扁平化：** 转码结果是一帧静态图（默认 PNG），动画、EXIF 元数据和内嵌色彩配置都不会保留。
 - **范围：** 只覆盖 `paste` 与 `drop`；文件选择器等其它入口保持原生行为。
 
 ## 性能
@@ -148,10 +152,10 @@ npm run check
 | 缺失的能力                   | 降级行为                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------- |
 | `AbortController`            | `install()` 改用不带 `signal` 的监听，disposer 用 `removeEventListener` 精确卸载               |
-| `canvas.toBlob`              | `toPngBlob()` 回退到 `toDataURL()`，再把 base64 解码成 `Blob`                                  |
+| `canvas.toBlob`              | `encodeCanvas()` 回退到 `toDataURL()`，再把 base64 解码成 `Blob`                               |
 | `DataTransfer` / `DragEvent` | `handle()` 在 claim 事件与 `preventDefault()` 之前返回，浏览器原生 paste/drop 路径完全不受影响 |
 
-缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 79 个测试（41 个客户端/多语言 + 20 个兼容性 + 18 个配置页/设置），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面三条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
+缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 87 个测试（41 个客户端/多语言 + 20 个兼容性 + 26 个配置页/设置），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面三条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
 
 ## 安全与隐私
 

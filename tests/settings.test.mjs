@@ -17,6 +17,8 @@ const DEFAULTS = {
   enabled: true,
   maxFiles: 8,
   maxSide: 4096,
+  outputFormat: 'png',
+  quality: 0.92,
   convertXpm: true,
   convertBmp: true,
   convertSvg: true,
@@ -85,6 +87,72 @@ function pngFile(name) {
   return new File([pngBytes()], name, { type: 'image/png' })
 }
 
+// 格式转换专用文档桩：记录 canvas 创建顺序与 toBlob 的实参，并可按请求的 MIME 返回 blob。
+function createFormatDocument(options = {}) {
+  const canvases = []
+  const blobCalls = []
+  const document = {
+    canvases,
+    blobCalls,
+    createElement(tag) {
+      if (tag !== 'canvas') return {}
+      const canvas = {
+        width: 0,
+        height: 0,
+        _image: null,
+        getContext() {
+          return {
+            createImageData(w, h) {
+              return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }
+            },
+            putImageData(image) {
+              canvas._image = image
+            },
+            drawImage() {},
+            getImageData() {
+              return { data: new Uint8ClampedArray([0, 0, 0, 255]) }
+            },
+            clearRect() {},
+            fillRect() {},
+            set fillStyle(value) {
+              this._fill = value
+            },
+            get fillStyle() {
+              return this._fill === undefined ? '#000000' : this._fill
+            },
+          }
+        },
+        toBlob(callback, type, quality) {
+          blobCalls.push({ type, quality, argCount: arguments.length })
+          const actual = options.actualType ? options.actualType(type) : type || 'image/png'
+          callback(new Blob([pngBytes()], { type: actual }))
+        },
+      }
+      canvases.push(canvas)
+      return canvas
+    },
+  }
+  return document
+}
+
+function bmpFile(name = 'wechat.png') {
+  const bmp = makeBmp(2, 2, [
+    [255, 0, 0],
+    [0, 255, 0],
+    [0, 0, 255],
+    [255, 255, 255],
+  ])
+  return new File([bmp], name, { type: 'image/png' })
+}
+
+async function convertBmpWith(patch, options = {}) {
+  const formatDocument = createFormatDocument(options)
+  const { api } = load({ document: formatDocument })
+  api.applySettings(patch)
+  const out = await api.normalize(bmpFile(options.fileName))
+  return { out, formatDocument, api }
+}
+
 // ---------- 设置读写 ----------
 
 test('getSettings 返回引入配置页之前的默认值', () => {
@@ -133,19 +201,46 @@ test('applySettings 把布尔字段强转成布尔值', () => {
   }
 })
 
-test('applySettings 局部更新保留其他字段', () => {
+test('applySettings 局部更新保留其他字段（含 outputFormat/quality）', () => {
   const { api } = load()
-  api.applySettings({ maxSide: 2048, convertSvg: false })
-  const expected = { ...DEFAULTS, maxSide: 2048, convertSvg: false, maxFiles: 2 }
+  api.applySettings({ maxSide: 2048, convertSvg: false, outputFormat: 'jpeg', quality: 0.5 })
+  const expected = {
+    ...DEFAULTS,
+    maxSide: 2048,
+    convertSvg: false,
+    outputFormat: 'jpeg',
+    quality: 0.5,
+    maxFiles: 2,
+  }
   assert.deepEqual(plain(api.applySettings({ maxFiles: 2 })), expected)
   assert.deepEqual(plain(api.getSettings()), expected)
+
+  // 再改一个字段，outputFormat/quality 仍应原样保留。
+  const kept = plain(api.applySettings({ quality: 0.75 }))
+  assert.equal(kept.outputFormat, 'jpeg')
+  assert.equal(kept.quality, 0.75)
 })
 
 test('applySettings 写入固定 key，新实例从 localStorage 读回同一份设置', () => {
   const storage = createStorage()
   const first = load({ localStorage: storage })
-  const expected = { ...DEFAULTS, maxFiles: 3, maxSide: 2048, convertSvg: false, logConversions: false }
-  first.api.applySettings({ maxFiles: 3, maxSide: 2048, convertSvg: false, logConversions: false })
+  const expected = {
+    ...DEFAULTS,
+    maxFiles: 3,
+    maxSide: 2048,
+    outputFormat: 'webp',
+    quality: 0.7,
+    convertSvg: false,
+    logConversions: false,
+  }
+  first.api.applySettings({
+    maxFiles: 3,
+    maxSide: 2048,
+    outputFormat: 'webp',
+    quality: 0.7,
+    convertSvg: false,
+    logConversions: false,
+  })
 
   const write = storage.writes.find((entry) => entry.key === SETTINGS_KEY)
   assert.ok(write, `必须写入 ${SETTINGS_KEY}`)
@@ -157,12 +252,25 @@ test('applySettings 写入固定 key，新实例从 localStorage 读回同一份
 
 test('损坏的 JSON 与越界的历史值都回退到安全默认', () => {
   const broken = load({ localStorage: createStorage({ [SETTINGS_KEY]: '{"maxFiles":' }) })
-  assert.deepEqual(plain(broken.api.getSettings()), DEFAULTS)
+  const brokenSettings = plain(broken.api.getSettings())
+  assert.deepEqual(brokenSettings, DEFAULTS)
+  assert.equal(brokenSettings.outputFormat, 'png')
+  assert.equal(brokenSettings.quality, 0.92)
 
   const stale = load({
     localStorage: createStorage({ [SETTINGS_KEY]: JSON.stringify({ maxFiles: 99, enabled: false }) }),
   })
   assert.deepEqual(plain(stale.api.getSettings()), { ...DEFAULTS, maxFiles: 8, enabled: false })
+})
+
+test('旧版 localStorage 只有 enabled/maxFiles 时补齐 outputFormat 与 quality 默认值', () => {
+  const legacy = load({
+    localStorage: createStorage({ [SETTINGS_KEY]: JSON.stringify({ enabled: false, maxFiles: 3 }) }),
+  })
+  const settings = plain(legacy.api.getSettings())
+  assert.deepEqual(settings, { ...DEFAULTS, enabled: false, maxFiles: 3 })
+  assert.equal(settings.outputFormat, 'png')
+  assert.equal(settings.quality, 0.92)
 })
 
 test('localStorage 抛错时退回内存设置且不崩溃', () => {
@@ -178,7 +286,10 @@ test('localStorage 抛错时退回内存设置且不崩溃', () => {
     },
   }
   const first = load({ localStorage: throwing })
-  assert.deepEqual(plain(first.api.getSettings()), DEFAULTS)
+  const defaults = plain(first.api.getSettings())
+  assert.deepEqual(defaults, DEFAULTS)
+  assert.equal(defaults.outputFormat, 'png')
+  assert.equal(defaults.quality, 0.92)
   assert.equal(first.api.applySettings({ maxSide: 2048 }).maxSide, 2048)
   assert.deepEqual(plain(first.api.getSettings()), { ...DEFAULTS, maxSide: 2048 })
 
@@ -186,25 +297,101 @@ test('localStorage 抛错时退回内存设置且不崩溃', () => {
   assert.deepEqual(plain(second.api.getSettings()), DEFAULTS)
 })
 
-test('resetSettings 恢复全部默认值并写回 storage', () => {
+test('resetSettings 恢复全部默认值（含 outputFormat/quality）并写回 storage', () => {
   const storage = createStorage()
   const { api } = load({ localStorage: storage })
   api.applySettings({
     enabled: false,
     maxFiles: 2,
     maxSide: 1024,
+    outputFormat: 'webp',
+    quality: 0.3,
     convertBmp: false,
     convertSvg: false,
     convertIco: false,
     logConversions: false,
   })
 
-  assert.deepEqual(plain(api.resetSettings()), DEFAULTS)
+  const reset = plain(api.resetSettings())
+  assert.deepEqual(reset, DEFAULTS)
+  assert.equal(reset.outputFormat, 'png')
+  assert.equal(reset.quality, 0.92)
   assert.deepEqual(plain(api.getSettings()), DEFAULTS)
 
   const write = storage.writes[storage.writes.length - 1]
   assert.equal(write.key, SETTINGS_KEY)
   assert.deepEqual(JSON.parse(write.value), DEFAULTS)
+})
+
+// ---------- 输出格式与质量 ----------
+
+test('非法 outputFormat 回退 png，枚举值大小写归一', () => {
+  const { api } = load()
+  assert.equal(api.applySettings({ outputFormat: 'gif' }).outputFormat, 'png')
+  assert.equal(api.applySettings({ outputFormat: 42 }).outputFormat, 'png')
+  assert.equal(api.applySettings({ outputFormat: 'WEBP' }).outputFormat, 'webp')
+  assert.equal(api.applySettings({ outputFormat: 'JPEG' }).outputFormat, 'jpeg')
+})
+
+test('quality 先按两位小数取整再夹到 0.1..1', () => {
+  const { api } = load()
+  assert.equal(api.applySettings({ quality: 0 }).quality, 0.1)
+  assert.equal(api.applySettings({ quality: 2 }).quality, 1)
+  assert.equal(api.applySettings({ quality: 0.456 }).quality, 0.46)
+  assert.equal(api.applySettings({ quality: 0.923 }).quality, 0.92)
+})
+
+test('outputFormat=jpeg 时 BMP 冒充 PNG 转成 JPEG，quality 传给 toBlob', async () => {
+  const { out, formatDocument } = await convertBmpWith({ outputFormat: 'jpeg', quality: 0.5 })
+  assert.ok(out)
+  assert.equal(out.file.type, 'image/jpeg')
+  assert.equal(out.file.name.endsWith('.jpg'), true)
+  assert.equal(out.to, 'image/jpeg')
+  assert.equal(formatDocument.blobCalls.length, 1)
+  assert.deepEqual(formatDocument.blobCalls[0], { type: 'image/jpeg', quality: 0.5, argCount: 3 })
+})
+
+test('outputFormat=webp 时 BMP 冒充 PNG 转成 WebP，quality 传给 toBlob', async () => {
+  const { out, formatDocument } = await convertBmpWith({ outputFormat: 'webp', quality: 0.5 })
+  assert.ok(out)
+  assert.equal(out.file.type, 'image/webp')
+  assert.equal(out.file.name.endsWith('.webp'), true)
+  assert.equal(out.to, 'image/webp')
+  assert.equal(formatDocument.blobCalls.length, 1)
+  assert.deepEqual(formatDocument.blobCalls[0], { type: 'image/webp', quality: 0.5, argCount: 3 })
+})
+
+test('默认 outputFormat=png 时输出 PNG，toBlob 只收 mime 不收 quality', async () => {
+  const { out, formatDocument } = await convertBmpWith({})
+  assert.ok(out)
+  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.file.name.endsWith('.png'), true)
+  assert.equal(out.to, 'image/png')
+  assert.equal(formatDocument.blobCalls.length, 1)
+  assert.equal(formatDocument.blobCalls[0].type, 'image/png')
+  assert.equal(formatDocument.blobCalls[0].argCount, 2)
+  assert.equal(formatDocument.blobCalls[0].quality, undefined)
+})
+
+test('请求 jpeg 但 canvas 实际返回 PNG 时以实际类型为准回退 .png', async () => {
+  const { out, formatDocument } = await convertBmpWith(
+    { outputFormat: 'jpeg', quality: 0.5 },
+    { actualType: () => 'image/png' },
+  )
+  assert.ok(out)
+  assert.equal(formatDocument.blobCalls[0].type, 'image/jpeg')
+  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.file.name.endsWith('.png'), true)
+  assert.equal(out.to, 'image/png')
+})
+
+test('JPEG 转换多建一张白底画布，PNG/WebP 不额外建', async () => {
+  const png = await convertBmpWith({ outputFormat: 'png' })
+  const jpeg = await convertBmpWith({ outputFormat: 'jpeg' })
+  const webp = await convertBmpWith({ outputFormat: 'webp' })
+  assert.equal(png.formatDocument.canvases.length, 2)
+  assert.equal(jpeg.formatDocument.canvases.length, png.formatDocument.canvases.length + 1)
+  assert.equal(webp.formatDocument.canvases.length, png.formatDocument.canvases.length)
 })
 
 // ---------- 行为接线 ----------
@@ -507,7 +694,7 @@ test('模块加载器把配置页注册到 plugins.row.config，key 与 locale �
   assert.equal(typeof component, 'function')
 })
 
-test('summary 视图输出单行状态字符串', () => {
+test('summary 视图输出单行状态字符串并带上输出格式', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
   applied.injections[0].factory()
@@ -515,46 +702,83 @@ test('summary 视图输出单行状态字符串', () => {
   const t = (key) =>
     ({ summary: 'Image paste conversion', summaryEnabled: 'enabled', summaryDisabled: 'disabled' })[key] || key
 
+  loaded.api.resetSettings()
   const enabled = flattenText(renderTree(Page({ view: 'summary', t })))
   assert.equal(typeof enabled, 'string')
-  assert.equal(enabled, 'Image paste conversion · enabled')
+  assert.ok(!enabled.includes('\n'), 'summary 必须是单行')
+  assert.match(enabled, /PNG/)
+  assert.match(enabled, /enabled/)
 
   loaded.api.applySettings({ enabled: false })
   const disabled = flattenText(renderTree(Page({ view: 'summary', t })))
   assert.equal(typeof disabled, 'string')
-  assert.equal(disabled, 'Image paste conversion · disabled')
+  assert.match(disabled, /disabled/)
+  assert.match(disabled, /PNG/)
+
+  loaded.api.applySettings({ outputFormat: 'jpeg' })
+  const jpeg = flattenText(renderTree(Page({ view: 'summary', t })))
+  assert.equal(typeof jpeg, 'string')
+  assert.ok(!jpeg.includes('\n'), 'summary 必须是单行')
+  assert.match(jpeg, /JPEG/)
+  assert.doesNotMatch(jpeg, /PNG/)
   loaded.api.resetSettings()
 })
 
-test('page 视图渲染 6 个 checkbox、2 个 number 输入与 2 个按钮', () => {
+test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个按钮', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
   applied.injections[0].factory()
   const Page = applied.registrations[0].component
-  const tree = renderTree(Page({ view: 'page', t: (key) => key }))
+  const t = (key) => key
 
+  loaded.api.resetSettings()
   const elements = []
-  walk(tree, (node) => elements.push(node))
+  walk(renderTree(Page({ view: 'page', t })), (node) => elements.push(node))
 
   const checkboxes = elements.filter((node) => node.type === 'input' && node.props.type === 'checkbox')
   const numbers = elements.filter((node) => node.type === 'input' && node.props.type === 'number')
+  const selects = elements.filter((node) => node.type === 'select')
   const buttons = elements.filter((node) => node.type === 'button')
 
   assert.equal(checkboxes.length, 6)
-  assert.equal(numbers.length, 2)
+  assert.equal(numbers.length, 3)
+  assert.equal(selects.length, 1)
   assert.equal(buttons.length, 2)
   assert.equal(checkboxes.filter((node) => node.props.checked).length, 6)
   assert.deepEqual(
     numbers.map((node) => node.props.value),
-    ['8', '4096'],
+    ['8', '4096', '0.92'],
   )
   assert.deepEqual(
     numbers.map((node) => node.props.min),
-    [1, 512],
+    [1, 512, 0.1],
   )
   assert.deepEqual(
     numbers.map((node) => node.props.max),
-    [8, 8192],
+    [8, 8192, 1],
   )
+  assert.deepEqual(
+    numbers.map((node) => node.props.step),
+    [1, 256, 0.01],
+  )
+
+  assert.equal(selects[0].props.value, 'png')
+  const options = []
+  walk(selects[0], (node) => {
+    if (node.type === 'option') options.push(node)
+  })
+  assert.deepEqual(
+    options.map((node) => node.props.value),
+    ['png', 'jpeg', 'webp'],
+  )
+
+  // PNG 是无损编码，质量输入应禁用；切到 JPEG 后启用。
+  assert.equal(numbers[2].props.disabled, true)
+  loaded.api.applySettings({ outputFormat: 'jpeg' })
+  const jpegElements = []
+  walk(renderTree(Page({ view: 'page', t })), (node) => jpegElements.push(node))
+  const jpegNumbers = jpegElements.filter((node) => node.type === 'input' && node.props.type === 'number')
+  assert.equal(jpegNumbers.length, 3)
+  assert.equal(jpegNumbers[2].props.disabled, false)
   loaded.api.resetSettings()
 })

@@ -4,6 +4,13 @@
   var NATIVE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
   var NATIVE_SET = new Set(NATIVE_TYPES)
   var NATIVE_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' }
+  // 转换产出的编码：PNG 不传 quality，JPEG/WebP 按设置的质量编码。
+  var OUTPUT_FORMATS = {
+    png: { mime: 'image/png', ext: 'png', quality: false },
+    jpeg: { mime: 'image/jpeg', ext: 'jpg', quality: true },
+    webp: { mime: 'image/webp', ext: 'webp', quality: true },
+  }
+  var OUTPUT_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
   var MIME_ALIAS = {
     'image/jpg': 'image/jpeg',
     'image/pjpeg': 'image/jpeg',
@@ -20,21 +27,25 @@
   var MAX_PIXELS = 64 * 1024 * 1024
 
   // ---------- 运行时设置 ----------
-  // 默认值就是引入配置页之前的行为：开启、最多 8 个文件、长边 4096、四种格式全转换、转换日志开。
-  // 只存在浏览器 localStorage 里（隐私模式或被禁用时退回内存），Host 侧不参与。
+  // 默认值就是引入配置页之前的行为：开启、最多 8 个文件、长边 4096、输出 PNG、质量 0.92、
+  // 四种格式全转换、转换日志开。只存在浏览器 localStorage 里（隐私模式或被禁用时退回内存），Host 侧不参与。
   var SETTINGS_KEY = 'dsh-paste-image.settings.v1'
   var SETTINGS_DEFAULTS = {
     enabled: true,
     maxFiles: 8,
     maxSide: 4096,
+    outputFormat: 'png',
+    quality: 0.92,
     convertXpm: true,
     convertBmp: true,
     convertSvg: true,
     convertIco: true,
     logConversions: true,
   }
-  var SETTINGS_RANGES = { maxFiles: [1, 8], maxSide: [512, 8192] }
+  var SETTINGS_RANGES = { maxFiles: [1, 8], maxSide: [512, 8192], quality: [0.1, 1] }
+  var SETTINGS_DECIMALS = { quality: 2 }
   var SETTINGS_FLAGS = ['enabled', 'convertXpm', 'convertBmp', 'convertSvg', 'convertIco', 'logConversions']
+  var SETTINGS_ENUMS = { outputFormat: ['png', 'jpeg', 'webp'] }
   // 文件头嗅探出的类型 -> 对应的转换开关；未列出的类型（PNG/JPEG/GIF/WebP/TIFF 等）不受开关约束。
   var CONVERT_FLAGS = {
     'image/xpm': 'convertXpm',
@@ -51,20 +62,27 @@
     return out
   }
 
-  // 布尔值强制布尔化；整数先取整再夹到区间内，非数字（NaN/Infinity/对象）保留原值，
-  // 这样界面里清空输入框不会把已保存的值打成 0。
+  // 布尔值强制布尔化；枚举只认设定值，其余一律回默认；数字先按各自精度取整再夹到区间内，
+  // 非数字（NaN/Infinity/对象）保留原值，这样界面里清空输入框不会把已保存的值打成 0。
   function sanitizeSettings(patch, base) {
     var next = copySettings(base)
     if (!patch || typeof patch !== 'object') return next
     SETTINGS_FLAGS.forEach(function (flag) {
       if (typeof patch[flag] !== 'undefined') next[flag] = Boolean(patch[flag])
     })
+    Object.keys(SETTINGS_ENUMS).forEach(function (name) {
+      if (typeof patch[name] === 'undefined') return
+      var value = String(patch[name]).toLowerCase()
+      next[name] = SETTINGS_ENUMS[name].indexOf(value) < 0 ? SETTINGS_DEFAULTS[name] : value
+    })
     Object.keys(SETTINGS_RANGES).forEach(function (name) {
       if (typeof patch[name] === 'undefined') return
       var value = Number(patch[name])
       if (!Number.isFinite(value)) return
       var range = SETTINGS_RANGES[name]
-      next[name] = Math.min(range[1], Math.max(range[0], Math.round(value)))
+      var decimals = SETTINGS_DECIMALS[name]
+      var rounded = decimals ? Number(value.toFixed(decimals)) : Math.round(value)
+      next[name] = Math.min(range[1], Math.max(range[0], rounded))
     })
     return next
   }
@@ -673,9 +691,9 @@
     return out.subarray(0, length)
   }
 
-  function dataUrlBlob(canvas) {
+  function dataUrlBlob(canvas, mime, quality) {
     if (typeof canvas.toDataURL !== 'function') throw new Error('canvas.toBlob/toDataURL unavailable')
-    var url = canvas.toDataURL('image/png')
+    var url = quality === null ? canvas.toDataURL(mime) : canvas.toDataURL(mime, quality)
     var comma = url.indexOf(',')
     if (comma < 0) throw new Error('canvas.toDataURL failed')
     var meta = url.slice(5, comma)
@@ -683,20 +701,43 @@
     return new Blob([base64Bytes(url.slice(comma + 1))], { type: meta.split(';')[0] || 'image/png' })
   }
 
-  function toPngBlob(canvas) {
+  // 统一编码入口：按选定 MIME 出 blob，PNG 不传 quality（浏览器不接受这个参数），
+  // JPEG/WebP 传 0.1–1 的质量；没有 toBlob 时退回同一 MIME/quality 的 data URL。
+  function encodeCanvas(canvas, mime, quality) {
     return new Promise(function (resolve, reject) {
+      var done = function (blob) {
+        blob ? resolve(blob) : reject(new Error('canvas.toBlob failed'))
+      }
       if (typeof canvas.toBlob !== 'function') {
         try {
-          resolve(dataUrlBlob(canvas))
+          resolve(dataUrlBlob(canvas, mime, quality))
         } catch (error) {
           reject(error)
         }
         return
       }
-      canvas.toBlob(function (blob) {
-        blob ? resolve(blob) : reject(new Error('canvas.toBlob failed'))
-      }, 'image/png')
+      if (quality === null) canvas.toBlob(done, mime)
+      else canvas.toBlob(done, mime, quality)
     })
+  }
+
+  // JPEG 没有 alpha 通道：先把画布铺到不透明白底上再编码，透明像素才不会变黑。
+  function flattenOnWhite(canvas) {
+    var out = document.createElement('canvas')
+    out.width = canvas.width
+    out.height = canvas.height
+    var ctx = out.getContext('2d')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, out.width, out.height)
+    ctx.drawImage(canvas, 0, 0)
+    return out
+  }
+
+  // 浏览器真正编码出来的类型（blob.type / data URL 的 MIME）才是最终类型：请求的格式不被支持时
+  // 以实际类型为准，无法识别时退回 PNG，保证 File 的 type 与扩展名始终自洽、宿主不会拒收。
+  function encodedMime(type) {
+    var mime = aliasMime(String(type || '').toLowerCase())
+    return OUTPUT_EXT[mime] ? mime : 'image/png'
   }
 
   async function toCanvas(file, bytes, kind) {
@@ -773,11 +814,14 @@
       }
     }
     var canvas = await toCanvas(file, bytes, kind)
-    var blob = await toPngBlob(canvas)
+    var profile = OUTPUT_FORMATS[settings.outputFormat] || OUTPUT_FORMATS.png
+    var encoded = profile.mime === 'image/jpeg' ? flattenOnWhite(canvas) : canvas
+    var blob = await encodeCanvas(encoded, profile.mime, profile.quality ? settings.quality : null)
+    var mime = encodedMime(blob.type)
     return {
-      file: new File([blob], fileName(file, 'png'), { type: 'image/png' }),
+      file: new File([blob], fileName(file, OUTPUT_EXT[mime]), { type: mime }),
       from: declared || '(no type)',
-      to: 'image/png',
+      to: mime,
       width: canvas.width,
       height: canvas.height,
     }
@@ -933,6 +977,9 @@
             enabled: '启用插件',
             maxFiles: '单次最大文件数',
             maxSide: '长边上限 (px)',
+            outputFormat: '输出格式',
+            quality: '质量',
+            qualityHint: 'PNG 为无损编码；质量只对 JPEG / WebP 生效。',
             convertXpm: '转换 XPM',
             convertBmp: '转换 BMP / DIB',
             convertSvg: '转换 SVG',
@@ -951,6 +998,9 @@
             enabled: 'Enable plugin',
             maxFiles: 'Max files per paste',
             maxSide: 'Long-edge limit (px)',
+            outputFormat: 'Output format',
+            quality: 'Quality',
+            qualityHint: 'PNG is lossless; quality applies to JPEG / WebP only.',
             convertXpm: 'Convert XPM',
             convertBmp: 'Convert BMP / DIB',
             convertSvg: 'Convert SVG',
@@ -999,6 +1049,16 @@
             ok: { color: 'var(--dsw-alias-state-success-primary)', fontSize: '12px' },
             error: { color: 'var(--dsw-alias-state-error-primary)', fontSize: '12px' },
             note: { color: 'var(--dsw-alias-label-tertiary)', fontSize: '12px', lineHeight: '18px' },
+          }
+
+          var FORMAT_OPTIONS = [
+            { value: 'png', label: 'PNG' },
+            { value: 'jpeg', label: 'JPEG' },
+            { value: 'webp', label: 'WebP' },
+          ]
+
+          function formatLabel(value) {
+            return value === 'jpeg' ? 'JPEG' : value === 'webp' ? 'WebP' : 'PNG'
           }
 
           function fallbackText(key) {
@@ -1064,7 +1124,7 @@
               )
             }
 
-            var number = function (key, min, max, step) {
+            var number = function (key, min, max, step, options) {
               return React.createElement(
                 'label',
                 { key: key, style: styles.row },
@@ -1076,6 +1136,7 @@
                   max: max,
                   step: step,
                   value: String(draft[key]),
+                  disabled: Boolean(options && options.disabled),
                   onChange: function (event) {
                     if (event.target.value === '') return
                     var value = Number(event.target.value)
@@ -1083,6 +1144,28 @@
                   },
                   style: styles.input,
                 }),
+              )
+            }
+
+            var select = function (key, options) {
+              return React.createElement(
+                'label',
+                { key: key, style: styles.row },
+                React.createElement('span', { key: 'text' }, t(key)),
+                React.createElement(
+                  'select',
+                  {
+                    key: 'select',
+                    value: draft[key],
+                    onChange: function (event) {
+                      update(key, String(event.target.value))
+                    },
+                    style: styles.input,
+                  },
+                  options.map(function (option) {
+                    return React.createElement('option', { key: option.value, value: option.value }, option.label)
+                  }),
+                ),
               )
             }
 
@@ -1100,6 +1183,9 @@
               checkbox('enabled'),
               number('maxFiles', 1, 8, 1),
               number('maxSide', 512, 8192, 256),
+              select('outputFormat', FORMAT_OPTIONS),
+              number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
+              React.createElement('div', { key: 'qualityHint', style: styles.note }, t('qualityHint')),
               checkbox('convertXpm'),
               checkbox('convertBmp'),
               checkbox('convertSvg'),
@@ -1133,7 +1219,11 @@
               return React.createElement(
                 'div',
                 { style: styles.summary },
-                t('summary') + ' · ' + t(effective.enabled ? 'summaryEnabled' : 'summaryDisabled'),
+                t('summary') +
+                  ' · ' +
+                  t(effective.enabled ? 'summaryEnabled' : 'summaryDisabled') +
+                  ' · ' +
+                  formatLabel(effective.outputFormat),
               )
             }
             return React.createElement(SettingsForm, { t: t })
