@@ -15,6 +15,7 @@
 - 输出格式：新增 `outputFormat`（`png` / `jpeg` / `webp`，默认 `png`）与 `quality`（0.1–1，默认 0.92，仅 JPEG / WebP 生效）；JPEG 编码前把透明像素合成到白底，PNG 无损、WebP 保留透明；浏览器不支持所选编码器时以实际 `blob.type` 为准回退，识别不了就回到 PNG，文件名扩展名同步。
 - 持久化：设置按浏览器保存在 `localStorage` 的 `dsh-paste-image.settings.v1` 键下，不上传、不写宿主；`localStorage` 不可用或内容损坏时回退到默认值/内存，不影响粘贴。
 - 测试：新增 26 个用例（`tests/settings.test.mjs`），覆盖默认值、范围钳制、持久化与损坏回退、恢复默认、行为接线、输出格式/质量与页面注册契约；测试总数从 61 增加到 87。
+- 文档：新增输出格式实测（`docs/output-formats.md`，英文 `docs/en/output-formats.md`），记录真实 Chromium 下五个夹具的 PNG / JPEG / WebP 体积与编码耗时（q=0.92 与 q=0.8），结论是体积比例取决于内容、没有通用百分比——照片用 JPEG/WebP 约小 82%，UI 截图用 JPEG 反而比 PNG 大 49%、PNG 仍可能更小，透明图必须避开 JPEG；README 配置节补了 4 行速查表并链接完整实测。
 
 ## [0.3.1] - 2026-11-21
 

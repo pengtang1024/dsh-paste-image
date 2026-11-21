@@ -980,6 +980,8 @@
             outputFormat: '输出格式',
             quality: '质量',
             qualityHint: 'PNG 为无损编码；质量只对 JPEG / WebP 生效。',
+            formatHint:
+              '照片类内容 JPEG/WebP 通常比 PNG 小约 80%；截图、文字和像素画往往 PNG 更小；需要透明请选 PNG 或 WebP。完整实测见 docs/output-formats.md。',
             convertXpm: '转换 XPM',
             convertBmp: '转换 BMP / DIB',
             convertSvg: '转换 SVG',
@@ -1001,6 +1003,8 @@
             outputFormat: 'Output format',
             quality: 'Quality',
             qualityHint: 'PNG is lossless; quality applies to JPEG / WebP only.',
+            formatHint:
+              'For photos, JPEG/WebP are usually about 80% smaller than PNG; for screenshots, text and pixel art PNG is often smaller; choose PNG or WebP when you need transparency. Full measurements: docs/output-formats.md.',
             convertXpm: 'Convert XPM',
             convertBmp: 'Convert BMP / DIB',
             convertSvg: 'Convert SVG',
@@ -1184,6 +1188,7 @@
               number('maxFiles', 1, 8, 1),
               number('maxSide', 512, 8192, 256),
               select('outputFormat', FORMAT_OPTIONS),
+              React.createElement('div', { key: 'formatHint', style: styles.note }, t('formatHint')),
               number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
               React.createElement('div', { key: 'qualityHint', style: styles.note }, t('qualityHint')),
               checkbox('convertXpm'),

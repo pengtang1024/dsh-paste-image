@@ -237,7 +237,7 @@ and pushes the original `File` into the outgoing batch. One bad file never block
 
 ## 12. Module registration
 
-The file is a classic script wrapped in an IIFE. At the bottom ([lines 959–1266](../../client.js#L959-L1266)) it registers itself with the DSH client module loader:
+The file is a classic script wrapped in an IIFE. At the bottom ([lines 959–1271](../../client.js#L959-L1271)) it registers itself with the DSH client module loader:
 
 ```js
 window.__ModuleLoader__.load({
@@ -279,7 +279,7 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`inject: ['slots', 'locale']` makes Cordis wait for the `slots` and `locale` services before calling `apply`, so the settings page is not skipped. `factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. `ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. `ctx.locale.register(NS, DICTIONARIES)` registers the Chinese and English dictionaries, and `ctx.slots.inject('plugins.row.config', ...)` then registers the settings page on the `plugins.row.config` row ([lines 1244–1261](../../client.js#L1244-L1261)). In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L947-L957) through `module.exports` for the test suite.
+`inject: ['slots', 'locale']` makes Cordis wait for the `slots` and `locale` services before calling `apply`, so the settings page is not skipped. `factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. `ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. `ctx.locale.register(NS, DICTIONARIES)` registers the Chinese and English dictionaries, and `ctx.slots.inject('plugins.row.config', ...)` then registers the settings page on the `plugins.row.config` row ([lines 1249–1266](../../client.js#L1249-L1266)). In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L947-L957) through `module.exports` for the test suite.
 
 ## 13. Settings and the configuration page
 
@@ -295,7 +295,9 @@ Output encoding is defined by `OUTPUT_FORMATS` ([`client.js:8-12`](../../client.
 
 The final type follows what the browser actually encoded: [`encodedMime()`](../../client.js#L738-L741) reads `blob.type` (after MIME alias mapping), accepts only PNG/JPEG/WebP, and falls back to `image/png` when the type is unrecognised; the file extension also follows the actual MIME. So a browser without the requested encoder yields an image whose label and bytes agree; the actual `blob.type` is authoritative and falls back to PNG when unrecognised, instead of PNG data masquerading as JPEG/WebP.
 
-The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1249-1261`](../../client.js#L1249-L1261)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
+The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1254-1266`](../../client.js#L1254-L1266)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
+
+The measured size impact of these settings is covered in the [output format measurements](output-formats.md): JPEG/WebP shrink photos by about 82%, while UI screenshots are often smaller as PNG.
 
 ## Code map
 
@@ -328,7 +330,7 @@ The page is registered inside the module loader factory: after `ctx.slots.inject
 | Synthetic drop            | `reroute()`             | [client.js:849](../../client.js#L849-L857)  |
 | Guards and dispatch       | `handle()`              | [client.js:869](../../client.js#L869-L910)  |
 | Event listeners           | `install()`             | [client.js:912](../../client.js#L912-L945)  |
-| Module entry              | `__ModuleLoader__.load` | [client.js:959](../../client.js#L959-L1266) |
+| Module entry              | `__ModuleLoader__.load` | [client.js:959](../../client.js#L959-L1271) |
 
 ## Design notes
 

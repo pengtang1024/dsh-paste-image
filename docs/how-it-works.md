@@ -237,7 +237,7 @@ composer().dispatchEvent(event)
 
 ## 12. 模块注册
 
-该文件是包在 IIFE 里的经典脚本。在底部（[第 959–1266 行](../client.js#L959-L1266)）它把自己注册到 DSH 客户端模块加载器：
+该文件是包在 IIFE 里的经典脚本。在底部（[第 959–1271 行](../client.js#L959-L1271)）它把自己注册到 DSH 客户端模块加载器：
 
 ```js
 window.__ModuleLoader__.load({
@@ -279,7 +279,7 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`inject: ['slots', 'locale']` 让 Cordis 先等到 `slots` 与 `locale` 两个服务就绪再调用 `apply`，否则配置页注册会被跳过。`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。`ctx.locale.register(NS, DICTIONARIES)` 注册中英两份字典，`ctx.slots.inject('plugins.row.config', ...)` 再把配置页注册到 `plugins.row.config` 行上（[第 1244–1261 行](../client.js#L1244-L1261)）。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L947-L957) 供测试套件使用。
+`inject: ['slots', 'locale']` 让 Cordis 先等到 `slots` 与 `locale` 两个服务就绪再调用 `apply`，否则配置页注册会被跳过。`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。`ctx.locale.register(NS, DICTIONARIES)` 注册中英两份字典，`ctx.slots.inject('plugins.row.config', ...)` 再把配置页注册到 `plugins.row.config` 行上（[第 1249–1266 行](../client.js#L1249-L1266)）。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L947-L957) 供测试套件使用。
 
 ## 13. 设置与配置页
 
@@ -295,7 +295,9 @@ window.__ModuleLoader__.load({
 
 最终类型以浏览器实际编码结果为准：[`encodedMime()`](../client.js#L738-L741) 读取 `blob.type`（经 MIME 别名映射），只接受 PNG/JPEG/WebP，识别不了就回退 `image/png`；文件名扩展名同样按实际 MIME 取。因此浏览器不支持所选编码器时，得到的是一个标签与字节一致的图片；以实际 `blob.type` 为准，无法识别时回退 PNG，而不是伪装成 JPEG/WebP 的 PNG 数据。
 
-配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1249-1261`](../client.js#L1249-L1261)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
+配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1254-1266`](../client.js#L1254-L1266)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
+
+这些设置对实际体积的影响另见[输出格式实测](output-formats.md)：照片用 JPEG/WebP 约小 82%，UI 截图用 PNG 往往更小。
 
 ## 代码地图
 
@@ -328,7 +330,7 @@ window.__ModuleLoader__.load({
 | 合成 drop            | `reroute()`             | [client.js:849](../client.js#L849-L857)  |
 | 前置校验与分发       | `handle()`              | [client.js:869](../client.js#L869-L910)  |
 | 事件监听器           | `install()`             | [client.js:912](../client.js#L912-L945)  |
-| 模块入口             | `__ModuleLoader__.load` | [client.js:959](../client.js#L959-L1266) |
+| 模块入口             | `__ModuleLoader__.load` | [client.js:959](../client.js#L959-L1271) |
 
 ## 设计说明
 

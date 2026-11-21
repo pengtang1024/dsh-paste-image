@@ -116,6 +116,17 @@ Only **Save** writes and applies the values; edits stay an in-page draft and are
 
 PNG is the default output: it is lossless. JPEG produces smaller files but composites transparent pixels onto white before encoding, and WebP keeps transparency while staying small. When the browser cannot encode the selected format, the plugin falls back to the type it actually produced, and to PNG when that type is unrecognised — the format table above still describes the default PNG output unless you switch formats.
 
+How much you actually save depends on the image content (q=0.92, sizes in KB, 1 KB = 1000 B):
+
+| Content          | Dimensions | PNG    | JPEG                        | WebP  |
+| ---------------- | ---------- | ------ | --------------------------- | ----- |
+| UI screenshot    | 1440×900   | 69.7   | 103.6                       | 33.9  |
+| Photo            | 1600×1200  | 3535.3 | 649.3                       | 628.0 |
+| Transparent logo | 512×512    | 349.1  | 25.8 (white bg, alpha lost) | 56.6  |
+| Pixel art        | 256×256    | 4.1    | 2.9                         | 2.9   |
+
+JPEG/WebP shrink photos by about 82%, while UI screenshots and pixel art are often smaller as PNG; never pick JPEG when you need transparency. Environment, method, timings and the q=0.8 comparison are in the [full measurements](docs/en/output-formats.md).
+
 Settings live only in this browser, under the `localStorage` key `dsh-paste-image.settings.v1`: nothing is uploaded, nothing is written to the host, and nothing syncs across browsers or profiles. In private mode or when `localStorage` is unavailable they fall back to memory and return to the defaults after a reload. Saved settings apply immediately — no reload needed, and the next paste uses them.
 
 ## Limitations
@@ -172,6 +183,7 @@ The plugin ships display metadata for every language the DSH interface supports 
 
 - [How it works](docs/en/how-it-works.md) — event flow, decoder internals and a function-by-function code map.
 - [Format support](docs/en/formats.md) — decision pipeline, format matrix, BMP variants and the checklist for adding a format.
+- [Output format measurements](docs/en/output-formats.md) — PNG / JPEG / WebP sizes and encode times, broken down by content type.
 - [Troubleshooting](docs/en/troubleshooting.md) — common failures and how to read the logs.
 - [Releasing](docs/en/releasing.md) — version policy and the maintainer release checklist.
 
