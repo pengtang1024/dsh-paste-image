@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-21
+
+### Performance
+
+- `normalize()` now reads at most a 1 KiB header through `file.slice()` to sniff the type; when the sniffed type is native (PNG/JPEG/WebP/GIF) and the declared MIME agrees, it returns `null` without calling `arrayBuffer()` on the whole file. The 20 MiB PNG pass-through benchmark drops from 3.803–3.929 ms/op with 20,971,520 bytes read in full to 0.0038–0.0063 ms/op with 0 bytes read in full; a full read only happens when an empty declaration needs re-wrapping or an actual conversion is required.
+- `resolveColor()` reuses one 1×1 canvas and 2D context instead of creating a canvas per palette colour; XPM now uses a character-code `Map` instead of a per-pixel `row.slice()` when `cpp === 1`. The 512×512 XPM benchmark drops from 4.712–4.837 ms/op to 3.35–3.95 ms/op (~-24%, observed -18% to -29%). BMP→PNG conversion stays at about 3.9–4.0 ms/op and `decodeBmp` stays within run-to-run noise.
+- The optimisation stays inside the existing synchronous renderer code: no new worker, no network request, and no change to timing or behaviour. `npm run bench` reproduces the full suite; `--quick` is the CI-sized smoke run.
+
+### Compatibility
+
+- Without `AbortController`, `install()` falls back to listeners registered without a `signal`, and the disposer removes both handlers with `removeEventListener`.
+- Without `canvas.toBlob`, `toPngBlob()` falls back to `toDataURL()` and decodes the base64 payload into a `Blob`.
+- Without `DataTransfer`/`DragEvent`, `handle()` returns before claiming the event or calling `preventDefault()`, leaving the browser's native paste/drop path intact instead of swallowing the event.
+- File-like objects without `file.slice()`/`file.size` cannot read just a header and fall back to the original full-read path.
+
+### Tests
+
+- 61 tests: 41 client/locale cases plus 20 compatibility cases — headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, and the three fallbacks above. The CI matrix expands to Node 20/22/24 and gains a `node bench/bench.mjs --quick` smoke job.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added

@@ -20,6 +20,8 @@
   var MAX_SIDE = 4096
   var MAX_FILES = 8
   var MAX_PIXELS = 64 * 1024 * 1024
+  // 头探测长度：所有魔数、DIB 头（<=124B）与 SVG 文本探测（1024B）都落在这一段内。
+  var HEAD_PROBE = 1024
   var REROUTED = '__dshPasteImageRerouted'
   var HANDLED = '__dshPasteImageHandled'
   var INSTALLED = '__dshPasteImageInstalled'
@@ -120,13 +122,22 @@
     return out
   }
 
+  // 复用的 1x1 canvas：一张 XPM 动辄几十上百个调色板颜色，逐色新建 canvas 纯属开销。
+  var colorCanvas = null
+
+  function colorContext() {
+    if (!colorCanvas) {
+      colorCanvas = document.createElement('canvas')
+      colorCanvas.width = 1
+      colorCanvas.height = 1
+    }
+    return colorCanvas.getContext('2d')
+  }
+
   // 用 canvas 把任意 CSS 颜色解析成 RGBA，顺带支持命名色与 4/8/12 位十六进制。
   function resolveColor(color) {
     if (!color || color === 'None') return [0, 0, 0, 0]
-    var c = document.createElement('canvas')
-    c.width = 1
-    c.height = 1
-    var ctx = c.getContext('2d')
+    var ctx = colorContext()
     ctx.clearRect(0, 0, 1, 1)
     ctx.fillStyle = '#000000'
     ctx.fillStyle = color
@@ -156,13 +167,18 @@
     if (width * height > MAX_PIXELS) throw new Error('xpm: too large')
 
     var palette = new Map()
+    // cpp===1 时按字符码建索引，像素循环里就不用为每个像素 row.slice 出一枚字符串
+    // （字符码与单字符 key 一一对应；越界位置两边都取到空 key，语义不变）。
+    var codePalette = cpp === 1 ? new Map() : null
     for (var i = 1; i <= colors; i++) {
       var line = strings[i] || ''
       var key = line.slice(0, cpp)
       var rest = line.slice(cpp)
       var m = /\bc\s+([^\s]+(?:\s+[^\s]+)?)/.exec(rest)
       var raw = m ? m[1].trim() : '#000000'
-      palette.set(key, resolveColor(raw) || [0, 0, 0, 255])
+      var color = resolveColor(raw) || [0, 0, 0, 255]
+      if (codePalette) codePalette.set(key.charCodeAt(0), color)
+      else palette.set(key, color)
     }
 
     var canvas = document.createElement('canvas')
@@ -174,8 +190,8 @@
     for (var y = 0; y < height; y++) {
       var row = strings[1 + colors + y] || ''
       for (var x = 0; x < width; x++) {
-        var k = row.slice(x * cpp, (x + 1) * cpp)
-        var rgba = palette.get(k) || [0, 0, 0, 0]
+        var rgba = codePalette ? codePalette.get(row.charCodeAt(x)) : palette.get(row.slice(x * cpp, (x + 1) * cpp))
+        rgba = rgba || [0, 0, 0, 0]
         var o = (y * width + x) * 4
         data[o] = rgba[0]
         data[o + 1] = rgba[1]
@@ -539,8 +555,51 @@
     return canvas
   }
 
+  // toDataURL 回退路径不能假设 atob 存在（非渲染进程的 vm/测试环境就没有），所以自带解码。
+  // 预建 256 项查表（0 = 非法字符），避免逐字符在 64 字符表里 indexOf。
+  var B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  var B64_LOOKUP = new Uint8Array(256)
+  for (var b64 = 0; b64 < B64_ALPHABET.length; b64++) B64_LOOKUP[B64_ALPHABET.charCodeAt(b64)] = b64 + 1
+
+  function base64Bytes(text) {
+    var out = new Uint8Array(((text.length * 3) >> 2) + 3)
+    var length = 0
+    var buffer = 0
+    var bits = 0
+    for (var i = 0; i < text.length; i++) {
+      var code = text.charCodeAt(i)
+      var value = code < 256 ? B64_LOOKUP[code] - 1 : -1
+      if (value < 0) continue
+      buffer = ((buffer << 6) | value) & 0xffffff
+      bits += 6
+      if (bits >= 8) {
+        bits -= 8
+        out[length++] = (buffer >> bits) & 0xff
+      }
+    }
+    return out.subarray(0, length)
+  }
+
+  function dataUrlBlob(canvas) {
+    if (typeof canvas.toDataURL !== 'function') throw new Error('canvas.toBlob/toDataURL unavailable')
+    var url = canvas.toDataURL('image/png')
+    var comma = url.indexOf(',')
+    if (comma < 0) throw new Error('canvas.toDataURL failed')
+    var meta = url.slice(5, comma)
+    if (meta.indexOf('base64') < 0) throw new Error('canvas.toDataURL is not base64')
+    return new Blob([base64Bytes(url.slice(comma + 1))], { type: meta.split(';')[0] || 'image/png' })
+  }
+
   function toPngBlob(canvas) {
     return new Promise(function (resolve, reject) {
+      if (typeof canvas.toBlob !== 'function') {
+        try {
+          resolve(dataUrlBlob(canvas))
+        } catch (error) {
+          reject(error)
+        }
+        return
+      }
       canvas.toBlob(function (blob) {
         blob ? resolve(blob) : reject(new Error('canvas.toBlob failed'))
       }, 'image/png')
@@ -583,10 +642,28 @@
     return base + '.' + ext
   }
 
+  // 只读文件头做嗅探。whole 为 true 表示这段头就是整个文件，后续可直接复用，
+  // 不必回头再 file.arrayBuffer() 一次。缺少 slice/size 的类 File 对象返回 null，走原全量读取。
+  async function readHead(file) {
+    if (typeof file.slice !== 'function' || typeof file.size !== 'number') return null
+    var bytes = new Uint8Array(await file.slice(0, HEAD_PROBE).arrayBuffer())
+    var whole = bytes.length < HEAD_PROBE || file.size <= bytes.length
+    return { bytes: bytes, whole: whole }
+  }
+
   async function normalize(file) {
-    var bytes = new Uint8Array(await file.arrayBuffer())
-    var kind = sniff(bytes)
     var declared = aliasMime((file.type || '').toLowerCase())
+    var head = await readHead(file)
+    var kind = head ? sniff(head.bytes) : null
+    // 原生类型且声明一致：本来就要原样放行，读 1KB 头就够了，整个文件不必进内存。
+    if (head && kind && NATIVE_SET.has(kind) && declared === kind) return null
+    var bytes
+    if (head && head.whole) {
+      bytes = head.bytes
+    } else {
+      bytes = new Uint8Array(await file.arrayBuffer())
+      kind = sniff(bytes)
+    }
     if (kind && NATIVE_SET.has(kind)) {
       if (declared === kind) return null
       if (!declared) {
@@ -623,6 +700,12 @@
     return document.querySelector('[data-composer-card]') || document.body
   }
 
+  // reroute() 依赖 DataTransfer/DragEvent 构造器；缺任何一个就无法把文件送进合成器，
+  // 此时必须彻底放手，让浏览器原生 paste/drop 路径继续跑（不 claim、不 preventDefault）。
+  function canReroute() {
+    return typeof DataTransfer === 'function' && typeof DragEvent === 'function'
+  }
+
   function reroute(files) {
     var dt = new DataTransfer()
     files.forEach(function (file) {
@@ -645,6 +728,7 @@
 
   async function handle(event, data) {
     if (!data || event[REROUTED]) return
+    if (!canReroute()) return
     var files = Array.prototype.slice.call(data.files || [])
     if (files.length === 0 || files.length > MAX_FILES) return
     if (!files.some(isImageCandidate)) return
@@ -686,28 +770,28 @@
     if (typeof document === 'undefined') return function () {}
     var record = document[INSTALLED]
     if (!record) {
-      var controller = new AbortController()
-      var options = { capture: true, signal: controller.signal }
-      document.addEventListener(
-        'paste',
-        function (event) {
-          void handle(event, event.clipboardData)
-        },
-        options,
-      )
-      document.addEventListener(
-        'drop',
-        function (event) {
-          void handle(event, event.dataTransfer)
-        },
-        options,
-      )
+      var onPaste = function (event) {
+        void handle(event, event.clipboardData)
+      }
+      var onDrop = function (event) {
+        void handle(event, event.dataTransfer)
+      }
+      // 现代 Chromium/Electron 走 AbortController；缺失时退回 removeEventListener，
+      // 两种方式都保留 handler 引用，保证同一 record 能被准确卸载。
+      var controller = typeof AbortController === 'function' ? new AbortController() : null
+      var options = controller ? { capture: true, signal: controller.signal } : { capture: true }
+      document.addEventListener('paste', onPaste, options)
+      document.addEventListener('drop', onDrop, options)
       record = {
         refs: 0,
         release: function () {
           record.refs -= 1
           if (record.refs > 0) return
-          controller.abort()
+          if (controller) controller.abort()
+          else {
+            document.removeEventListener('paste', onPaste, true)
+            document.removeEventListener('drop', onDrop, true)
+          }
           delete document[INSTALLED]
         },
       }

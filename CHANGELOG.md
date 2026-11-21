@@ -6,6 +6,25 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-21
+
+### 性能
+
+- `normalize()` 先用 `file.slice()` 读取至多 1 KiB 头做嗅探；嗅探结果是原生格式（PNG/JPEG/WebP/GIF）且声明 MIME 与之一致时直接返回 `null`，不再对整文件调用 `arrayBuffer()`。20 MiB PNG 直通基准从 3.803–3.929 ms/op、每次全量读取 20,971,520 字节，降到 0.0038–0.0063 ms/op、全量读取 0 字节；只有声明类型为空需要重包、或确实要转码时才读全量。
+- `resolveColor()` 复用一个 1×1 canvas 与 2D context，不再为每个调色板颜色新建画布；XPM 在 `cpp === 1` 时用字符码 `Map` 代替逐像素 `row.slice()`。512×512 XPM 基准从 4.712–4.837 ms/op 降到 3.35–3.95 ms/op（约 -24%，观测区间 -18%～-29%）。BMP→PNG 转换仍在约 3.9–4.0 ms/op，`decodeBmp` 在运行噪声内不变。
+- 优化只发生在原有的同步渲染进程代码里：没有新增 worker，没有网络请求，处理时机与行为不变。`npm run bench` 可复现完整基准，`--quick` 为 CI 规模的冒烟运行。
+
+### 兼容性
+
+- 缺少 `AbortController` 时 `install()` 退回不带 `signal` 的监听，disposer 用 `removeEventListener` 精确卸载两个 handler。
+- 缺少 `canvas.toBlob` 时 `toPngBlob()` 回退到 `toDataURL()`，再把 base64 解码成 `Blob`。
+- 缺少 `DataTransfer`/`DragEvent` 时 `handle()` 在 claim 事件与 `preventDefault()` 之前返回，保留浏览器原生 paste/drop 路径，不会吞掉事件。
+- 缺少 `file.slice()`/`file.size` 的类 `File` 对象无法只读文件头，退回原有的全量读取路径。
+
+### 测试
+
+- 61 个测试：41 个客户端/多语言用例，加上 20 个兼容性用例——无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传，以及上述三条降级路径。CI 矩阵扩展到 Node 20/22/24，并新增 `node bench/bench.mjs --quick` 冒烟任务。
+
 ## [0.3.0] - 2026-11-20
 
 ### 新增

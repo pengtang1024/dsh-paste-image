@@ -107,6 +107,33 @@ npm run check
 - **扁平化：** 转码结果是一帧 PNG，动画、EXIF 元数据和内嵌色彩配置都不会保留。
 - **范围：** 只覆盖 `paste` 与 `drop`；文件选择器等其它入口保持原生行为。
 
+## 性能
+
+0.3.1 对热路径做了实测优化，数字来自 `bench/bench.mjs`，同一台机器、Node 24：
+
+| 场景                          | 0.3.0                                           | 0.3.1                                           |
+| ----------------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| 原生 PNG 直通（20 MiB）       | 3.803–3.929 ms/op；每次全量读取 20,971,520 字节 | 0.0038–0.0063 ms/op；全量读取 0 字节            |
+| XPM 解码（512×512，64 色）    | 4.712–4.837 ms/op                               | 3.35–3.95 ms/op（约 -24%，观测区间 -18%～-29%） |
+| BMP→PNG 转换（1024×1024）     | 约 3.9–4.0 ms/op                                | 约 3.9–4.0 ms/op，未变                          |
+| `decodeBmp`（24/32 位、RLE8） | —                                               | 在运行噪声内不变                                |
+
+`normalize()` 现在先用 `file.slice()` 读至多 1 KiB 头做嗅探；只要嗅探结果是原生格式（PNG/JPEG/WebP/GIF）且声明的 MIME 与之一致，就直接返回、不再把整个文件读进内存。只有需要重新标注类型（声明为空）或真的要转码时才回退到全量 `arrayBuffer()`。`resolveColor()` 复用一个 1×1 画布，XPM 在编码为单字符时用字符码 Map 查表，省掉逐像素 `row.slice()`。BMP 解码与转码路径没有改动。
+
+优化只发生在这段同步的渲染进程代码里：没有新增 worker、没有网络请求，也没有改变插件的处理时机。基准可以用 `npm run bench`（或 `npm run bench -- --quick`）在本机复现；仓库记录的数字是参考值，不是 CI 阈值。
+
+## 兼容性
+
+插件面向现代 Chromium/Electron 提供的渲染进程 API：`File`/`Blob`、`TextDecoder`、`createImageBitmap`、`canvas.toBlob`、`DataTransfer`/`DragEvent`，以及带 `signal` 的 `addEventListener`。在这套基线上，三处缺失做了显式降级，避免某个 API 不存在时插件整体失效或吞掉原生事件：
+
+| 缺失的能力                   | 降级行为                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `AbortController`            | `install()` 改用不带 `signal` 的监听，disposer 用 `removeEventListener` 精确卸载               |
+| `canvas.toBlob`              | `toPngBlob()` 回退到 `toDataURL()`，再把 base64 解码成 `Blob`                                  |
+| `DataTransfer` / `DragEvent` | `handle()` 在 claim 事件与 `preventDefault()` 之前返回，浏览器原生 paste/drop 路径完全不受影响 |
+
+缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 61 个测试（41 个客户端/多语言 + 20 个兼容性），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传，以及上面三条降级路径。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
+
 ## 安全与隐私
 
 - 全部逻辑运行在渲染进程，不发网络请求、不上传、不落盘。

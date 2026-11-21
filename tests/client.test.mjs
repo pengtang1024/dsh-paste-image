@@ -61,6 +61,38 @@ function loadWith(document) {
 
 const api = load()
 
+const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10]
+
+// 类 File 的计数桩：分别统计头探测（slice().arrayBuffer()）与全量读取（arrayBuffer()）。
+// 用真实的分支来验证 normalize() 到底读了多少字节，而不是看结果「对不对」。
+function countingFile(bytes, { name = 'shot.bin', type = '' } = {}) {
+  const stats = { headCalls: 0, headBytes: 0, fullCalls: 0, fullBytes: 0 }
+  const file = {
+    name,
+    type,
+    size: bytes.length,
+    slice(start, end) {
+      stats.headCalls += 1
+      const chunk = bytes.slice(start, end)
+      stats.headBytes += chunk.length
+      return { arrayBuffer: async () => chunk.slice().buffer }
+    },
+    async arrayBuffer() {
+      stats.fullCalls += 1
+      stats.fullBytes += bytes.length
+      return bytes.slice().buffer
+    },
+  }
+  return { file, stats }
+}
+
+function pngBytes(length) {
+  const bytes = new Uint8Array(length)
+  bytes.set(PNG_SIGNATURE)
+  bytes.fill(0x5a, PNG_SIGNATURE.length)
+  return bytes
+}
+
 test('install 幂等且按引用计数卸载，一次粘贴只挂一条监听', () => {
   const document = createEventDocument()
   const client = loadWith(document)
@@ -221,6 +253,59 @@ test('normalize 给缺少 MIME 的原生图片补上正确类型', async () => {
   assert.ok(out)
   assert.equal(out.file.type, 'image/png')
   assert.equal(out.file.name, 'shot.png')
+})
+
+test('normalize 原生直通只读文件头，不触发全量 arrayBuffer', async () => {
+  const bytes = pngBytes(64 * 1024)
+  const { file, stats } = countingFile(bytes, { name: 'big.png', type: 'image/png' })
+  assert.equal(await api.normalize(file), null)
+  assert.equal(stats.fullCalls, 0, 'native pass-through must not call file.arrayBuffer()')
+  assert.equal(stats.fullBytes, 0)
+  assert.equal(stats.headCalls, 1)
+  assert.ok(stats.headBytes <= 1024, `header read ${stats.headBytes} B, expected <= 1024 B`)
+})
+
+test('normalize 小文件复用已读头部，无声明类型时也不二次读取', async () => {
+  const bytes = pngBytes(12)
+  const { file, stats } = countingFile(bytes, { name: 'shot.png', type: '' })
+  const out = await api.normalize(file)
+  assert.ok(out, 'should rewrap with the sniffed native type')
+  assert.equal(out.from, '(no type)')
+  assert.equal(out.file.type, 'image/png')
+  assert.equal(stats.headCalls, 1)
+  assert.equal(stats.headBytes, bytes.length)
+  assert.equal(stats.fullCalls, 0, 'whole-file head should be reused instead of re-read')
+})
+
+test('normalize 转换路径仍读取完整文件', async () => {
+  const pixels = Array.from({ length: 64 * 64 }, (_, i) => [i & 0xff, (i * 3) & 0xff, (i * 7) & 0xff])
+  const bmp = makeBmp(64, 64, pixels)
+  assert.ok(bmp.length > 1024, 'fixture must be larger than the header probe')
+  const { file, stats } = countingFile(bmp, { name: 'wechat.png', type: 'image/png' })
+  const out = await api.normalize(file)
+  assert.ok(out)
+  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.width, 64)
+  assert.equal(out.height, 64)
+  assert.equal(stats.headCalls, 1)
+  assert.ok(stats.headBytes <= 1024)
+  assert.equal(stats.fullCalls, 1, 'conversion must read the whole file')
+  assert.equal(stats.fullBytes, bmp.length)
+})
+
+test('normalize 对没有 slice/size 的类 File 对象回退到全量读取', async () => {
+  const bytes = pngBytes(2048)
+  let fullCalls = 0
+  const file = {
+    name: 'shot.png',
+    type: 'image/png',
+    async arrayBuffer() {
+      fullCalls += 1
+      return bytes.slice().buffer
+    },
+  }
+  assert.equal(await api.normalize(file), null)
+  assert.equal(fullCalls, 1, 'no-slice File-like object must fall back to file.arrayBuffer()')
 })
 
 test('parseBmp 明确拒绝 BI_CMYK 而不是猜通道', () => {

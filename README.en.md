@@ -105,6 +105,33 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 - **Flattening:** a converted image becomes a single PNG frame. Animation, EXIF metadata and embedded colour profiles are not preserved.
 - **Scope:** only the `paste` and `drop` paths are covered. The file picker and other insertion paths keep their native behaviour.
 
+## Performance
+
+Version 0.3.1 optimises the hot paths; the numbers come from `bench/bench.mjs` on the same machine under Node 24:
+
+| Case                             | 0.3.0                                            | 0.3.1                                          |
+| -------------------------------- | ------------------------------------------------ | ---------------------------------------------- |
+| Native PNG pass-through (20 MiB) | 3.803–3.929 ms/op; 20,971,520 bytes read in full | 0.0038–0.0063 ms/op; 0 bytes read in full      |
+| XPM decode (512×512, 64 colours) | 4.712–4.837 ms/op                                | 3.35–3.95 ms/op (~-24%, observed -18% to -29%) |
+| BMP→PNG conversion (1024×1024)   | ~3.9–4.0 ms/op                                   | ~3.9–4.0 ms/op, unchanged                      |
+| `decodeBmp` (24/32-bit, RLE8)    | —                                                | unchanged within run-to-run noise              |
+
+`normalize()` now reads at most a 1 KiB header through `file.slice()` to sniff the type; when the sniffed type is native (PNG/JPEG/WebP/GIF) and the declared MIME agrees, it returns without ever pulling the whole file into memory. It only falls back to a full `arrayBuffer()` read when the bytes need re-typing (empty declaration) or an actual conversion. `resolveColor()` reuses one 1×1 canvas, and XPM uses a character-code map instead of a per-pixel `row.slice()` when the code is a single character. The BMP decoder and the conversion path are untouched.
+
+The optimisation stays inside the synchronous renderer code: no new worker, no network request, and no change to when the plugin runs. Reproduce the numbers with `npm run bench` (or `npm run bench -- --quick`); the recorded figures are reference values, not CI thresholds.
+
+## Compatibility
+
+The plugin targets the renderer APIs modern Chromium/Electron provides: `File`/`Blob`, `TextDecoder`, `createImageBitmap`, `canvas.toBlob`, `DataTransfer`/`DragEvent`, and `addEventListener` with a `signal`. On that baseline three fallbacks are explicit, so a missing API never disables the plugin outright or swallows a native event:
+
+| Missing capability           | Fallback                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `AbortController`            | `install()` registers listeners without a `signal`, and the disposer removes them with `removeEventListener`                     |
+| `canvas.toBlob`              | `toPngBlob()` falls back to `toDataURL()` plus base64→`Blob` decoding                                                            |
+| `DataTransfer` / `DragEvent` | `handle()` returns before claiming the event or calling `preventDefault()`, so the browser's native paste/drop path is untouched |
+
+File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 61 tests (41 client/locale + 20 compatibility) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, and the three fallbacks above. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
+
 ## Security and privacy
 
 - Everything runs in the renderer. The plugin makes no network requests, uploads nothing and stores nothing.
