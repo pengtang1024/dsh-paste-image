@@ -1143,6 +1143,7 @@
         var Page = React ? createPage() : null
 
         return {
+          inject: ['slots', 'locale'],
           apply: function (ctx) {
             if (!ctx || typeof ctx.effect !== 'function') {
               install()

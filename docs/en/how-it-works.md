@@ -237,7 +237,7 @@ and pushes the original `File` into the outgoing batch. One bad file never block
 
 ## 12. Module registration
 
-The file is a classic script wrapped in an IIFE. At the bottom ([lines 916–1174](../../client.js#L916-L1174)) it registers itself with the DSH client module loader:
+The file is a classic script wrapped in an IIFE. At the bottom ([lines 916–1175](../../client.js#L916-L1175)) it registers itself with the DSH client module loader:
 
 ```js
 window.__ModuleLoader__.load({
@@ -278,7 +278,7 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. `ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. `ctx.locale.register(NS, DICTIONARIES)` registers the Chinese and English dictionaries, and `ctx.slots.inject('plugins.row.config', ...)` then registers the settings page on the `plugins.row.config` row ([lines 1153–1170](../../client.js#L1153-L1170)). In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L903-L913) through `module.exports` for the test suite.
+`factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. `ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. `ctx.locale.register(NS, DICTIONARIES)` registers the Chinese and English dictionaries, and `ctx.slots.inject('plugins.row.config', ...)` then registers the settings page on the `plugins.row.config` row ([lines 1154–1171](../../client.js#L1154-L1171)). In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L903-L913) through `module.exports` for the test suite.
 
 ## 13. Settings and the configuration page
 
@@ -290,7 +290,7 @@ Three consumers each read one slice:
 - [`normalize()`](../../client.js#L747-L784) checks `conversionAllowed(kind)` as soon as the header has been sniffed; a disabled format returns `null`, the original file is handed to the composer untouched and the full bytes are never read. The BMP-labelled-PNG case goes through the same check, so turning BMP conversion off passes it through as well.
 - [`handle()`](../../client.js#L825-L866) checks `settings.enabled` first and returns when it is off; `settings.maxFiles` then decides whether the whole batch goes to the native path, and `settings.logConversions` gates the log lines.
 
-The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1164-1169`](../../client.js#L1164-L1169)). `Page` returns a one-line summary when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), two number inputs (file count and long edge), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
+The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1165-1171`](../../client.js#L1165-L1171)). `Page` returns a one-line summary when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), two number inputs (file count and long edge), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
 
 ## Code map
 
@@ -321,7 +321,7 @@ The page is registered inside the module loader factory: after `ctx.slots.inject
 | Synthetic drop            | `reroute()`             | [client.js:805](../../client.js#L805-L813)  |
 | Guards and dispatch       | `handle()`              | [client.js:825](../../client.js#L825-L866)  |
 | Event listeners           | `install()`             | [client.js:868](../../client.js#L868-L901)  |
-| Module entry              | `__ModuleLoader__.load` | [client.js:916](../../client.js#L916-L1174) |
+| Module entry              | `__ModuleLoader__.load` | [client.js:916](../../client.js#L916-L1175) |
 
 ## Design notes
 

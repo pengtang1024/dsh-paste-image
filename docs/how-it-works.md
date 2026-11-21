@@ -237,7 +237,7 @@ composer().dispatchEvent(event)
 
 ## 12. 模块注册
 
-该文件是包在 IIFE 里的经典脚本。在底部（[第 916–1174 行](../client.js#L916-L1174)）它把自己注册到 DSH 客户端模块加载器：
+该文件是包在 IIFE 里的经典脚本。在底部（[第 916–1175 行](../client.js#L916-L1175)）它把自己注册到 DSH 客户端模块加载器：
 
 ```js
 window.__ModuleLoader__.load({
@@ -278,7 +278,7 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。`ctx.locale.register(NS, DICTIONARIES)` 注册中英两份字典，`ctx.slots.inject('plugins.row.config', ...)` 再把配置页注册到 `plugins.row.config` 行上（[第 1153–1170 行](../client.js#L1153-L1170)）。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L903-L913) 供测试套件使用。
+`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。`ctx.locale.register(NS, DICTIONARIES)` 注册中英两份字典，`ctx.slots.inject('plugins.row.config', ...)` 再把配置页注册到 `plugins.row.config` 行上（[第 1154–1171 行](../client.js#L1154-L1171)）。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L903-L913) 供测试套件使用。
 
 ## 13. 设置与配置页
 
@@ -290,7 +290,7 @@ window.__ModuleLoader__.load({
 - [`normalize()`](../client.js#L747-L784) 读到文件头、嗅探出格式后立即用 `conversionAllowed(kind)` 判定；被关掉的格式返回 `null`，原文件原样交给合成器，连整份字节都不再读取。BMP 冒充 PNG 是否转码也走同一判断，所以关掉 BMP 转换后它同样原样放行。
 - [`handle()`](../client.js#L825-L866) 先看 `settings.enabled`，关掉时直接返回；再用 `settings.maxFiles` 决定是否整批交给原生路径；日志由 `settings.logConversions` 控制。
 
-配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1164-1169`](../client.js#L1164-L1169)）。`Page` 在 `view === 'summary'` 时返回一行摘要，否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、2 个数字输入（文件数、长边）、保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
+配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1165-1171`](../client.js#L1165-L1171)）。`Page` 在 `view === 'summary'` 时返回一行摘要，否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、2 个数字输入（文件数、长边）、保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
 
 ## 代码地图
 
@@ -321,7 +321,7 @@ window.__ModuleLoader__.load({
 | 合成 drop            | `reroute()`             | [client.js:805](../client.js#L805-L813)  |
 | 前置校验与分发       | `handle()`              | [client.js:825](../client.js#L825-L866)  |
 | 事件监听器           | `install()`             | [client.js:868](../client.js#L868-L901)  |
-| 模块入口             | `__ModuleLoader__.load` | [client.js:916](../client.js#L916-L1174) |
+| 模块入口             | `__ModuleLoader__.load` | [client.js:916](../client.js#L916-L1175) |
 
 ## 设计说明
 
