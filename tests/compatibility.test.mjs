@@ -244,15 +244,23 @@ function createHarness() {
   const document = createEventDocument()
   // 事件桩只记录监听器，转换还需要 canvas 桩：两者合并成同一个文档对象。
   Object.assign(document, createDocument())
+  // 真实合成器卡片：client.js 只在 querySelector('[data-composer-card]') 命中时才接管粘贴，
+  // 并把结果 drop 派发到这个元素上，而不是 document.body。
   const dropEvents = []
-  document.body.dispatchEvent = (event) => {
-    dropEvents.push(event)
-    return true
+  const card = {
+    dispatchEvent(event) {
+      dropEvents.push(event)
+      return true
+    },
+  }
+  document.querySelector = (selector) => (selector === '[data-composer-card]' ? card : null)
+  document.body.dispatchEvent = () => {
+    throw new Error('reroute 必须派发到 composer card，不得落到 document.body')
   }
   const client = loadClient({ document, globals: { DataTransfer: DataTransferStub, DragEvent: DragEventStub } })
   const dispose = client.install()
   const paste = document.listeners.find((entry) => entry.type === 'paste').listener
-  return { document, client, dispose, paste, dropEvents }
+  return { document, client, dispose, paste, dropEvents, card }
 }
 
 // ============================ A. 格式 / 平台兼容 ============================
@@ -622,6 +630,33 @@ test('兼容性 B 降级：缺少 canvas.toBlob 时回退到 toDataURL 生成 PN
   assert.equal(out.width, 2)
   assert.equal(out.height, 1)
   assert.equal(client.sniff(new Uint8Array(await out.file.arrayBuffer())), 'image/png')
+})
+
+test('兼容性 B 降级：有构造器但没有 [data-composer-card] 时不接管粘贴，保留原生路径', async () => {
+  const document = createEventDocument()
+  // 有 canvas 能力也不影响判定：缺失合成器卡片必须直接放手。
+  Object.assign(document, createDocument())
+  assert.equal(document.querySelector('[data-composer-card]'), null)
+  const dispatched = []
+  document.body.dispatchEvent = (event) => {
+    dispatched.push(event)
+    return true
+  }
+  const client = loadClient({ document, globals: { DataTransfer: DataTransferStub, DragEvent: DragEventStub } })
+  const dispose = client.install()
+  try {
+    const paste = document.listeners.find((entry) => entry.type === 'paste').listener
+    const bmp = makeBmp(1, 1, [[255, 0, 0]])
+    const event = makePasteEvent([new File([bmp], 'shot.bmp', { type: 'image/bmp' })])
+    paste(event)
+    await delay(50)
+    assert.equal(event.__dshPasteImageHandled, undefined, '没有合成器卡片时不得 claim')
+    assert.equal(event.defaultPrevented, false)
+    assert.equal(event.propagationStopped, false)
+    assert.equal(dispatched.length, 0, '没有合成器卡片时不得派发合成 drop')
+  } finally {
+    dispose()
+  }
 })
 
 test('兼容性 B 降级：缺少 DataTransfer/DragEvent 时不 claim/preventDefault，保留原生合成器路径', async () => {

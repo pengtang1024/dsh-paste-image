@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
+### 修复
+
+- 配置页不再拖累粘贴链路（`client.js`）：模块工厂不再返回 `inject: ['slots', 'locale']`，`apply()` 一进来就先 `ctx.effect(install, 'paste-image')` 挂上 paste/drop 监听，再尽力注册配置页——`slots`/`locale` 已就绪时内联注册，否则用 `ctx.inject(['slots', 'locale'], cb)` 等服务到达后延迟注册，两者都没有就跳过。UI 服务缺失或注册抛错时，粘贴依旧可用。
+- 不再吞掉原生粘贴：`handle()` 只有拿到真正的 `[data-composer-card]` 才 claim 并 `preventDefault()`/`stopPropagation()`；卡片不存在时直接返回，浏览器原生 paste/drop 路径继续执行，不再把合成 drop 派发到 `document.body`。
+- 声明宿主要求：`package.json` 新增 `engines.dsh`（`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`），插件详情页不再显示“未声明宿主要求”。
+- 展示描述同步实际行为：`package.json` 与八种 `locale/*.json` 的简介从「只转 PNG」改为「PNG / JPEG / WebP（默认 PNG）」，并补充文件数与长边上限可配。
+- 测试：补充监听立即安装、`ctx.inject` 延迟注册、缺少 `[data-composer-card]` 时不接管三条用例，套件共 90 个测试（90 通过、0 失败）。
+
 ## [0.4.0] - 2026-11-21
 
 ### 新增

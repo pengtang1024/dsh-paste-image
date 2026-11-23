@@ -73,6 +73,8 @@ dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 
 把 `<profile>` 换成应用实际使用的 profile。**装完必须重载页面**（`Ctrl+R`，macOS 上是 `Cmd+R`）：客户端模块只在渲染进程加载时注入，没重载之前插件不会拦截任何东西。
 
+**宿主要求：** DSH 需满足包内声明的 `engines.dsh`（`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`），Node >= 20。DSH 版本不满足时插件不会被加载，插件详情页也会给出对应提示。
+
 ## 验证
 
 先跑仓库自带检查：
@@ -158,15 +160,16 @@ npm run check
 
 ## 兼容性
 
-插件面向现代 Chromium/Electron 提供的渲染进程 API：`File`/`Blob`、`TextDecoder`、`createImageBitmap`、`canvas.toBlob`、`DataTransfer`/`DragEvent`，以及带 `signal` 的 `addEventListener`。在这套基线上，三处缺失做了显式降级，避免某个 API 不存在时插件整体失效或吞掉原生事件：
+插件面向现代 Chromium/Electron 提供的渲染进程 API：`File`/`Blob`、`TextDecoder`、`createImageBitmap`、`canvas.toBlob`、`DataTransfer`/`DragEvent`，以及带 `signal` 的 `addEventListener`。在这套基线上，四处缺失做了显式降级，避免某个 API 不存在时插件整体失效或吞掉原生事件：
 
 | 缺失的能力                   | 降级行为                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------- |
 | `AbortController`            | `install()` 改用不带 `signal` 的监听，disposer 用 `removeEventListener` 精确卸载               |
 | `canvas.toBlob`              | `encodeCanvas()` 回退到 `toDataURL()`，再把 base64 解码成 `Blob`                               |
 | `DataTransfer` / `DragEvent` | `handle()` 在 claim 事件与 `preventDefault()` 之前返回，浏览器原生 paste/drop 路径完全不受影响 |
+| `[data-composer-card]`       | `handle()` 拿不到目标就直接返回：不 claim、不 `preventDefault()`，原生粘贴保持原样             |
 
-缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 87 个测试（41 个客户端/多语言 + 20 个兼容性 + 26 个配置页/设置），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面三条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
+缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 90 个测试（41 个客户端/多语言 + 21 个兼容性 + 28 个配置页/设置），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面四条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
 
 ## 安全与隐私
 

@@ -836,8 +836,10 @@
     return IMAGE_EXT.test(file.name || '')
   }
 
+  // 只认真正的合成器卡片：拿不到目标就返回 null，调用方必须彻底放手，
+  // 绝不能把合成 drop 派发到 body 上——那会吞掉宿主的原生粘贴/拖放。
   function composer() {
-    return document.querySelector('[data-composer-card]') || document.body
+    return document.querySelector('[data-composer-card]')
   }
 
   // reroute() 依赖 DataTransfer/DragEvent 构造器；缺任何一个就无法把文件送进合成器，
@@ -846,14 +848,14 @@
     return typeof DataTransfer === 'function' && typeof DragEvent === 'function'
   }
 
-  function reroute(files) {
+  function reroute(files, target) {
     var dt = new DataTransfer()
     files.forEach(function (file) {
       dt.items.add(file)
     })
     var event = new DragEvent('drop', { bubbles: true, cancelable: true, composed: true, dataTransfer: dt })
     Object.defineProperty(event, REROUTED, { value: true })
-    composer().dispatchEvent(event)
+    target.dispatchEvent(event)
   }
 
   function claim(event) {
@@ -870,7 +872,10 @@
     // 总开关只停本插件的转换/拦截，不卸载监听：配置页保存后立刻生效，也不影响原生粘贴路径。
     if (!settings.enabled) return
     if (!data || event[REROUTED]) return
+    // 构造器或真实合成器卡片缺一不可；缺了就 return，让浏览器原生粘贴路径继续。
     if (!canReroute()) return
+    var target = composer()
+    if (!target) return
     var files = Array.prototype.slice.call(data.files || [])
     if (files.length === 0 || files.length > settings.maxFiles) return
     if (!files.some(isImageCandidate)) return
@@ -906,7 +911,7 @@
           )
       }
     }
-    reroute(out)
+    reroute(out, target)
   }
 
   function install() {
@@ -1237,32 +1242,64 @@
 
         var Page = React ? createPage() : null
 
+        // 配置页是可选能力：slots/locale 未就绪、甚至永远不到达，都不能阻塞粘贴链路。
+        // 注册只做一次，内联注册与 ctx.inject 延迟注册共用这一条路径。
+        var pageRegistered = false
+
+        function hasPageServices(scope) {
+          return Boolean(
+            Page &&
+            scope &&
+            scope.slots &&
+            typeof scope.slots.inject === 'function' &&
+            typeof scope.slots.register === 'function' &&
+            scope.locale &&
+            typeof scope.locale.register === 'function',
+          )
+        }
+
+        function registerSettingsPage(scope) {
+          if (pageRegistered || !hasPageServices(scope)) return false
+          pageRegistered = true
+          var slots = scope.slots
+          var locale = scope.locale
+          var run = function (callback, label) {
+            if (typeof scope.effect === 'function') scope.effect(callback, label)
+            else callback()
+          }
+          run(function () {
+            return locale.register(NS, DICTIONARIES)
+          }, 'paste-image: settings dictionaries')
+          slots.inject('plugins.row.config', function () {
+            return slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS }, Page)
+          })
+          return true
+        }
+
         return {
-          inject: ['slots', 'locale'],
           apply: function (ctx) {
             if (!ctx || typeof ctx.effect !== 'function') {
               install()
               return
             }
-            // 监听器只挂一次；总开关交给 settings.enabled 在 handle 里判断，不来回卸载。
+            // 先挂监听：粘贴/拖放绝不等待可选的配置页服务。开关交给 settings.enabled 在 handle 里判断。
             ctx.effect(install, 'paste-image')
-            if (Page && ctx.locale && typeof ctx.locale.register === 'function') {
-              ctx.effect(function () {
-                return ctx.locale.register(NS, DICTIONARIES)
-              }, 'paste-image: settings dictionaries')
-            }
-            if (
-              Page &&
-              ctx.slots &&
-              typeof ctx.slots.inject === 'function' &&
-              typeof ctx.slots.register === 'function'
-            ) {
-              ctx.slots.inject('plugins.row.config', function () {
-                return ctx.slots.register(
-                  { name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS },
-                  Page,
-                )
-              })
+            if (!Page) return
+            try {
+              if (hasPageServices(ctx)) {
+                registerSettingsPage(ctx)
+              } else if (typeof ctx.inject === 'function') {
+                // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
+                ctx.inject(['slots', 'locale'], function (scope) {
+                  try {
+                    registerSettingsPage(scope)
+                  } catch (error) {
+                    // 配置页失败只影响配置页，绝不影响粘贴。
+                  }
+                })
+              }
+            } catch (error) {
+              // best-effort：配置页注册异常不得冒泡打断 apply。
             }
           },
         }

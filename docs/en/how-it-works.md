@@ -36,7 +36,7 @@ paste / drop (capture phase)
 
 ## 1. Capture phase
 
-[`install()`](../../client.js#L912-L945) adds two listeners on `document`:
+[`install()`](../../client.js#L917-L950) adds two listeners on `document`:
 
 ```js
 document.addEventListener(
@@ -59,13 +59,14 @@ The `true` flag is the whole point: capture runs from `document` down to the tar
 
 ## 2. Guards and dispatch
 
-[`handle()`](../../client.js#L869-L910) is the dispatcher. It bails out early in the following cases:
+[`handle()`](../../client.js#L871-L915) is the dispatcher. It bails out early in the following cases:
 
-- The master switch is off (`settings.enabled === false`, [line 871](../../client.js#L871)): return immediately; the listener is never torn down, so saving the settings re-enables conversion.
+- The master switch is off (`settings.enabled === false`, [line 873](../../client.js#L873)): return immediately; the listener is never torn down, so saving the settings re-enables conversion.
 - `event[REROUTED]` is set ([line 136](../../client.js#L136)); if it is set, the plugin returns immediately. Without this flag the plugin's own capture listener would see its synthetic event and recurse.
-- The batch has zero files or more than `settings.maxFiles` files (default 8, [`handle()` line 875](../../client.js#L875); the settings page allows 1–8). The check happens _before_ `preventDefault()`, so a batch of nine images is left entirely to the native path instead of being partially converted.
+- The batch has zero files or more than `settings.maxFiles` files (default 8, [`handle()` line 880](../../client.js#L880); the settings page allows 1–8). The check happens _before_ `preventDefault()`, so a batch of nine images is left entirely to the native path instead of being partially converted.
 - No file is an image candidate ([`isImageCandidate()`](../../client.js#L832-L837)): the declared type must start with `image/`, or the name must end in one of the extensions in [`IMAGE_EXT`](../../client.js#L26). A plain-text paste never matches, so it is never touched.
-- The `DataTransfer`/`DragEvent` constructors are missing ([`canReroute()`](../../client.js#L845-L847)): the plugin cannot hand the files back to the composer, so it lets go entirely and the browser's native paste/drop path keeps running — no event is swallowed by something that cannot take over.
+- The `DataTransfer`/`DragEvent` constructors are missing ([`canReroute()`](../../client.js#L847-L849)): the plugin cannot hand the files back to the composer, so it lets go entirely and the browser's native paste/drop path keeps running — no event is swallowed by something that cannot take over.
+- No real composer card is present ([`composer()`](../../client.js#L841-L843) returns `null`): the plugin returns as well, without claiming or calling `preventDefault()`, so native paste and drop stay untouched.
 
 Each candidate is converted inside its own `try/catch`; failures keep the original file (see [section 11](#11-failure-handling-and-logging)).
 
@@ -204,7 +205,7 @@ The 32-bit alpha heuristic closes a long-standing footgun: when **every** pixel'
 
 ## 10. Rerouting
 
-[`reroute()`](../../client.js#L849-L857) builds the bridge back into the composer:
+[`reroute()`](../../client.js#L851-L859) builds the bridge back into the composer:
 
 ```js
 var dt = new DataTransfer()
@@ -213,14 +214,14 @@ files.forEach(function (file) {
 })
 var event = new DragEvent('drop', { bubbles: true, cancelable: true, composed: true, dataTransfer: dt })
 Object.defineProperty(event, REROUTED, { value: true })
-composer().dispatchEvent(event)
+target.dispatchEvent(event)
 ```
 
-[`composer()`](../../client.js#L839-L841) resolves `document.querySelector('[data-composer-card]')` and falls back to `document.body`. Dispatching a real `drop` event means the plugin does not need to know any private composer API: it reuses the same attachment path as a manual drag-and-drop. The `REROUTED` property is defined non-enumerably so it does not leak into anything that inspects the event.
+[`composer()`](../../client.js#L841-L843) accepts only a real composer card: `document.querySelector('[data-composer-card]')`, returning `null` when it is absent — and then `handle()` lets go instead of dispatching the synthetic drop on `document.body`. Dispatching a real `drop` event means the plugin does not need to know any private composer API: it reuses the same attachment path as a manual drag-and-drop. The `REROUTED` property is defined non-enumerably so it does not leak into anything that inspects the event.
 
 ## 11. Failure handling and logging
 
-Conversion runs per file inside a `try/catch` ([`handle()`, lines 869–910](../../client.js#L869-L910)). On success the plugin logs:
+Conversion runs per file inside a `try/catch` ([`handle()`, lines 871–915](../../client.js#L871-L915)). On success the plugin logs:
 
 ```text
 [dsh-paste-image] image/xpm -> image/png 1440x900
@@ -237,7 +238,7 @@ and pushes the original `File` into the outgoing batch. One bad file never block
 
 ## 12. Module registration
 
-The file is a classic script wrapped in an IIFE. At the bottom ([lines 959–1271](../../client.js#L959-L1271)) it registers itself with the DSH client module loader:
+The file is a classic script wrapped in an IIFE. At the bottom ([lines 964–1307](../../client.js#L964-L1307)) it registers itself with the DSH client module loader:
 
 ```js
 window.__ModuleLoader__.load({
@@ -252,26 +253,38 @@ window.__ModuleLoader__.load({
       React = null
     }
     var Page = React ? createPage() : null
+    var pageRegistered = false
+
+    function registerSettingsPage(scope) {
+      // Skipped when already registered or when slots/locale do not have the right shape;
+      // locale.register and slots.inject('plugins.row.config', ...) use the effect scope when available.
+    }
+
     return {
-      inject: ['slots', 'locale'],
+      // No inject: no UI service can defer apply.
       apply: function (ctx) {
         if (!ctx || typeof ctx.effect !== 'function') {
           install()
           return
         }
+        // Listeners first: paste/drop never wait for the optional settings-page services.
         ctx.effect(install, 'paste-image')
-        if (Page && ctx.locale && typeof ctx.locale.register === 'function') {
-          ctx.effect(function () {
-            return ctx.locale.register(NS, DICTIONARIES)
-          }, 'paste-image: settings dictionaries')
-        }
-        if (Page && ctx.slots && typeof ctx.slots.inject === 'function' && typeof ctx.slots.register === 'function') {
-          ctx.slots.inject('plugins.row.config', function () {
-            return ctx.slots.register(
-              { name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS },
-              Page,
-            )
-          })
+        if (!Page) return
+        try {
+          if (hasPageServices(ctx)) {
+            registerSettingsPage(ctx)
+          } else if (typeof ctx.inject === 'function') {
+            // Services not ready: let the host inject them and register when the callback arrives; paste is already working.
+            ctx.inject(['slots', 'locale'], function (scope) {
+              try {
+                registerSettingsPage(scope)
+              } catch (error) {
+                // A settings-page failure only affects the settings page, never paste.
+              }
+            })
+          }
+        } catch (error) {
+          // best-effort: a settings-page exception must not bubble out of apply.
         }
       },
     }
@@ -279,7 +292,11 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`inject: ['slots', 'locale']` makes Cordis wait for the `slots` and `locale` services before calling `apply`, so the settings page is not skipped. `factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. `ctx.effect(install, 'paste-image')` ties the installation to the plugin's effect scope and names it for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. `ctx.locale.register(NS, DICTIONARIES)` registers the Chinese and English dictionaries, and `ctx.slots.inject('plugins.row.config', ...)` then registers the settings page on the `plugins.row.config` row ([lines 1249–1266](../../client.js#L1249-L1266)). In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L947-L957) through `module.exports` for the test suite.
+The returned object has **no** `inject`, so no UI service can delay `apply`: `ctx.effect(install, 'paste-image')` registers the paste/drop listeners as soon as `apply` runs, and ties the installation to the plugin's effect scope with a name for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. 0.4.0 returned `inject: ['slots', 'locale']` here, so when the UI services were not ready the whole `apply` — listener installation included — was skipped; 0.4.1 removes it.
+
+The settings page is strictly optional: `hasPageServices()` checks the shape of `Page` plus `slots`/`locale`, and when it holds, `registerSettingsPage(ctx)` is called inline — `locale.register(NS, DICTIONARIES)` followed by `slots.inject('plugins.row.config', ...)` → `slots.register(...)` ([lines 1261–1277](../../client.js#L1261-L1277)); otherwise `ctx.inject` is used when present, registering once the services reach the callback, and both are skipped when neither exists. `pageRegistered` keeps registration to a single pass, and the call sites sit inside `try/catch`, so a registration failure only affects the settings page.
+
+`factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L952-L962) through `module.exports` for the test suite.
 
 ## 13. Settings and the configuration page
 
@@ -289,13 +306,13 @@ Three consumers each read one slice:
 
 - [`canvasOf()`](../../client.js#L658-L667) uses `settings.maxSide` to compute the scale, which affects converted images only.
 - [`normalize()`](../../client.js#L788-L828) checks `conversionAllowed(kind)` as soon as the header has been sniffed; a disabled format returns `null`, the original file is handed to the composer untouched and the full bytes are never read. The BMP-labelled-PNG case goes through the same check, so turning BMP conversion off passes it through as well. When conversion is needed, it picks the output encoding from `settings.outputFormat` and `settings.quality`.
-- [`handle()`](../../client.js#L869-L910) checks `settings.enabled` first and returns when it is off; `settings.maxFiles` then decides whether the whole batch goes to the native path, and `settings.logConversions` gates the log lines.
+- [`handle()`](../../client.js#L871-L915) checks `settings.enabled` first and returns when it is off; `settings.maxFiles` then decides whether the whole batch goes to the native path, and `settings.logConversions` gates the log lines.
 
 Output encoding is defined by `OUTPUT_FORMATS` ([`client.js:8-12`](../../client.js#L8-L12)): `png` → `image/png` (lossless, no quality argument), `jpeg` → `image/jpeg`, and `webp` → `image/webp`. JPEG has no alpha channel, so `normalize()` first runs [`flattenOnWhite()`](../../client.js#L725-L734) to composite the canvas onto an opaque white background, keeping transparent pixels from turning black; PNG is lossless and WebP keeps transparency. [`encodeCanvas()`](../../client.js#L706-L722) then calls `canvas.toBlob(callback, mime)` — PNG uses two arguments, while JPEG/WebP receive `quality` as the third; without `toBlob`, [`dataUrlBlob()`](../../client.js#L694-L702) goes through `toDataURL()` with the same MIME and quality and decodes the base64 payload.
 
 The final type follows what the browser actually encoded: [`encodedMime()`](../../client.js#L738-L741) reads `blob.type` (after MIME alias mapping), accepts only PNG/JPEG/WebP, and falls back to `image/png` when the type is unrecognised; the file extension also follows the actual MIME. So a browser without the requested encoder yields an image whose label and bytes agree; the actual `blob.type` is authoritative and falls back to PNG when unrecognised, instead of PNG data masquerading as JPEG/WebP.
 
-The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1254-1266`](../../client.js#L1254-L1266)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
+The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1273-1275`](../../client.js#L1273-L1275)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
 
 The measured size impact of these settings is covered in the [output format measurements](output-formats.md): JPEG/WebP shrink photos by about 82%, while UI screenshots are often smaller as PNG.
 
@@ -326,11 +343,11 @@ The measured size impact of these settings is covered in the [output format meas
 | Decode routing            | `toCanvas()`            | [client.js:743](../../client.js#L743-L772)  |
 | Pass-through / conversion | `normalize()`           | [client.js:788](../../client.js#L788-L828)  |
 | Candidate test            | `isImageCandidate()`    | [client.js:832](../../client.js#L832-L837)  |
-| Composer target           | `composer()`            | [client.js:839](../../client.js#L839-L841)  |
-| Synthetic drop            | `reroute()`             | [client.js:849](../../client.js#L849-L857)  |
-| Guards and dispatch       | `handle()`              | [client.js:869](../../client.js#L869-L910)  |
-| Event listeners           | `install()`             | [client.js:912](../../client.js#L912-L945)  |
-| Module entry              | `__ModuleLoader__.load` | [client.js:959](../../client.js#L959-L1271) |
+| Composer target           | `composer()`            | [client.js:841](../../client.js#L841-L843)  |
+| Synthetic drop            | `reroute()`             | [client.js:851](../../client.js#L851-L859)  |
+| Guards and dispatch       | `handle()`              | [client.js:871](../../client.js#L871-L915)  |
+| Event listeners           | `install()`             | [client.js:917](../../client.js#L917-L950)  |
+| Module entry              | `__ModuleLoader__.load` | [client.js:964](../../client.js#L964-L1307) |
 
 ## Design notes
 

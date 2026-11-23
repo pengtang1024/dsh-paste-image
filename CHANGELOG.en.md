@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
+### Fixed
+
+- The settings page no longer drags the paste path down with it (`client.js`): the module factory no longer returns `inject: ['slots', 'locale']`, and `apply()` starts with `ctx.effect(install, 'paste-image')` to register the paste/drop listeners before it tries to register the settings page — inline when `slots`/`locale` are already available, otherwise via `ctx.inject(['slots', 'locale'], cb)` once the services arrive, and skipped outright when neither exists. Paste keeps working when a UI service is missing or registration throws.
+- Native paste is no longer swallowed: `handle()` only claims and calls `preventDefault()`/`stopPropagation()` when it has a real `[data-composer-card]`; without that card it returns immediately and the browser's native paste/drop path keeps running, instead of dispatching the synthetic drop on `document.body`.
+- Host requirement is declared: `package.json` now carries `engines.dsh` (`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`), so the plugin detail page no longer shows "未声明宿主要求".
+- Marketplace descriptions match the real behaviour: the summaries in `package.json` and all eight `locale/*.json` files move from "PNG only" to "PNG / JPEG / WebP (PNG by default)" and mention the configurable file count and long-edge limit.
+- Tests: three new cases cover immediate listener installation, deferred `ctx.inject` registration and the missing `[data-composer-card]` pass-through; the suite now has 90 tests (90 passing, 0 failing).
+
 ## [0.4.0] - 2026-11-21
 
 ### Added

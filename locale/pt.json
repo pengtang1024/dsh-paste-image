@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Colar qualquer imagem",
-    "description": "Cole ou arraste uma imagem cujo tipo declarado seja XPM, BMP ou DIB, SVG, ICO, ou simplesmente esteja errado: o renderer detecta os bytes reais e entrega ao composer um PNG. PNG, JPEG, WebP e GIF nativos passam intactos. Cada colagem aceita até 8 arquivos, e as imagens convertidas mantêm a proporção com 4096 px no lado maior. HEIC e TIFF são reconhecidos, mas ficam como estão, porque o plugin não inclui decodificador para eles.",
+    "description": "Cole ou arraste uma imagem cujo tipo declarado seja XPM, BMP ou DIB, SVG, ICO, ou simplesmente esteja errado: o renderer detecta os bytes reais e converte para PNG, JPEG ou WebP (PNG por padrão) antes de entregar ao composer. PNG, JPEG, WebP e GIF nativos passam intactos. O número de arquivos e o limite do lado maior são configuráveis (8 arquivos e 4096 px por padrão). HEIC e TIFF são reconhecidos, mas não decodificados, porque o plugin não inclui decodificador para eles.",
     "detail": "README.pt.md"
   }
 }

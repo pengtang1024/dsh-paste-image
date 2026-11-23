@@ -421,14 +421,22 @@ class FakeDragEvent {
 function createDropSink(document) {
   const drops = []
   const waiters = []
-  document.body.dispatchEvent = (event) => {
-    drops.push(event)
-    for (let i = waiters.length - 1; i >= 0; i--) {
-      if (waiters[i]()) waiters.splice(i, 1)
-    }
-    return true
+  // client.js 只认真正的合成器卡片，并把 drop 派发到该元素；body 只是兜底陷阱。
+  const card = {
+    dispatchEvent(event) {
+      drops.push(event)
+      for (let i = waiters.length - 1; i >= 0; i--) {
+        if (waiters[i]()) waiters.splice(i, 1)
+      }
+      return true
+    },
+  }
+  document.querySelector = (selector) => (selector === '[data-composer-card]' ? card : null)
+  document.body.dispatchEvent = () => {
+    throw new Error('reroute 必须派发到 composer card，不得落到 document.body')
   }
   return {
+    card,
     drops,
     wait(count = 1, timeout = 2000) {
       if (drops.length >= count) return Promise.resolve(drops[count - 1])
@@ -620,8 +628,9 @@ function flattenText(node) {
 
 function loadPlugin() {
   let definition = null
+  const document = createEventDocument()
   const loaded = load({
-    document: createEventDocument(),
+    document,
     window: {
       __ModuleLoader__: {
         load(value) {
@@ -631,7 +640,7 @@ function loadPlugin() {
     },
   })
   assert.ok(definition, 'client.js 必须调用 window.__ModuleLoader__.load')
-  return { ...loaded, definition }
+  return { ...loaded, document, definition }
 }
 
 function applyPlugin(definition, react) {
@@ -781,4 +790,115 @@ test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个�
   assert.equal(jpegNumbers.length, 3)
   assert.equal(jpegNumbers[2].props.disabled, false)
   loaded.api.resetSettings()
+})
+
+test('apply(ctx) 在没有 slots/locale/inject 时仍立即安装 paste/drop 监听', () => {
+  const loaded = loadPlugin()
+  const effects = []
+  const disposers = []
+  const ctx = {
+    effect(callback, label) {
+      effects.push(label)
+      const disposer = callback()
+      disposers.push(typeof disposer === 'function' ? disposer : () => {})
+      return disposer
+    },
+  }
+  const plugin = loaded.definition.factory((name) => {
+    assert.equal(name, 'react')
+    return createReactStub()
+  })
+  // 模块 factory 只暴露 apply，不再有模块级 inject 出口。
+  assert.deepEqual(Object.keys(plugin), ['apply'])
+  assert.equal(Object.prototype.hasOwnProperty.call(plugin, 'inject'), false)
+
+  plugin.apply(ctx)
+
+  assert.deepEqual(
+    loaded.document.listeners.map((entry) => entry.type),
+    ['paste', 'drop'],
+  )
+  assert.deepEqual(effects, ['paste-image'])
+  disposers[0]()
+  assert.equal(loaded.document.listeners.length, 0)
+})
+
+test('ctx.inject 延迟注册：监听先装，回调到达后才注册配置页且不重复', () => {
+  const loaded = loadPlugin()
+  const effects = []
+  const injectCalls = []
+  const ctx = {
+    effect(callback, label) {
+      effects.push(label)
+      const disposer = callback()
+      return typeof disposer === 'function' ? disposer : () => {}
+    },
+    inject(names, callback) {
+      injectCalls.push({ names, callback })
+    },
+  }
+  const plugin = loaded.definition.factory((name) => {
+    assert.equal(name, 'react')
+    return createReactStub()
+  })
+  plugin.apply(ctx)
+
+  // 监听不等配置页服务，ctx.inject 只登记一次延迟注册。
+  assert.deepEqual(
+    loaded.document.listeners.map((entry) => entry.type),
+    ['paste', 'drop'],
+  )
+  assert.deepEqual(effects, ['paste-image'])
+  assert.equal(injectCalls.length, 1)
+  assert.deepEqual(Array.from(injectCalls[0].names), ['slots', 'locale'])
+
+  const scopeEffects = []
+  const slotInjections = []
+  const registrations = []
+  const locales = []
+  const scope = {
+    effect(callback, label) {
+      scopeEffects.push(label)
+      const disposer = callback()
+      return typeof disposer === 'function' ? disposer : () => {}
+    },
+    slots: {
+      inject(name, factory) {
+        slotInjections.push({ name, factory })
+      },
+      register(meta, component) {
+        registrations.push({ meta, component })
+        return () => {}
+      },
+    },
+    locale: {
+      register(namespace, dictionaries) {
+        locales.push({ namespace, dictionaries })
+        return () => {}
+      },
+    },
+  }
+
+  // 回调到达之前不得注册任何配置页/词典。
+  assert.equal(locales.length, 0)
+  assert.equal(slotInjections.length, 0)
+  assert.equal(registrations.length, 0)
+
+  injectCalls[0].callback(scope)
+
+  assert.equal(locales.length, 1)
+  assert.equal(locales[0].namespace, 'dsh-paste-image:settings')
+  assert.equal(slotInjections.length, 1)
+  assert.equal(slotInjections[0].name, 'plugins.row.config')
+  assert.deepEqual(scopeEffects, ['paste-image: settings dictionaries'])
+  // 宿主执行注入 factory 后才真正 register。
+  slotInjections[0].factory()
+  assert.equal(registrations.length, 1)
+
+  // 二次回调不得重复注册。
+  injectCalls[0].callback(scope)
+  assert.equal(locales.length, 1)
+  assert.equal(slotInjections.length, 1)
+  assert.equal(registrations.length, 1)
+  assert.deepEqual(scopeEffects, ['paste-image: settings dictionaries'])
 })

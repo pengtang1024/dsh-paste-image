@@ -36,7 +36,7 @@ paste / drop (capture phase)
 
 ## 1. 捕获阶段
 
-[`install()`](../client.js#L912-L945) 在 `document` 上挂两个监听器：
+[`install()`](../client.js#L917-L950) 在 `document` 上挂两个监听器：
 
 ```js
 document.addEventListener(
@@ -59,13 +59,14 @@ document.addEventListener(
 
 ## 2. 前置校验与分发
 
-[`handle()`](../client.js#L869-L910) 是分发器。它在以下几种情况下提前退出：
+[`handle()`](../client.js#L871-L915) 是分发器。它在以下几种情况下提前退出：
 
-- 总开关关闭（`settings.enabled === false`，[第 871 行](../client.js#L871)）：直接返回；监听器不会卸载，保存设置后立即恢复。
+- 总开关关闭（`settings.enabled === false`，[第 873 行](../client.js#L873)）：直接返回；监听器不会卸载，保存设置后立即恢复。
 - 已设置 `event[REROUTED]`（[第 136 行](../client.js#L136)）；一旦设置，插件立即返回。没有这个标志，插件自己的捕获监听器会再次看到自己派发的合成事件，从而递归。
-- 这一批文件数为零，或多于 `settings.maxFiles` 个（默认 8，[`handle()` 第 875 行](../client.js#L875)；配置页可调到 1–8）。这个检查发生在 `preventDefault()` _之前_，所以一次九个图片的批次会整体交给原生路径，而不会被部分转换。
+- 这一批文件数为零，或多于 `settings.maxFiles` 个（默认 8，[`handle()` 第 880 行](../client.js#L880)；配置页可调到 1–8）。这个检查发生在 `preventDefault()` _之前_，所以一次九个图片的批次会整体交给原生路径，而不会被部分转换。
 - 没有任何文件是图片候选（[`isImageCandidate()`](../client.js#L832-L837)）：声明类型必须以 `image/` 开头，或者文件名以 [`IMAGE_EXT`](../client.js#L26) 中的某个扩展名结尾。纯文本粘贴永远不匹配，因此永远不会被处理。
-- `DataTransfer`/`DragEvent` 构造器缺失（[`canReroute()`](../client.js#L845-L847)）：插件无法把文件回投给输入框，于是直接放手，浏览器原生 paste/drop 路径继续运行，不会出现事件被吞掉却没人接管的情况。
+- `DataTransfer`/`DragEvent` 构造器缺失（[`canReroute()`](../client.js#L847-L849)）：插件无法把文件回投给输入框，于是直接放手，浏览器原生 paste/drop 路径继续运行，不会出现事件被吞掉却没人接管的情况。
+- 找不到真正的输入框卡片（[`composer()`](../client.js#L841-L843) 返回 `null`）：同样直接返回，不 claim、不 `preventDefault()`，浏览器原生粘贴/拖放保持原样。
 
 每个候选文件都在各自的 `try/catch` 里转换；失败时保留原文件（见[第 11 节](#11-失败处理与日志)）。
 
@@ -204,7 +205,7 @@ BMP 是一个家族而不是一种格式，所以 0.2.0 把工作拆成两部分
 
 ## 10. 重路由
 
-[`reroute()`](../client.js#L849-L857) 搭建回到输入框的桥：
+[`reroute()`](../client.js#L851-L859) 搭建回到输入框的桥：
 
 ```js
 var dt = new DataTransfer()
@@ -213,14 +214,14 @@ files.forEach(function (file) {
 })
 var event = new DragEvent('drop', { bubbles: true, cancelable: true, composed: true, dataTransfer: dt })
 Object.defineProperty(event, REROUTED, { value: true })
-composer().dispatchEvent(event)
+target.dispatchEvent(event)
 ```
 
-[`composer()`](../client.js#L839-L841) 解析 `document.querySelector('[data-composer-card]')`，并回退到 `document.body`。派发一个真正的 `drop` 事件意味着插件不需要了解任何私有的输入框 API：它复用与手动拖放相同的附件路径。`REROUTED` 属性被定义为不可枚举，因此不会泄漏到任何检查该事件的地方。
+[`composer()`](../client.js#L841-L843) 只认真正的合成器卡片：`document.querySelector('[data-composer-card]')` 拿不到就返回 `null`，`handle()` 随即放手，绝不把合成 drop 派发到 `document.body`。派发一个真正的 `drop` 事件意味着插件不需要了解任何私有的输入框 API：它复用与手动拖放相同的附件路径。`REROUTED` 属性被定义为不可枚举，因此不会泄漏到任何检查该事件的地方。
 
 ## 11. 失败处理与日志
 
-转换按文件在 `try/catch` 内运行（[`handle()`，第 869–910 行](../client.js#L869-L910)）。成功时插件记录：
+转换按文件在 `try/catch` 内运行（[`handle()`，第 871–915 行](../client.js#L871-L915)）。成功时插件记录：
 
 ```text
 [dsh-paste-image] image/xpm -> image/png 1440x900
@@ -237,7 +238,7 @@ composer().dispatchEvent(event)
 
 ## 12. 模块注册
 
-该文件是包在 IIFE 里的经典脚本。在底部（[第 959–1271 行](../client.js#L959-L1271)）它把自己注册到 DSH 客户端模块加载器：
+该文件是包在 IIFE 里的经典脚本。在底部（[第 964–1307 行](../client.js#L964-L1307)）它把自己注册到 DSH 客户端模块加载器：
 
 ```js
 window.__ModuleLoader__.load({
@@ -252,26 +253,38 @@ window.__ModuleLoader__.load({
       React = null
     }
     var Page = React ? createPage() : null
+    var pageRegistered = false
+
+    function registerSettingsPage(scope) {
+      // 已注册、或 slots/locale 形状不符时直接跳过；
+      // locale.register 与 slots.inject('plugins.row.config', ...) 都尽量走 effect 作用域。
+    }
+
     return {
-      inject: ['slots', 'locale'],
+      // 没有 inject：apply 不会被任何 UI 服务阻塞。
       apply: function (ctx) {
         if (!ctx || typeof ctx.effect !== 'function') {
           install()
           return
         }
+        // 先挂监听：粘贴/拖放绝不等待可选的配置页服务。
         ctx.effect(install, 'paste-image')
-        if (Page && ctx.locale && typeof ctx.locale.register === 'function') {
-          ctx.effect(function () {
-            return ctx.locale.register(NS, DICTIONARIES)
-          }, 'paste-image: settings dictionaries')
-        }
-        if (Page && ctx.slots && typeof ctx.slots.inject === 'function' && typeof ctx.slots.register === 'function') {
-          ctx.slots.inject('plugins.row.config', function () {
-            return ctx.slots.register(
-              { name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS },
-              Page,
-            )
-          })
+        if (!Page) return
+        try {
+          if (hasPageServices(ctx)) {
+            registerSettingsPage(ctx)
+          } else if (typeof ctx.inject === 'function') {
+            // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
+            ctx.inject(['slots', 'locale'], function (scope) {
+              try {
+                registerSettingsPage(scope)
+              } catch (error) {
+                // 配置页失败只影响配置页，绝不影响粘贴。
+              }
+            })
+          }
+        } catch (error) {
+          // best-effort：配置页注册异常不得冒泡打断 apply。
         }
       },
     }
@@ -279,7 +292,11 @@ window.__ModuleLoader__.load({
 })
 ```
 
-`inject: ['slots', 'locale']` 让 Cordis 先等到 `slots` 与 `locale` 两个服务就绪再调用 `apply`，否则配置页注册会被跳过。`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。`ctx.effect(install, 'paste-image')` 把安装绑定到插件的 effect 作用域，并为其命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。`ctx.locale.register(NS, DICTIONARIES)` 注册中英两份字典，`ctx.slots.inject('plugins.row.config', ...)` 再把配置页注册到 `plugins.row.config` 行上（[第 1249–1266 行](../client.js#L1249-L1266)）。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L947-L957) 供测试套件使用。
+返回对象里**没有** `inject`，所以任何 UI 服务都无法推迟 `apply`：`ctx.effect(install, 'paste-image')` 一进 `apply` 就把 paste/drop 监听挂上，并把安装绑定到插件的 effect 作用域、命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。0.4.0 曾在这里返回 `inject: ['slots', 'locale']`，UI 服务未就绪时整个 `apply`（连同监听安装）会被跳过——0.4.1 去掉了它。
+
+配置页是纯可选能力：`hasPageServices()` 检查 `Page` 与 `slots`/`locale` 的形状，满足就内联调用 `registerSettingsPage(ctx)`——`locale.register(NS, DICTIONARIES)` 与 `slots.inject('plugins.row.config', ...)` → `slots.register(...)`（[第 1261–1277 行](../client.js#L1261-L1277)）；否则若有 `ctx.inject` 就等它把服务送进回调后再注册，两者都没有就跳过。`pageRegistered` 保证只注册一次，调用点包在 `try/catch` 里，注册异常只影响配置页。
+
+`factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L952-L962) 供测试套件使用。
 
 ## 13. 设置与配置页
 
@@ -289,13 +306,13 @@ window.__ModuleLoader__.load({
 
 - [`canvasOf()`](../client.js#L658-L667) 用 `settings.maxSide` 计算缩放比例，只影响转码后的图片。
 - [`normalize()`](../client.js#L788-L828) 读到文件头、嗅探出格式后立即用 `conversionAllowed(kind)` 判定；被关掉的格式返回 `null`，原文件原样交给合成器，连整份字节都不再读取。BMP 冒充 PNG 是否转码也走同一判断，所以关掉 BMP 转换后它同样原样放行。需要转码时，它按 `settings.outputFormat` 与 `settings.quality` 选择输出编码。
-- [`handle()`](../client.js#L869-L910) 先看 `settings.enabled`，关掉时直接返回；再用 `settings.maxFiles` 决定是否整批交给原生路径；日志由 `settings.logConversions` 控制。
+- [`handle()`](../client.js#L871-L915) 先看 `settings.enabled`，关掉时直接返回；再用 `settings.maxFiles` 决定是否整批交给原生路径；日志由 `settings.logConversions` 控制。
 
 输出编码由 `OUTPUT_FORMATS`（[`client.js:8-12`](../client.js#L8-L12)）定义：`png` → `image/png`（无损，不传质量参数），`jpeg` → `image/jpeg`，`webp` → `image/webp`。JPEG 没有 alpha 通道，所以 `normalize()` 先经 [`flattenOnWhite()`](../client.js#L725-L734) 把画布合成到不透明白底上，透明像素不会变黑；PNG 无损，WebP 保留透明度。随后 [`encodeCanvas()`](../client.js#L706-L722) 调 `canvas.toBlob(callback, mime)`——PNG 只用两个参数，JPEG/WebP 第三个参数传 `quality`；没有 `toBlob` 时 [`dataUrlBlob()`](../client.js#L694-L702) 以相同的 MIME 和质量走 `toDataURL()` 并解码 base64。
 
 最终类型以浏览器实际编码结果为准：[`encodedMime()`](../client.js#L738-L741) 读取 `blob.type`（经 MIME 别名映射），只接受 PNG/JPEG/WebP，识别不了就回退 `image/png`；文件名扩展名同样按实际 MIME 取。因此浏览器不支持所选编码器时，得到的是一个标签与字节一致的图片；以实际 `blob.type` 为准，无法识别时回退 PNG，而不是伪装成 JPEG/WebP 的 PNG 数据。
 
-配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1254-1266`](../client.js#L1254-L1266)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
+配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1273-1275`](../client.js#L1273-L1275)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
 
 这些设置对实际体积的影响另见[输出格式实测](output-formats.md)：照片用 JPEG/WebP 约小 82%，UI 截图用 PNG 往往更小。
 
@@ -326,11 +343,11 @@ window.__ModuleLoader__.load({
 | 解码路由             | `toCanvas()`            | [client.js:743](../client.js#L743-L772)  |
 | 透传 / 转换          | `normalize()`           | [client.js:788](../client.js#L788-L828)  |
 | 候选判定             | `isImageCandidate()`    | [client.js:832](../client.js#L832-L837)  |
-| 输入框目标           | `composer()`            | [client.js:839](../client.js#L839-L841)  |
-| 合成 drop            | `reroute()`             | [client.js:849](../client.js#L849-L857)  |
-| 前置校验与分发       | `handle()`              | [client.js:869](../client.js#L869-L910)  |
-| 事件监听器           | `install()`             | [client.js:912](../client.js#L912-L945)  |
-| 模块入口             | `__ModuleLoader__.load` | [client.js:959](../client.js#L959-L1271) |
+| 输入框目标           | `composer()`            | [client.js:841](../client.js#L841-L843)  |
+| 合成 drop            | `reroute()`             | [client.js:851](../client.js#L851-L859)  |
+| 前置校验与分发       | `handle()`              | [client.js:871](../client.js#L871-L915)  |
+| 事件监听器           | `install()`             | [client.js:917](../client.js#L917-L950)  |
+| 模块入口             | `__ModuleLoader__.load` | [client.js:964](../client.js#L964-L1307) |
 
 ## 设计说明
 

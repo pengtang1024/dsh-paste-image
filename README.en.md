@@ -71,6 +71,8 @@ dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 
 Replace `<profile>` with the profile your app runs. **Reload the page after installing** (`Ctrl+R`, or `Cmd+R` on macOS). The client module is only injected when the renderer loads, so a freshly installed plugin intercepts nothing until you reload.
 
+**Host requirements:** DSH must satisfy the `engines.dsh` range declared in the package (`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`) and Node >= 20. On an unsupported DSH version the plugin is not loaded, and the plugin detail page says so.
+
 ## Verify it works
 
 Run the repository checks:
@@ -156,15 +158,16 @@ The optimisation stays inside the synchronous renderer code: no new worker, no n
 
 ## Compatibility
 
-The plugin targets the renderer APIs modern Chromium/Electron provides: `File`/`Blob`, `TextDecoder`, `createImageBitmap`, `canvas.toBlob`, `DataTransfer`/`DragEvent`, and `addEventListener` with a `signal`. On that baseline three fallbacks are explicit, so a missing API never disables the plugin outright or swallows a native event:
+The plugin targets the renderer APIs modern Chromium/Electron provides: `File`/`Blob`, `TextDecoder`, `createImageBitmap`, `canvas.toBlob`, `DataTransfer`/`DragEvent`, and `addEventListener` with a `signal`. On that baseline four cases degrade explicitly, so a missing API never disables the plugin outright or swallows a native event:
 
-| Missing capability           | Fallback                                                                                                                         |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `AbortController`            | `install()` registers listeners without a `signal`, and the disposer removes them with `removeEventListener`                     |
-| `canvas.toBlob`              | `encodeCanvas()` falls back to `toDataURL()` plus base64→`Blob` decoding                                                         |
-| `DataTransfer` / `DragEvent` | `handle()` returns before claiming the event or calling `preventDefault()`, so the browser's native paste/drop path is untouched |
+| Missing capability           | Fallback                                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `AbortController`            | `install()` registers listeners without a `signal`, and the disposer removes them with `removeEventListener`                           |
+| `canvas.toBlob`              | `encodeCanvas()` falls back to `toDataURL()` plus base64→`Blob` decoding                                                               |
+| `DataTransfer` / `DragEvent` | `handle()` returns before claiming the event or calling `preventDefault()`, so the browser's native paste/drop path is untouched       |
+| `[data-composer-card]`       | `handle()` returns as soon as the target is absent: it does not claim, does not call `preventDefault()`, and native paste stays intact |
 
-File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 87 tests (41 client/locale + 20 compatibility + 26 settings page/runtime settings) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, the three fallbacks above, and the settings page's registration contract and behaviour. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
+File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 90 tests (41 client/locale + 21 compatibility + 28 settings page/runtime settings) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, the four fallbacks above, and the settings page's registration contract and behaviour. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
 
 ## Security and privacy
 

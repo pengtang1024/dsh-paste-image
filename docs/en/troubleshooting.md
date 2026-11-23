@@ -19,7 +19,18 @@ The plugin has no UI. Every success and every failure is written to the browser 
 3. **Re-run the install after editing a local checkout.** Current DSH builds copy a `file:` install into the profile; edits in your checkout are not picked up by a reload alone. Re-run `dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image` and reload.
 4. **Use an absolute path.** A relative `file:` path is resolved in the profile directory, not in your shell's working directory.
 5. **Look for module-loading errors.** If the module fails to load, the console shows an error at load time, before any paste. Reload with the console open and read the first red line.
-6. **Check the composer target.** In the console, run `document.querySelector('[data-composer-card]')`. If it returns `null`, the plugin can still convert images but can only dispatch the synthetic drop on `document.body`; a composer that has moved away from that attribute will not receive it. That means the DSH build changed its composer markup — please report it.
+6. **Check the composer target.** In the console, run `document.querySelector('[data-composer-card]')`. If it returns `null`, the plugin deliberately lets go: it does not claim the event and does not call `preventDefault()`, so the browser's native paste/drop goes to the host untouched and the plugin does not convert the image. That is the 0.4.1 fail-safe, not a crash — and it means the DSH build changed its composer markup, so please report it.
+
+## Pasting images does nothing
+
+You paste or drop an image and no attachment shows up in the composer, with no obvious red error in the console:
+
+1. **Confirm the plugin is enabled and at version 0.4.1 or later.** In Settings → Plugins → dsh-paste-image the row should read "enabled". 0.4.0 had a regression: when the UI services the settings page needs were not ready, the whole `apply()` — listener installation included — was skipped. 0.4.1 decouples listener installation from settings-page registration. Upgrade before investigating further.
+2. **Restart or reload the host after upgrading.** Updating the package does not hot-inject the client module: quit and start DSH again, or reload the page in the window. Still nothing after upgrading usually means an old process is still running.
+3. **Look for `[dsh-paste-image]` lines in the console.** Open DevTools → Console, set the level to **Verbose** and filter for `dsh-paste-image`. A successful conversion logs something like `image/xpm -> image/png`; no line at all means the event never reached the plugin (listeners were not installed, or the page was not reloaded). A `keep original (...)` line means conversion failed — see the next section.
+4. **Confirm the composer card exists.** Run `document.querySelector('[data-composer-card]')` in the console. When it returns `null` the plugin deliberately stays out of the way: it does not claim the event and does not call `preventDefault()`, so native paste goes to the host untouched — that is the 0.4.1 fail-safe; the trade-off is that the plugin will not convert that image.
+5. **Confirm the event really carries images, within the limit.** Plain text and non-image files never enter the plugin; a paste with more files than "max files per paste" (8 by default) goes to the native path as a whole batch.
+6. **Still nothing? File an issue with evidence.** Include the DSH version, the plugin version (`0.4.1`), how it was installed, the OS and desktop session, plus the full `[dsh-paste-image]` lines at Verbose level and the first red error.
 
 ## The red "仅支持 PNG、JPG、WebP、GIF" error is still there
 
@@ -29,7 +40,8 @@ There are two different failures behind the same message.
 
 - the paste or drop contains zero files or more than 8 files (`MAX_FILES`);
 - no file looks like an image — the MIME type does not start with `image/` and the file name has no recognized image extension;
-- the plugin is not loaded (see the previous section).
+- the plugin is not loaded (see the previous section);
+- the page has no `[data-composer-card]`, so the plugin deliberately lets go, native paste takes over and no conversion happens (see step 4 above).
 
 A `.heic` file still fails after the sniff: the plugin now recognizes `heic`/`heif` by extension and by the `ftyp` box, but Chromium ships no HEIC codec, so decoding throws and the original is forwarded. Convert it to PNG or JPEG before pasting.
 
