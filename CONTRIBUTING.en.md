@@ -84,11 +84,59 @@ npm run format:check  # npx --yes prettier@3 --check .
 
 `.prettierignore` keeps `node_modules/` and `package-lock.json` out. `LICENSE` has no file extension, so Prettier skips it when run on the directory; it is plain MIT text.
 
+## Branch model
+
+The project follows Git Flow: `develop` is the integration branch and `master` is the release branch. Both histories advance only by merges; releases are marked with signed tags.
+
+- **Long-lived branches**: `develop` (day-to-day integration) and `master` (released state only). Do not develop directly on `master`.
+- **`feature/*` and `fix/*`**: branch off `develop` and merge back into `develop`. `--no-ff` may be used to preserve the branch topology, but is not required for these merges.
+- **`release/*`**: cut from `develop` to finish version numbers, changelog and other release prep. When done, **merge both ways**: first into `master`, tag the signed tag on `master`, then merge `master` back into `develop`.
+- **`hotfix/*`**: cut from `master` (or a published tag) for urgent fixes. It follows the same **two-way merge**: into `master` with a signed tag, then `master` back into `develop`.
+
+Merging `release/*` and `hotfix/*` into both `master` and `develop` **must use `--no-ff`** to leave a traceable merge commit. Signed tags are only created on `master`.
+
+By default, do not change GitHub's default branch setting, do not force push, and do not rebase already-published commits; published tags must never move. Ask a maintainer before making an exception.
+
+### Naming and commit conventions
+
+- Branch names use **kebab-case** (lowercase, words separated by hyphens), e.g. `feat/paste-webp`, `fix/settings-locale`. In practice `feature/*` is often written as `feat/*`; the two are equivalent.
+- Commit messages follow Conventional Commits in the form `type(scope): 中文描述`. `scope` is optional and names the affected module (e.g. `decoder`, `locale`, `docs`); the description is written in Simplified Chinese and does not end with a period. Example: `fix(decoder): 修正截断 BMP 的越界读取`.
+- `type` is one of `feat`, `fix`, `docs`, `chore`, `refactor`, `perf`.
+
+## Signing convention
+
+Release tags on this machine are signed with **SSH** (not GPG). The effective git configuration, which you can re-check with `git config --get <key>`, is:
+
+| Setting | Value |
+| --- | --- |
+| `gpg.format` | `ssh` |
+| `user.signingkey` | `/home/pt/.ssh/id_ed25519_github_docker_panel.pub` |
+| `tag.gpgSign` | `true` |
+
+The equivalent `git config --list --local` excerpt:
+
+```text
+gpg.format=ssh
+user.signingkey=/home/pt/.ssh/id_ed25519_github_docker_panel.pub
+tag.gpgSign=true
+```
+
+Tags created on `master` therefore carry a signature by default. To verify a signature, Git needs a list of trusted public keys; by convention `gpg.ssh.allowedSignersFile` points at `.git/allowed_signers` inside the repository. **That file lives under `.git/` and is never versioned**, so every fresh clone needs this local setup:
+
+```bash
+git config --local gpg.ssh.allowedSignersFile .git/allowed_signers
+# Write the public-key line into the file; <principal> is the identity you
+# want associated with the key (e.g. your GitHub username):
+printf '<principal> %s\n' "$(cat /home/pt/.ssh/id_ed25519_github_docker_panel.pub)" > .git/allowed_signers
+```
+
+You can then check signatures with `git verify-tag v<version>` or `git log --show-signature`. Never commit the private key; `allowed_signers` is also a per-machine, local-only concern and does not belong in version control.
+
 ## Pull requests
 
 1. Open an issue first for anything larger than a typo or a docs fix.
-2. Branch from `master`: `feat/...`, `fix/...` or `docs/...`.
-3. Keep commits focused and use `type(scope): summary` with `feat`, `fix`, `docs`, `test` or `chore`.
+2. Follow the [branch model](#branch-model) above and branch from `develop`: `feat/...`, `fix/...` or `docs/...`, using kebab-case names.
+3. Keep commits focused and follow the [naming and commit conventions](#naming-and-commit-conventions) above.
 4. In the description, cover what changed, why, and how you verified it — paste the commands and the relevant output. For event-path changes, describe the manual paste/drop check.
 5. CI runs `node --check` on both entry files, `npx prettier@3 --check .` and `npm test` on Node 20 and 22. Keep all three green.
 6. Do not bump the version or edit `CHANGELOG.md` in a feature pull request; releases are cut by the maintainer.
