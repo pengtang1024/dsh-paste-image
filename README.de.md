@@ -106,7 +106,7 @@ Die Einstellungen des Plugins liegen jetzt unter **Einstellungen → Beliebiges 
 - **Andere Codecs:** SVG wird im Plugin selbst gerastert; ICO/CUR fallen auf PNG-komprimierte Einträge zurück; AVIF setzt auf den Browser-Decoder. TIFF und HEIC werden erkannt, aber Chromium liefert keinen Codec dafür mit, sodass das Original durchgereicht wird und der Host es wie zuvor ablehnt. Es wird kein Decoder von Drittanbietern mitgeliefert.
 - **Größe:** konvertierte Bilder werden auf höchstens 4096 px auf der längsten Seite herunterskaliert. Nativ unverändert durchgereichte Dateien werden nicht skaliert.
 - **Dateianzahl:** eine Einfüge- oder Drop-Aktion darf höchstens 8 Dateien enthalten. Größere Stapel werden vollständig dem nativen Pfad überlassen.
-- **Flattening:** ein konvertiertes Bild wird zu einem einzelnen PNG-Frame. Animationen, EXIF-Metadaten und eingebettete Farbprofile bleiben nicht erhalten.
+- **Flattening:** ein konvertiertes Bild wird zu einem einzelnen Standbild im gewählten Ausgabeformat (standardmäßig PNG). Animationen, EXIF-Metadaten und eingebettete Farbprofile bleiben nicht erhalten.
 - **Umfang:** Es werden nur die Pfade `paste` und `drop` abgedeckt. Der Dateiauswahldialog und andere Einfügewege behalten ihr natives Verhalten.
 
 ## Sicherheit und Datenschutz

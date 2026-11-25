@@ -25,7 +25,7 @@ Confirmaremos la recepción del informe en la medida de lo posible; una vez conf
 
 ## Alcance
 
-`dsh-paste-image` se ejecuta completamente en el proceso de renderizado de DSH. No accede a la red, no tiene procesos en segundo plano, no sondea el portapapeles ni modifica el código del host de DSH. Todo su trabajo consiste en: leer archivos de los eventos `paste` o `drop`, decodificarlos localmente, recodificarlos a PNG y despachar un evento `drop` sintético en la misma ventana.
+`dsh-paste-image` se ejecuta completamente en el proceso de renderizado de DSH. No accede a la red, no tiene procesos en segundo plano, no sondea el portapapeles ni modifica el código del host de DSH. Todo su trabajo consiste en: leer archivos de los eventos `paste` o `drop`, decodificarlos localmente, recodificarlos al formato de salida elegido (PNG por defecto) y despachar un evento `drop` sintético en la misma ventana.
 
 Dentro del alcance:
 

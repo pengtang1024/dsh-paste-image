@@ -25,7 +25,7 @@ Wir bestätigen den Eingang von Meldungen nach bestem Bemühen; sofern eine Meld
 
 ## Geltungsbereich
 
-`dsh-paste-image` läuft vollständig im Renderer-Prozess von DSH. Es greift nicht auf das Netzwerk zu, hat keine Hintergrundprozesse, fragt die Zwischenablage nicht ab und verändert keinen Host-Code von DSH. Seine gesamte Aufgabe besteht darin, Dateien aus `paste`- oder `drop`-Ereignissen zu lesen, sie lokal zu dekodieren, als PNG neu zu kodieren und anschließend ein synthetisches `drop`-Ereignis im selben Fenster auszulösen.
+`dsh-paste-image` läuft vollständig im Renderer-Prozess von DSH. Es greift nicht auf das Netzwerk zu, hat keine Hintergrundprozesse, fragt die Zwischenablage nicht ab und verändert keinen Host-Code von DSH. Seine gesamte Aufgabe besteht darin, Dateien aus `paste`- oder `drop`-Ereignissen zu lesen, sie lokal zu dekodieren, im gewählten Ausgabeformat (standardmäßig PNG) neu zu kodieren und anschließend ein synthetisches `drop`-Ereignis im selben Fenster auszulösen.
 
 Im Geltungsbereich:
 

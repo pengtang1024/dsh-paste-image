@@ -25,7 +25,7 @@ Nous confirmerons la réception des rapports dans la mesure du possible ; une fo
 
 ## Périmètre
 
-`dsh-paste-image` s'exécute entièrement dans le processus de rendu de DSH. Il n'accède pas au réseau, n'a pas de processus en arrière-plan, n'interroge pas le presse-papiers en continu et ne modifie pas le code hôte de DSH. Toute son activité consiste à : lire des fichiers à partir des événements `paste` ou `drop`, les décoder localement, les réencoder en PNG, puis distribuer un événement `drop` synthétique dans la même fenêtre.
+`dsh-paste-image` s'exécute entièrement dans le processus de rendu de DSH. Il n'accède pas au réseau, n'a pas de processus en arrière-plan, n'interroge pas le presse-papiers en continu et ne modifie pas le code hôte de DSH. Toute son activité consiste à : lire des fichiers à partir des événements `paste` ou `drop`, les décoder localement, les réencoder dans le format de sortie choisi (PNG par défaut), puis distribuer un événement `drop` synthétique dans la même fenêtre.
 
 Dans le périmètre :
 

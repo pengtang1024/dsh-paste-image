@@ -106,7 +106,7 @@ Los ajustes del plugin están ahora en **Ajustes → Pegar cualquier imagen**, q
 - **Otros códecs:** SVG se rasteriza dentro del propio plugin; ICO/CUR recurren a las entradas comprimidas en PNG; AVIF depende del decodificador del navegador. TIFF y HEIC se detectan, pero Chromium no trae códec para ellos, así que el original se deja pasar y el host lo rechaza como antes. No se incluye ningún decodificador de terceros.
 - **Tamaño:** las imágenes convertidas se reducen a como máximo 4096 px en el lado más largo. Los archivos nativos que se dejan pasar intactos no se redimensionan.
 - **Cantidad de archivos:** un pegado o un arrastre puede contener como máximo 8 archivos. Los lotes más grandes se dejan por completo al camino nativo.
-- **Aplanado:** una imagen convertida pasa a ser un solo cuadro PNG. La animación, los metadatos EXIF y los perfiles de color incrustados no se conservan.
+- **Aplanado:** una imagen convertida pasa a ser un solo cuadro estático en el formato de salida elegido (PNG por defecto). La animación, los metadatos EXIF y los perfiles de color incrustados no se conservan.
 - **Alcance:** solo se cubren las rutas `paste` y `drop`. El selector de archivos y las demás rutas de inserción mantienen su comportamiento nativo.
 
 ## Seguridad y privacidad

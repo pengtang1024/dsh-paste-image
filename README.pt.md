@@ -106,7 +106,7 @@ As configurações do plugin agora ficam em **Configurações → Colar qualquer
 - **Outros codecs:** SVG é rasterizado internamente; ICO/CUR recorrem a entradas comprimidas em PNG; AVIF depende do decodificador do navegador. TIFF e HEIC são detectados, mas o Chromium não traz codec para eles, então o original passa intacto e o host o rejeita como antes. Nenhum decodificador de terceiros está incluído.
 - **Tamanho:** imagens convertidas são reduzidas a no máximo 4096 px no lado mais longo. Arquivos nativos que passam intactos não são redimensionados.
 - **Quantidade de arquivos:** uma colagem ou soltura pode conter no máximo 8 arquivos. Lotes maiores são deixados inteiramente para o caminho nativo.
-- **Achatamento:** uma imagem convertida vira um único frame PNG. Animação, metadados EXIF e perfis de cor embutidos não são preservados.
+- **Achatamento:** uma imagem convertida vira um único quadro estático no formato de saída escolhido (PNG por padrão). Animação, metadados EXIF e perfis de cor embutidos não são preservados.
 - **Escopo:** apenas os caminhos `paste` e `drop` são cobertos. O seletor de arquivos e outros caminhos de inserção mantêm o comportamento nativo.
 
 ## Segurança e privacidade

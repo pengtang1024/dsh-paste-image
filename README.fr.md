@@ -106,7 +106,7 @@ Les réglages du plugin se trouvent désormais sous **Paramètres → Coller n'i
 - **Autres codecs :** le SVG est rasterisé en interne ; ICO/CUR retombent sur les entrées compressées en PNG ; AVIF s'appuie sur le décodeur du navigateur. TIFF et HEIC sont détectés, mais Chromium n'embarque aucun codec pour eux : l'original est transmis tel quel et l'hôte le rejette comme avant. Aucun décodeur tiers n'est embarqué.
 - **Taille :** les images converties sont réduites à 4096 px au maximum sur le côté le plus long. Les fichiers natifs transmis tels quels ne sont pas redimensionnés.
 - **Nombre de fichiers :** un collage ou un dépôt peut contenir au plus 8 fichiers. Les lots plus importants sont entièrement laissés au chemin natif.
-- **Aplatissement :** une image convertie devient une seule trame PNG. L'animation, les métadonnées EXIF et les profils de couleur intégrés ne sont pas conservés.
+- **Aplatissement :** une image convertie devient une seule image fixe dans le format de sortie choisi (PNG par défaut). L'animation, les métadonnées EXIF et les profils de couleur intégrés ne sont pas conservés.
 - **Périmètre :** seuls les chemins `paste` et `drop` sont couverts. Le sélecteur de fichiers et les autres chemins d'insertion conservent leur comportement natif.
 
 ## Sécurité et confidentialité
