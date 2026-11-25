@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-25
+
+### 修复
+
+- 配置页不显示：恢复工厂返回对象里的 module-level `inject: ['slots']`（宿主 facade 服务门）。宿主 cordis-client-runner 的 guard 白名单不含 `slots`/`locale`/`inject`，0.4.1 删掉 inject 后 `apply()` 里读 `ctx.slots` / `typeof ctx.inject` 抛错被空 catch 吞掉，配置页从未注册到 `plugins.row.config`。只声明 `slots`、不声明 `locale`，避免 locale 偶发缺失时 park 整个包。
+- `locale` 改由 `ctx.inject(['slots', 'locale'], cb)` 延迟获取；配置页注册失败不再静默，只输出一行 `console.debug('[dsh-paste-image] settings page unavailable: ...')`。注册仍由 `pageRegistered` 保证幂等，slot/key/NS 均不变（`plugins.row.config` / `dsh-paste-image#paste-image` / `dsh-paste-image:settings`）。
+- 保留 0.4.1 的粘贴优先与合成器失败安全：`apply()` 仍先 `ctx.effect(install, 'paste-image')` 挂上监听，找不到真实 `[data-composer-card]` 时不 claim、放行原生 paste/drop。
+- 测试仍为 90 个（90 通过、0 失败）。
+
 ## [0.4.1] - 2026-11-23
 
 ### 修复

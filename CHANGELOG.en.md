@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-25
+
+### Fixed
+
+- The settings page did not show up: the factory's returned object once again carries module-level `inject: ['slots']` (the host facade service gate). The host cordis-client-runner guard whitelist does not include `slots`/`locale`/`inject`, so after 0.4.1 removed `inject`, reading `ctx.slots` / `typeof ctx.inject` inside `apply()` threw and was swallowed by an empty catch, and the page was never registered into `plugins.row.config`. Only `slots` is declared and not `locale`, so an occasionally missing locale cannot park the whole package.
+- `locale` is now obtained lazily through `ctx.inject(['slots', 'locale'], cb)`; a settings-page registration failure is no longer silent and emits a single `console.debug('[dsh-paste-image] settings page unavailable: ...')` line. Registration stays idempotent via `pageRegistered`, and the slot/key/NS are unchanged (`plugins.row.config` / `dsh-paste-image#paste-image` / `dsh-paste-image:settings`).
+- The 0.4.1 paste-first behaviour and composer failure safety are preserved: `apply()` still installs the listeners with `ctx.effect(install, 'paste-image')` first, and without a real `[data-composer-card]` the plugin does not claim the event and lets native paste/drop through.
+- The suite stays at 90 tests (90 passing, 0 failing).
+
 ## [0.4.1] - 2026-11-23
 
 ### Fixed

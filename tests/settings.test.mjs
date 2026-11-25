@@ -808,11 +808,17 @@ test('apply(ctx) 在没有 slots/locale/inject 时仍立即安装 paste/drop 监
     assert.equal(name, 'react')
     return createReactStub()
   })
-  // 模块 factory 只暴露 apply，不再有模块级 inject 出口。
-  assert.deepEqual(Object.keys(plugin), ['apply'])
-  assert.equal(Object.prototype.hasOwnProperty.call(plugin, 'inject'), false)
+  // 0.4.2 恢复 module-level inject ['slots'] 作为宿主 facade 服务门；
+  // 即便 ctx 没有 slots/locale/inject，apply 仍必须立即装 paste/drop。
+  assert.deepEqual(Object.keys(plugin), ['inject', 'apply'])
+  assert.deepEqual(Array.from(plugin.inject), ['slots'])
 
   plugin.apply(ctx)
+
+  // 配置页服务缺失只留一行 debug（load() 的 vm console 统一记入 logs），不阻塞粘贴链路。
+  const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))
+  assert.equal(debugLines.length, 1)
+  assert.match(debugLines[0], /^\[dsh-paste-image\] settings page unavailable: /)
 
   assert.deepEqual(
     loaded.document.listeners.map((entry) => entry.type),

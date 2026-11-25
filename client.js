@@ -1246,25 +1246,28 @@
         // 注册只做一次，内联注册与 ctx.inject 延迟注册共用这一条路径。
         var pageRegistered = false
 
-        function hasPageServices(scope) {
+        // 失败只留一行 debug：既不刷屏也不静默，方便下次诊断宿主服务是否就绪。
+        function debugUnavailable(error) {
+          var msg = error && error.message ? error.message : String(error)
+          console.debug('[dsh-paste-image] settings page unavailable: ' + msg)
+        }
+
+        function hasPageServices(slots, locale) {
           return Boolean(
             Page &&
-            scope &&
-            scope.slots &&
-            typeof scope.slots.inject === 'function' &&
-            typeof scope.slots.register === 'function' &&
-            scope.locale &&
-            typeof scope.locale.register === 'function',
+            slots &&
+            typeof slots.inject === 'function' &&
+            typeof slots.register === 'function' &&
+            locale &&
+            typeof locale.register === 'function',
           )
         }
 
-        function registerSettingsPage(scope) {
-          if (pageRegistered || !hasPageServices(scope)) return false
+        function registerSettingsPage(slots, locale, effect) {
+          if (pageRegistered || !hasPageServices(slots, locale)) return false
           pageRegistered = true
-          var slots = scope.slots
-          var locale = scope.locale
           var run = function (callback, label) {
-            if (typeof scope.effect === 'function') scope.effect(callback, label)
+            if (typeof effect === 'function') effect(callback, label)
             else callback()
           }
           run(function () {
@@ -1277,6 +1280,9 @@
         }
 
         return {
+          // module-level 声明 slots：宿主 guard 白名单不含 slots/locale，未声明时读 ctx.slots 会抛错。
+          // 只声明 slots、不声明 locale：避免 locale 偶发缺失时 park 整个包，粘贴链路必须永远可用。
+          inject: ['slots'],
           apply: function (ctx) {
             if (!ctx || typeof ctx.effect !== 'function') {
               install()
@@ -1285,21 +1291,53 @@
             // 先挂监听：粘贴/拖放绝不等待可选的配置页服务。开关交给 settings.enabled 在 handle 里判断。
             ctx.effect(install, 'paste-image')
             if (!Page) return
+            var effect = ctx.effect
+            var slots = null
+            var locale = null
+            // 这些读取在宿主 guard 下可能抛错：分别兜住，任何一路失败都只影响配置页。
             try {
-              if (hasPageServices(ctx)) {
-                registerSettingsPage(ctx)
-              } else if (typeof ctx.inject === 'function') {
-                // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
-                ctx.inject(['slots', 'locale'], function (scope) {
-                  try {
-                    registerSettingsPage(scope)
-                  } catch (error) {
-                    // 配置页失败只影响配置页，绝不影响粘贴。
-                  }
-                })
-              }
+              slots = ctx.slots
             } catch (error) {
-              // best-effort：配置页注册异常不得冒泡打断 apply。
+              slots = null
+            }
+            try {
+              locale = ctx.locale
+            } catch (error) {
+              locale = null
+            }
+            if (hasPageServices(slots, locale)) {
+              try {
+                registerSettingsPage(slots, locale, effect)
+              } catch (error) {
+                debugUnavailable(error)
+              }
+              return
+            }
+            // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
+            var injectFn = null
+            try {
+              injectFn = ctx.inject
+            } catch (error) {
+              injectFn = null
+            }
+            if (typeof injectFn !== 'function') {
+              debugUnavailable(new Error('slots/locale service unavailable'))
+              return
+            }
+            try {
+              injectFn.call(ctx, ['slots', 'locale'], function (scope) {
+                try {
+                  var resolvedSlots = scope && scope.slots ? scope.slots : slots
+                  var resolvedLocale = scope && scope.locale ? scope.locale : locale
+                  // 注入回调带来的 scope 可能自带 effect（宿主注入上下文），优先用它，回退 ctx.effect。
+                  var resolvedEffect = scope && typeof scope.effect === 'function' ? scope.effect : effect
+                  registerSettingsPage(resolvedSlots, resolvedLocale, resolvedEffect)
+                } catch (error) {
+                  debugUnavailable(error)
+                }
+              })
+            } catch (error) {
+              debugUnavailable(error)
             }
           },
         }

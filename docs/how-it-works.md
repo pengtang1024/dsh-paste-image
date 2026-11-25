@@ -238,7 +238,7 @@ target.dispatchEvent(event)
 
 ## 12. 模块注册
 
-该文件是包在 IIFE 里的经典脚本。在底部（[第 964–1307 行](../client.js#L964-L1307)）它把自己注册到 DSH 客户端模块加载器：
+该文件是包在 IIFE 里的经典脚本。在底部（[第 964–1346 行](../client.js#L964-L1346)）它把自己注册到 DSH 客户端模块加载器：
 
 ```js
 window.__ModuleLoader__.load({
@@ -255,13 +255,20 @@ window.__ModuleLoader__.load({
     var Page = React ? createPage() : null
     var pageRegistered = false
 
-    function registerSettingsPage(scope) {
-      // 已注册、或 slots/locale 形状不符时直接跳过；
-      // locale.register 与 slots.inject('plugins.row.config', ...) 都尽量走 effect 作用域。
+    function debugUnavailable(error) {
+      // 失败只留一行 debug：既不刷屏也不静默。
+      var msg = error && error.message ? error.message : String(error)
+      console.debug('[dsh-paste-image] settings page unavailable: ' + msg)
+    }
+
+    function registerSettingsPage(slots, locale, effect) {
+      // pageRegistered 保证只注册一次；locale.register 与
+      // slots.inject('plugins.row.config', ...) 都尽量走 effect 作用域。
     }
 
     return {
-      // 没有 inject：apply 不会被任何 UI 服务阻塞。
+      // 宿主 facade 服务门：只声明 slots，不声明 locale。
+      inject: ['slots'],
       apply: function (ctx) {
         if (!ctx || typeof ctx.effect !== 'function') {
           install()
@@ -270,21 +277,16 @@ window.__ModuleLoader__.load({
         // 先挂监听：粘贴/拖放绝不等待可选的配置页服务。
         ctx.effect(install, 'paste-image')
         if (!Page) return
-        try {
-          if (hasPageServices(ctx)) {
-            registerSettingsPage(ctx)
-          } else if (typeof ctx.inject === 'function') {
-            // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
-            ctx.inject(['slots', 'locale'], function (scope) {
-              try {
-                registerSettingsPage(scope)
-              } catch (error) {
-                // 配置页失败只影响配置页，绝不影响粘贴。
-              }
-            })
-          }
-        } catch (error) {
-          // best-effort：配置页注册异常不得冒泡打断 apply。
+        // slots/locale 的读取分别兜住：宿主 guard 下可能抛错，失败只影响配置页。
+        if (hasPageServices(slots, locale)) {
+          registerSettingsPage(slots, locale, effect)
+        } else if (typeof ctx.inject === 'function') {
+          // 服务未就绪：locale 交给 ctx.inject 延迟取，回调到达时再注册；此时粘贴早已可用。
+          ctx.inject(['slots', 'locale'], function (scope) {
+            registerSettingsPage(resolvedSlots, resolvedLocale, resolvedEffect)
+          })
+        } else {
+          debugUnavailable(new Error('slots/locale service unavailable'))
         }
       },
     }
@@ -292,9 +294,9 @@ window.__ModuleLoader__.load({
 })
 ```
 
-返回对象里**没有** `inject`，所以任何 UI 服务都无法推迟 `apply`：`ctx.effect(install, 'paste-image')` 一进 `apply` 就把 paste/drop 监听挂上，并把安装绑定到插件的 effect 作用域、命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。0.4.0 曾在这里返回 `inject: ['slots', 'locale']`，UI 服务未就绪时整个 `apply`（连同监听安装）会被跳过——0.4.1 去掉了它。
+返回对象里的 `inject: ['slots']` 是**宿主 facade 服务门**，不是阻碍：宿主 cordis-client-runner 的 guard 白名单不含 `slots`/`locale`/`inject`，不声明时 `apply()` 里读 `ctx.slots` 或 `typeof ctx.inject` 会抛错并被空 catch 吞掉，配置页因此从未注册到 `plugins.row.config`（0.4.1 的回归，0.4.2 修复）。只声明 `slots`、不声明 `locale`，避免 `locale` 偶发缺失时 park 整个包。`ctx.effect(install, 'paste-image')` 仍是 `apply` 的第一步，把 paste/drop 监听绑定到插件的 effect 作用域并命名以便诊断；回退的 `install()` 让模块在没有 effect 作用域的环境里仍然可用。
 
-配置页是纯可选能力：`hasPageServices()` 检查 `Page` 与 `slots`/`locale` 的形状，满足就内联调用 `registerSettingsPage(ctx)`——`locale.register(NS, DICTIONARIES)` 与 `slots.inject('plugins.row.config', ...)` → `slots.register(...)`（[第 1261–1277 行](../client.js#L1261-L1277)）；否则若有 `ctx.inject` 就等它把服务送进回调后再注册，两者都没有就跳过。`pageRegistered` 保证只注册一次，调用点包在 `try/catch` 里，注册异常只影响配置页。
+配置页是纯可选能力：`hasPageServices()` 检查 `Page` 与 `slots`/`locale` 的形状，满足就内联调用 `registerSettingsPage(slots, locale, effect)`——`locale.register(NS, DICTIONARIES)` 与 `slots.inject('plugins.row.config', ...)` → `slots.register(...)`（[第 1266–1280 行](../client.js#L1266-L1280)）；否则用 `ctx.inject(['slots', 'locale'], cb)` 等延迟注入，`pageRegistered` 保证只注册一次。读取服务、注册和注入回调都各自包在 `try/catch` 里，失败统一经 `debugUnavailable()` 输出一行 `console.debug('[dsh-paste-image] settings page unavailable: ...')`（[第 1250–1253 行](../client.js#L1250-L1253)），只影响配置页，绝不影响粘贴。
 
 `factory(require)` 只在工厂内部 `require('react')`，Node 测试没有 `window` 就永远走不到这里，顶层也不会加载 React。Node 测试里没有 `window`，所以整个注册代码块被跳过，文件通过 `module.exports` 导出 [`api`](../client.js#L952-L962) 供测试套件使用。
 
@@ -312,7 +314,7 @@ window.__ModuleLoader__.load({
 
 最终类型以浏览器实际编码结果为准：[`encodedMime()`](../client.js#L738-L741) 读取 `blob.type`（经 MIME 别名映射），只接受 PNG/JPEG/WebP，识别不了就回退 `image/png`；文件名扩展名同样按实际 MIME 取。因此浏览器不支持所选编码器时，得到的是一个标签与字节一致的图片；以实际 `blob.type` 为准，无法识别时回退 PNG，而不是伪装成 JPEG/WebP 的 PNG 数据。
 
-配置页注册在模块加载器的 factory 里：`ctx.slots.inject('plugins.row.config', ...)` 之后调用 `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)`（[`client.js:1273-1275`](../client.js#L1273-L1275)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
+配置页注册在模块加载器的 factory 里：`slots.inject('plugins.row.config', ...)` 之后调用 `slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS })`，`NS = 'dsh-paste-image:settings'`（[`client.js:1276-1277`](../client.js#L1276-L1277)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
 
 这些设置对实际体积的影响另见[输出格式实测](output-formats.md)：照片用 JPEG/WebP 约小 82%，UI 截图用 PNG 往往更小。
 
@@ -347,7 +349,7 @@ window.__ModuleLoader__.load({
 | 合成 drop            | `reroute()`             | [client.js:851](../client.js#L851-L859)  |
 | 前置校验与分发       | `handle()`              | [client.js:871](../client.js#L871-L915)  |
 | 事件监听器           | `install()`             | [client.js:917](../client.js#L917-L950)  |
-| 模块入口             | `__ModuleLoader__.load` | [client.js:964](../client.js#L964-L1307) |
+| 模块入口             | `__ModuleLoader__.load` | [client.js:964](../client.js#L964-L1346) |
 
 ## 设计说明
 

@@ -238,7 +238,7 @@ and pushes the original `File` into the outgoing batch. One bad file never block
 
 ## 12. Module registration
 
-The file is a classic script wrapped in an IIFE. At the bottom ([lines 964–1307](../../client.js#L964-L1307)) it registers itself with the DSH client module loader:
+The file is a classic script wrapped in an IIFE. At the bottom ([lines 964–1346](../../client.js#L964-L1346)) it registers itself with the DSH client module loader:
 
 ```js
 window.__ModuleLoader__.load({
@@ -255,13 +255,20 @@ window.__ModuleLoader__.load({
     var Page = React ? createPage() : null
     var pageRegistered = false
 
-    function registerSettingsPage(scope) {
-      // Skipped when already registered or when slots/locale do not have the right shape;
-      // locale.register and slots.inject('plugins.row.config', ...) use the effect scope when available.
+    function debugUnavailable(error) {
+      // One debug line only: neither noisy nor silent.
+      var msg = error && error.message ? error.message : String(error)
+      console.debug('[dsh-paste-image] settings page unavailable: ' + msg)
+    }
+
+    function registerSettingsPage(slots, locale, effect) {
+      // pageRegistered keeps registration to a single pass; locale.register and
+      // slots.inject('plugins.row.config', ...) use the effect scope when available.
     }
 
     return {
-      // No inject: no UI service can defer apply.
+      // Host facade service gate: declare slots only, never locale.
+      inject: ['slots'],
       apply: function (ctx) {
         if (!ctx || typeof ctx.effect !== 'function') {
           install()
@@ -270,21 +277,16 @@ window.__ModuleLoader__.load({
         // Listeners first: paste/drop never wait for the optional settings-page services.
         ctx.effect(install, 'paste-image')
         if (!Page) return
-        try {
-          if (hasPageServices(ctx)) {
-            registerSettingsPage(ctx)
-          } else if (typeof ctx.inject === 'function') {
-            // Services not ready: let the host inject them and register when the callback arrives; paste is already working.
-            ctx.inject(['slots', 'locale'], function (scope) {
-              try {
-                registerSettingsPage(scope)
-              } catch (error) {
-                // A settings-page failure only affects the settings page, never paste.
-              }
-            })
-          }
-        } catch (error) {
-          // best-effort: a settings-page exception must not bubble out of apply.
+        // Each service read is guarded: the host guard may throw, and only the settings page is affected.
+        if (hasPageServices(slots, locale)) {
+          registerSettingsPage(slots, locale, effect)
+        } else if (typeof ctx.inject === 'function') {
+          // Services not ready: locale arrives lazily through ctx.inject; paste is already working.
+          ctx.inject(['slots', 'locale'], function (scope) {
+            registerSettingsPage(resolvedSlots, resolvedLocale, resolvedEffect)
+          })
+        } else {
+          debugUnavailable(new Error('slots/locale service unavailable'))
         }
       },
     }
@@ -292,9 +294,9 @@ window.__ModuleLoader__.load({
 })
 ```
 
-The returned object has **no** `inject`, so no UI service can delay `apply`: `ctx.effect(install, 'paste-image')` registers the paste/drop listeners as soon as `apply` runs, and ties the installation to the plugin's effect scope with a name for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope. 0.4.0 returned `inject: ['slots', 'locale']` here, so when the UI services were not ready the whole `apply` — listener installation included — was skipped; 0.4.1 removes it.
+`inject: ['slots']` in the returned object is a **host facade service gate**, not a blocker: the host cordis-client-runner guard whitelist does not include `slots`/`locale`/`inject`, so without it reading `ctx.slots` or `typeof ctx.inject` inside `apply()` throws and is swallowed by an empty catch, and the page is never registered into `plugins.row.config` (the 0.4.1 regression, fixed in 0.4.2). Only `slots` is declared and not `locale`, so an occasionally missing locale cannot park the whole package. `ctx.effect(install, 'paste-image')` is still the first step of `apply`, tying the paste/drop listeners to the plugin's effect scope with a name for diagnostics; the fallback `install()` keeps the module usable in environments without an effect scope.
 
-The settings page is strictly optional: `hasPageServices()` checks the shape of `Page` plus `slots`/`locale`, and when it holds, `registerSettingsPage(ctx)` is called inline — `locale.register(NS, DICTIONARIES)` followed by `slots.inject('plugins.row.config', ...)` → `slots.register(...)` ([lines 1261–1277](../../client.js#L1261-L1277)); otherwise `ctx.inject` is used when present, registering once the services reach the callback, and both are skipped when neither exists. `pageRegistered` keeps registration to a single pass, and the call sites sit inside `try/catch`, so a registration failure only affects the settings page.
+The settings page is strictly optional: `hasPageServices()` checks the shape of `Page` plus `slots`/`locale`, and when it holds, `registerSettingsPage(slots, locale, effect)` is called inline — `locale.register(NS, DICTIONARIES)` followed by `slots.inject('plugins.row.config', ...)` → `slots.register(...)` ([lines 1266–1280](../../client.js#L1266-L1280)); otherwise `ctx.inject(['slots', 'locale'], cb)` defers the services until the callback arrives, and `pageRegistered` keeps registration to a single pass. Service reads, registration and the injection callback each sit inside `try/catch`, and every failure goes through `debugUnavailable()` to emit one `console.debug('[dsh-paste-image] settings page unavailable: ...')` line ([lines 1250–1253](../../client.js#L1250-L1253)) — affecting only the settings page, never paste.
 
 `factory(require)` pulls `react` in only inside the factory, so a Node test without `window` never reaches it and the top level never loads React. In a Node test there is no `window`, so the whole registration block is skipped and the file exports [`api`](../../client.js#L952-L962) through `module.exports` for the test suite.
 
@@ -312,7 +314,7 @@ Output encoding is defined by `OUTPUT_FORMATS` ([`client.js:8-12`](../../client.
 
 The final type follows what the browser actually encoded: [`encodedMime()`](../../client.js#L738-L741) reads `blob.type` (after MIME alias mapping), accepts only PNG/JPEG/WebP, and falls back to `image/png` when the type is unrecognised; the file extension also follows the actual MIME. So a browser without the requested encoder yields an image whose label and bytes agree; the actual `blob.type` is authoritative and falls back to PNG when unrecognised, instead of PNG data masquerading as JPEG/WebP.
 
-The page is registered inside the module loader factory: after `ctx.slots.inject('plugins.row.config', ...)` it calls `ctx.slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: 'dsh-paste-image:settings' }, Page)` ([`client.js:1273-1275`](../../client.js#L1273-L1275)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
+The page is registered inside the module loader factory: after `slots.inject('plugins.row.config', ...)` it calls `slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS })`, with `NS = 'dsh-paste-image:settings'` ([`client.js:1276-1277`](../../client.js#L1276-L1277)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
 
 The measured size impact of these settings is covered in the [output format measurements](output-formats.md): JPEG/WebP shrink photos by about 82%, while UI screenshots are often smaller as PNG.
 
@@ -347,7 +349,7 @@ The measured size impact of these settings is covered in the [output format meas
 | Synthetic drop            | `reroute()`             | [client.js:851](../../client.js#L851-L859)  |
 | Guards and dispatch       | `handle()`              | [client.js:871](../../client.js#L871-L915)  |
 | Event listeners           | `install()`             | [client.js:917](../../client.js#L917-L950)  |
-| Module entry              | `__ModuleLoader__.load` | [client.js:964](../../client.js#L964-L1307) |
+| Module entry              | `__ModuleLoader__.load` | [client.js:964](../../client.js#L964-L1346) |
 
 ## Design notes
 
