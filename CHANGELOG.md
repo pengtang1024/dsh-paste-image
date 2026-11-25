@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 配置页仍不显示：根因是工厂返回对象只声明 `inject: ['slots']`，漏了 `locale`。cordis 要求服务读取先在 fiber 声明（reflect.ts 的 `prop in fiber.inject` 才放行），`apply()` 读 `ctx.locale` 被 guard 抛错、被 try/catch 吞成 `null`，`hasPageServices()` 因此返回 false；随后 `ctx.inject(['slots','locale'], cb)` 兜底并不会真正注册到 `plugins.row.config`，异常又被 `debugUnavailable` 吞掉，配置按钮始终不出现。现改为 `inject: ['slots', 'locale']`，删除无效的延迟兜底与为读服务而设的 try/catch，服务就绪后直接调用 `registerSettingsPage()`（保留 `pageRegistered` 幂等、locale 命名空间 `dsh-paste-image:settings` 与 slot key 不变）。`ctx.effect(install, 'paste-image')` 仍在最前，配置页失败不影响粘贴链路；服务缺失时仅留一行 `console.debug`。
+- 测试新增 cordis guard 语义回归用例：factory 必须同时声明 `slots`/`locale`，并验证旧声明下 `ctx.locale` 读取会被 guard 拦截、新声明下可直接注册配置页。
+
 ## [0.4.2] - 2026-11-25
 
 ### 修复

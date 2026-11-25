@@ -792,7 +792,7 @@ test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个�
   loaded.api.resetSettings()
 })
 
-test('apply(ctx) 在没有 slots/locale/inject 时仍立即安装 paste/drop 监听', () => {
+test('apply(ctx) 在没有 slots/locale 时仍立即安装 paste/drop 监听', () => {
   const loaded = loadPlugin()
   const effects = []
   const disposers = []
@@ -808,10 +808,9 @@ test('apply(ctx) 在没有 slots/locale/inject 时仍立即安装 paste/drop 监
     assert.equal(name, 'react')
     return createReactStub()
   })
-  // 0.4.2 恢复 module-level inject ['slots'] 作为宿主 facade 服务门；
-  // 即便 ctx 没有 slots/locale/inject，apply 仍必须立即装 paste/drop。
+  // module-level inject 必须同时声明 slots/locale：cordis guard 只放行声明过的服务读取。
   assert.deepEqual(Object.keys(plugin), ['inject', 'apply'])
-  assert.deepEqual(Array.from(plugin.inject), ['slots'])
+  assert.deepEqual(Array.from(plugin.inject), ['slots', 'locale'])
 
   plugin.apply(ctx)
 
@@ -829,42 +828,42 @@ test('apply(ctx) 在没有 slots/locale/inject 时仍立即安装 paste/drop 监
   assert.equal(loaded.document.listeners.length, 0)
 })
 
-test('ctx.inject 延迟注册：监听先装，回调到达后才注册配置页且不重复', () => {
+// 复刻 cordis 的 guard：只有 factory 声明过 inject 的服务名才可以读取，否则抛错。
+// effect 是 ctx 内建方法（reflect.ts 的 isSpecialProperty），不走 inject 白名单。
+// 对应 reflect.ts:152 `cannot get property ... without inject` / :172 `prop in fiber.inject` 放行。
+const GUARD_BUILTINS = ['effect']
+function guardedContext(target, declared) {
+  const allowed = [...declared, ...GUARD_BUILTINS]
+  return new Proxy(target, {
+    get(object, prop, receiver) {
+      if (typeof prop === 'string' && !allowed.includes(prop)) {
+        throw new Error(`cannot get property "${prop}" without inject`)
+      }
+      return Reflect.get(object, prop, receiver)
+    },
+  })
+}
+
+test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale 可读且配置页直接注册', () => {
   const loaded = loadPlugin()
-  const effects = []
-  const injectCalls = []
-  const ctx = {
-    effect(callback, label) {
-      effects.push(label)
-      const disposer = callback()
-      return typeof disposer === 'function' ? disposer : () => {}
-    },
-    inject(names, callback) {
-      injectCalls.push({ names, callback })
-    },
-  }
   const plugin = loaded.definition.factory((name) => {
     assert.equal(name, 'react')
     return createReactStub()
   })
-  plugin.apply(ctx)
+  assert.ok(plugin.inject.includes('slots'), 'factory 必须声明 slots')
+  assert.ok(plugin.inject.includes('locale'), 'factory 必须声明 locale（否则 ctx.locale 被 guard 拦截）')
 
-  // 监听不等配置页服务，ctx.inject 只登记一次延迟注册。
-  assert.deepEqual(
-    loaded.document.listeners.map((entry) => entry.type),
-    ['paste', 'drop'],
-  )
-  assert.deepEqual(effects, ['paste-image'])
-  assert.equal(injectCalls.length, 1)
-  assert.deepEqual(Array.from(injectCalls[0].names), ['slots', 'locale'])
+  // 反证：按旧的 inject: ['slots'] 构造 guard，读 ctx.locale 必抛错。
+  const oldGuard = guardedContext({ slots: {}, locale: {} }, ['slots'])
+  assert.throws(() => oldGuard.locale, /cannot get property "locale" without inject/)
 
-  const scopeEffects = []
+  const effects = []
   const slotInjections = []
   const registrations = []
   const locales = []
-  const scope = {
+  const target = {
     effect(callback, label) {
-      scopeEffects.push(label)
+      effects.push(label)
       const disposer = callback()
       return typeof disposer === 'function' ? disposer : () => {}
     },
@@ -884,27 +883,65 @@ test('ctx.inject 延迟注册：监听先装，回调到达后才注册配置页
       },
     },
   }
+  const ctx = guardedContext(target, Array.from(plugin.inject))
+  // 新声明下两个服务都可读；这正是 0.4.2 缺失的一环。
+  assert.equal(ctx.locale, target.locale)
+  assert.equal(ctx.slots, target.slots)
 
-  // 回调到达之前不得注册任何配置页/词典。
-  assert.equal(locales.length, 0)
-  assert.equal(slotInjections.length, 0)
-  assert.equal(registrations.length, 0)
-
-  injectCalls[0].callback(scope)
-
+  plugin.apply(ctx)
+  assert.deepEqual(effects, ['paste-image', 'paste-image: settings dictionaries'])
   assert.equal(locales.length, 1)
   assert.equal(locales[0].namespace, 'dsh-paste-image:settings')
   assert.equal(slotInjections.length, 1)
   assert.equal(slotInjections[0].name, 'plugins.row.config')
-  assert.deepEqual(scopeEffects, ['paste-image: settings dictionaries'])
-  // 宿主执行注入 factory 后才真正 register。
   slotInjections[0].factory()
   assert.equal(registrations.length, 1)
+  assert.deepEqual(plain(registrations[0].meta), {
+    name: 'plugins.row.config',
+    key: 'dsh-paste-image#paste-image',
+    locale: 'dsh-paste-image:settings',
+  })
 
-  // 二次回调不得重复注册。
-  injectCalls[0].callback(scope)
+  // pageRegistered 幂等：重复 apply 不重复注册词典/槽位。
+  plugin.apply(ctx)
   assert.equal(locales.length, 1)
   assert.equal(slotInjections.length, 1)
   assert.equal(registrations.length, 1)
-  assert.deepEqual(scopeEffects, ['paste-image: settings dictionaries'])
+  assert.deepEqual(effects, ['paste-image', 'paste-image: settings dictionaries', 'paste-image'])
+
+  const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))
+  assert.equal(debugLines.length, 0)
+})
+
+test('服务就绪时同步注册配置页，不再走 ctx.inject 延迟兜底', () => {
+  const loaded = loadPlugin()
+  const injectCalls = []
+  const ctx = {
+    effect(callback, label) {
+      const disposer = callback()
+      return typeof disposer === 'function' ? disposer : () => {}
+    },
+    inject(names, callback) {
+      injectCalls.push({ names, callback })
+    },
+    slots: {
+      inject() {},
+      register() {
+        return () => {}
+      },
+    },
+    locale: {
+      register() {
+        return () => {}
+      },
+    },
+  }
+  const plugin = loaded.definition.factory((name) => {
+    assert.equal(name, 'react')
+    return createReactStub()
+  })
+  plugin.apply(ctx)
+  assert.equal(injectCalls.length, 0, '不得再调用 ctx.inject([\'slots\',\'locale\'], cb) 兜底')
+  const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))
+  assert.equal(debugLines.length, 0)
 })

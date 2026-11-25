@@ -1242,8 +1242,8 @@
 
         var Page = React ? createPage() : null
 
-        // 配置页是可选能力：slots/locale 未就绪、甚至永远不到达，都不能阻塞粘贴链路。
-        // 注册只做一次，内联注册与 ctx.inject 延迟注册共用这一条路径。
+        // 配置页是可选能力：slots/locale 未就绪也不能阻塞粘贴链路。
+        // 注册只做一次，由 pageRegistered 保证幂等。
         var pageRegistered = false
 
         // 失败只留一行 debug：既不刷屏也不静默，方便下次诊断宿主服务是否就绪。
@@ -1280,9 +1280,9 @@
         }
 
         return {
-          // module-level 声明 slots：宿主 guard 白名单不含 slots/locale，未声明时读 ctx.slots 会抛错。
-          // 只声明 slots、不声明 locale：避免 locale 偶发缺失时 park 整个包，粘贴链路必须永远可用。
-          inject: ['slots'],
+          // cordis guard 只放行 inject 列表里的服务读取：配置页要读 ctx.locale，必须一并声明。
+          // 包依赖里已经有 locale（package.json 的 dsh.client.inject），这里是服务名声明，不是重复依赖。
+          inject: ['slots', 'locale'],
           apply: function (ctx) {
             if (!ctx || typeof ctx.effect !== 'function') {
               install()
@@ -1291,51 +1291,15 @@
             // 先挂监听：粘贴/拖放绝不等待可选的配置页服务。开关交给 settings.enabled 在 handle 里判断。
             ctx.effect(install, 'paste-image')
             if (!Page) return
-            var effect = ctx.effect
-            var slots = null
-            var locale = null
-            // 这些读取在宿主 guard 下可能抛错：分别兜住，任何一路失败都只影响配置页。
-            try {
-              slots = ctx.slots
-            } catch (error) {
-              slots = null
-            }
-            try {
-              locale = ctx.locale
-            } catch (error) {
-              locale = null
-            }
-            if (hasPageServices(slots, locale)) {
-              try {
-                registerSettingsPage(slots, locale, effect)
-              } catch (error) {
-                debugUnavailable(error)
-              }
-              return
-            }
-            // 服务未就绪：交给宿主注入，回调到达时再注册；此时粘贴早已可用。
-            var injectFn = null
-            try {
-              injectFn = ctx.inject
-            } catch (error) {
-              injectFn = null
-            }
-            if (typeof injectFn !== 'function') {
+            var slots = ctx.slots
+            var locale = ctx.locale
+            if (!hasPageServices(slots, locale)) {
               debugUnavailable(new Error('slots/locale service unavailable'))
               return
             }
+            // 服务已就绪，直接注册；pageRegistered 保证幂等。注册失败只影响配置页，不动粘贴链路。
             try {
-              injectFn.call(ctx, ['slots', 'locale'], function (scope) {
-                try {
-                  var resolvedSlots = scope && scope.slots ? scope.slots : slots
-                  var resolvedLocale = scope && scope.locale ? scope.locale : locale
-                  // 注入回调带来的 scope 可能自带 effect（宿主注入上下文），优先用它，回退 ctx.effect。
-                  var resolvedEffect = scope && typeof scope.effect === 'function' ? scope.effect : effect
-                  registerSettingsPage(resolvedSlots, resolvedLocale, resolvedEffect)
-                } catch (error) {
-                  debugUnavailable(error)
-                }
-              })
+              registerSettingsPage(slots, locale, ctx.effect)
             } catch (error) {
               debugUnavailable(error)
             }
