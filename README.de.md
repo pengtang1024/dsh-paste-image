@@ -114,7 +114,7 @@ Schlägt die Konvertierung fehl, behält das Plugin die Originaldatei und protok
 
 ## Sprachen
 
-Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche unterstützt – Englisch, vereinfachtes Chinesisch, Japanisch, Spanisch, Französisch, Deutsch, Russisch und Portugiesisch. Jede Datei `locale/<language>.json` enthält den lokalisierten Titel und die Beschreibung und verweist mit ihrer Detailseite auf das passende README in diesem Repository, sodass der Plugin Manager und seine Detailseite dieselbe Sprache sprechen wie die App.
+Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche unterstützt – Englisch, vereinfachtes Chinesisch, Spanisch, Französisch, Deutsch, Russisch und Portugiesisch. Jede Datei `locale/<language>.json` enthält den lokalisierten Titel und die Beschreibung und verweist mit ihrer Detailseite auf das passende README in diesem Repository, sodass der Plugin Manager und seine Detailseite dieselbe Sprache sprechen wie die App.
 
 Übersetzungen sind Quelldateien neben dem Code, kein generierter Text. Die Testsuite prüft, dass jede angekündigte Sprache eine Locale-Datei, ein Detaildokument und Links zu den anderen READMEs hat. Wie Sie eine Übersetzung korrigieren oder hinzufügen, steht unter [Mitwirken](CONTRIBUTING.en.md#translations).
 

@@ -178,7 +178,7 @@ File-like objects without `slice()`/`size` cannot read just a header and fall ba
 
 ## Languages
 
-The plugin ships display metadata for every language the DSH interface supports — English, Simplified Chinese, Japanese, Spanish, French, German, Russian and Portuguese. Each `locale/<language>.json` carries the localized title and description, and points its detail page at the matching README in this repository, so Plugin Manager and its detail page speak the same language as the app.
+The plugin ships display metadata for every language the DSH interface supports — English, Simplified Chinese, Spanish, French, German, Russian and Portuguese. Each `locale/<language>.json` carries the localized title and description, and points its detail page at the matching README in this repository, so Plugin Manager and its detail page speak the same language as the app.
 
 **Simplified Chinese is the source language.** `README.md`, the pages under `docs/`, and `CONTRIBUTING.md`, `CHANGELOG.md` and `SECURITY.md` are written in Chinese; this page and `docs/en/` mirror them. Translations are source files next to the code, not generated text. The test suite checks that every advertised language has a locale file, a detail document, and links to the other READMEs. To fix or add a translation, see [Contributing](CONTRIBUTING.en.md#translations).
 

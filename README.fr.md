@@ -114,7 +114,7 @@ Si la conversion échoue, le plugin conserve le fichier d'origine et journalise 
 
 ## Langues
 
-Le plugin fournit des métadonnées d'affichage pour chaque langue prise en charge par l'interface DSH — anglais, chinois simplifié, japonais, espagnol, français, allemand, russe et portugais. Chaque fichier `locale/<language>.json` porte le titre et la description localisés, et fait pointer sa page de détail vers le README correspondant de ce dépôt, afin que le Plugin Manager et sa page de détail parlent la même langue que l'application.
+Le plugin fournit des métadonnées d'affichage pour chaque langue prise en charge par l'interface DSH — anglais, chinois simplifié, espagnol, français, allemand, russe et portugais. Chaque fichier `locale/<language>.json` porte le titre et la description localisés, et fait pointer sa page de détail vers le README correspondant de ce dépôt, afin que le Plugin Manager et sa page de détail parlent la même langue que l'application.
 
 Les traductions sont des fichiers source à côté du code, pas du texte généré. La suite de tests vérifie que chaque langue annoncée dispose d'un fichier de locale, d'un document de détail et de liens vers les autres README. Pour corriger ou ajouter une traduction, voir [Contribuer](CONTRIBUTING.en.md#translations).
 

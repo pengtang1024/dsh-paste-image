@@ -114,7 +114,7 @@ Si la conversión falla, el plugin conserva el archivo original y en su lugar re
 
 ## Idiomas
 
-El plugin incluye metadatos de presentación para todos los idiomas que admite la interfaz de DSH: inglés, chino simplificado, japonés, español, francés, alemán, ruso y portugués. Cada `locale/<language>.json` lleva el título y la descripción localizados, y apunta su página de detalle al README correspondiente en este repositorio, de modo que el Administrador de plugins y su página de detalle hablan el mismo idioma que la aplicación.
+El plugin incluye metadatos de presentación para todos los idiomas que admite la interfaz de DSH: inglés, chino simplificado, español, francés, alemán, ruso y portugués. Cada `locale/<language>.json` lleva el título y la descripción localizados, y apunta su página de detalle al README correspondiente en este repositorio, de modo que el Administrador de plugins y su página de detalle hablan el mismo idioma que la aplicación.
 
 Las traducciones son archivos fuente junto al código, no texto generado. La suite de pruebas comprueba que cada idioma anunciado tenga un archivo de locale, un documento de detalle y enlaces a los demás README. Para corregir o añadir una traducción, consulta [Contribuir](CONTRIBUTING.en.md#translations).
 
