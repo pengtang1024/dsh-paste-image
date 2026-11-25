@@ -982,6 +982,12 @@
             summary: '图片粘贴转换',
             summaryEnabled: '已启用',
             summaryDisabled: '已停用',
+            groupSwitch: '开关',
+            groupLimits: '数量与上限',
+            groupOutput: '输出格式与质量',
+            groupConvert: '格式转换',
+            groupSystem: '系统',
+            groupActions: '操作',
             enabled: '启用插件',
             maxFiles: '单次最大文件数',
             maxSide: '长边上限 (px)',
@@ -1006,6 +1012,12 @@
             summary: 'Image paste conversion',
             summaryEnabled: 'enabled',
             summaryDisabled: 'disabled',
+            groupSwitch: 'Switch',
+            groupLimits: 'Count & limits',
+            groupOutput: 'Output format & quality',
+            groupConvert: 'Format conversion',
+            groupSystem: 'System',
+            groupActions: 'Actions',
             enabled: 'Enable plugin',
             maxFiles: 'Max files per paste',
             maxSide: 'Long-edge limit (px)',
@@ -1028,40 +1040,129 @@
         }
 
         function createPage() {
+          // 克制型设置面板：宿主面板里的紧凑表单，靠分组、留白与细分隔建立层次，
+          // 所有取色与圆角都走 DSH 令牌，不硬编码颜色、不引入依赖。
           var styles = {
             summary: { color: 'var(--dsw-alias-label-secondary)', fontSize: '13px', lineHeight: '20px' },
             page: {
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px',
-              color: 'var(--dsw-alias-label-primary)',
-              fontSize: '13px',
-            },
-            row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' },
-            checkRow: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
-            check: { margin: '0', accentColor: 'var(--dsw-alias-brand-primary)' },
-            input: {
-              width: '140px',
-              padding: '4px 8px',
-              borderRadius: '6px',
+              boxSizing: 'border-box',
+              width: '100%',
+              padding: '10px 12px 12px',
               border: '1px solid var(--dsw-alias-border-l2)',
+              borderRadius: 'var(--dsw-radius-md)',
               background: 'var(--dsw-alias-bg-layer-1)',
               color: 'var(--dsw-alias-label-primary)',
               fontSize: '13px',
+              lineHeight: '20px',
             },
-            buttons: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+            section: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              padding: '10px 0',
+              borderTop: '1px solid var(--dsw-alias-border-l1)',
+            },
+            sectionFirst: { display: 'flex', flexDirection: 'column', gap: '6px', padding: '0 0 10px' },
+            sectionTitle: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              color: 'var(--dsw-alias-label-tertiary)',
+            },
+            sectionRule: { flex: '1', height: '1px', background: 'var(--dsw-alias-border-l1)' },
+            row: {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap',
+              minHeight: '28px',
+            },
+            label: { color: 'var(--dsw-alias-label-secondary)', flexShrink: 0 },
+            hint: {
+              color: 'var(--dsw-alias-label-tertiary)',
+              fontSize: '11px',
+              lineHeight: '17px',
+              marginTop: '-2px',
+            },
+            checkRow: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              padding: '5px 6px',
+              margin: '0 -6px',
+              borderRadius: 'var(--dsw-radius-sm)',
+            },
+            checkRowHover: { background: 'var(--dsw-alias-interactive-bg-hover)' },
+            check: { margin: '0', accentColor: 'var(--dsw-alias-brand-primary)', flexShrink: 0 },
+            input: {
+              width: '132px',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              padding: '4px 8px',
+              borderRadius: 'var(--dsw-radius-sm)',
+              border: '1px solid var(--dsw-alias-border-l2)',
+              background: 'var(--dsw-alias-bg-layer-2)',
+              color: 'var(--dsw-alias-label-primary)',
+              fontFamily: 'inherit',
+              fontSize: '13px',
+            },
+            inputDisabled: { opacity: '0.55', cursor: 'not-allowed' },
+            buttons: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minHeight: '28px' },
             button: {
               padding: '5px 14px',
-              borderRadius: '6px',
+              borderRadius: 'var(--dsw-radius-sm)',
               border: '1px solid var(--dsw-alias-border-l2)',
-              background: 'var(--dsw-alias-bg-layer-1)',
+              background: 'var(--dsw-alias-bg-layer-2)',
               color: 'var(--dsw-alias-label-primary)',
+              fontFamily: 'inherit',
               fontSize: '13px',
+              lineHeight: '18px',
               cursor: 'pointer',
             },
-            ok: { color: 'var(--dsw-alias-state-success-primary)', fontSize: '12px' },
-            error: { color: 'var(--dsw-alias-state-error-primary)', fontSize: '12px' },
-            note: { color: 'var(--dsw-alias-label-tertiary)', fontSize: '12px', lineHeight: '18px' },
+            buttonHover: { background: 'var(--dsw-alias-interactive-bg-hover-solid)' },
+            buttonPrimary: {
+              padding: '5px 14px',
+              borderRadius: 'var(--dsw-radius-sm)',
+              border: '1px solid var(--dsw-alias-button-primary-fill)',
+              background: 'var(--dsw-alias-button-primary-fill)',
+              color: 'var(--dsw-alias-label-on-color)',
+              fontFamily: 'inherit',
+              fontSize: '13px',
+              lineHeight: '18px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            },
+            buttonPrimaryHover: {
+              borderColor: 'var(--dsw-alias-button-primary-hover)',
+              background: 'var(--dsw-alias-button-primary-hover)',
+            },
+            status: {
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '3px 9px',
+              borderRadius: 'var(--dsw-radius-sm)',
+              border: '1px solid var(--dsw-alias-border-l2)',
+              background: 'var(--dsw-alias-bg-layer-2)',
+              fontSize: '12px',
+              lineHeight: '18px',
+              fontWeight: 600,
+            },
+            ok: { color: 'var(--dsw-alias-state-success-primary)' },
+            error: { color: 'var(--dsw-alias-state-error-primary)' },
+            note: {
+              color: 'var(--dsw-alias-label-tertiary)',
+              fontSize: '11px',
+              lineHeight: '17px',
+              paddingTop: '8px',
+              borderTop: '1px solid var(--dsw-alias-border-l1)',
+            },
           }
 
           var FORMAT_OPTIONS = [
@@ -1078,6 +1179,32 @@
             return key
           }
 
+          // 只为视觉细节加包装节点：不增减任何表单控件，也不改变取值与事件语义。
+          function mergeStyle(base, extra) {
+            var merged = {}
+            Object.keys(base).forEach(function (key) {
+              merged[key] = base[key]
+            })
+            Object.keys(extra).forEach(function (key) {
+              merged[key] = extra[key]
+            })
+            return merged
+          }
+
+          function section(title, children, first) {
+            return React.createElement(
+              'div',
+              { key: 'section:' + title, style: first ? styles.sectionFirst : styles.section },
+              React.createElement(
+                'div',
+                { key: 'heading', style: styles.sectionTitle },
+                React.createElement('span', { key: 'title' }, title),
+                React.createElement('span', { key: 'rule', style: styles.sectionRule }),
+              ),
+              children,
+            )
+          }
+
           // 表单只在“保存”时写：draft 是本地状态，离开页面即丢弃。
           function SettingsForm(props) {
             var t = props && typeof props.t === 'function' ? props.t : fallbackText
@@ -1089,6 +1216,10 @@
             var statusState = React.useState('')
             var status = statusState[0]
             var setStatus = statusState[1]
+            // 仅用于 hover 视觉；不改变任何控件的值、类型或 disabled 语义。
+            var hoverState = React.useState('')
+            var hovered = hoverState[0]
+            var setHovered = hoverState[1]
 
             var update = function (key, value) {
               setDraft(function (current) {
@@ -1123,7 +1254,16 @@
             var checkbox = function (key) {
               return React.createElement(
                 'label',
-                { key: key, style: styles.checkRow },
+                {
+                  key: key,
+                  style: hovered === key ? mergeStyle(styles.checkRow, styles.checkRowHover) : styles.checkRow,
+                  onMouseEnter: function () {
+                    setHovered(key)
+                  },
+                  onMouseLeave: function () {
+                    setHovered('')
+                  },
+                },
                 React.createElement('input', {
                   key: 'input',
                   type: 'checkbox',
@@ -1138,10 +1278,11 @@
             }
 
             var number = function (key, min, max, step, options) {
+              var disabled = Boolean(options && options.disabled)
               return React.createElement(
                 'label',
                 { key: key, style: styles.row },
-                React.createElement('span', { key: 'text' }, t(key)),
+                React.createElement('span', { key: 'text', style: styles.label }, t(key)),
                 React.createElement('input', {
                   key: 'input',
                   type: 'number',
@@ -1149,13 +1290,13 @@
                   max: max,
                   step: step,
                   value: String(draft[key]),
-                  disabled: Boolean(options && options.disabled),
+                  disabled: disabled,
                   onChange: function (event) {
                     if (event.target.value === '') return
                     var value = Number(event.target.value)
                     if (Number.isFinite(value)) update(key, value)
                   },
-                  style: styles.input,
+                  style: disabled ? mergeStyle(styles.input, styles.inputDisabled) : styles.input,
                 }),
               )
             }
@@ -1164,7 +1305,7 @@
               return React.createElement(
                 'label',
                 { key: key, style: styles.row },
-                React.createElement('span', { key: 'text' }, t(key)),
+                React.createElement('span', { key: 'text', style: styles.label }, t(key)),
                 React.createElement(
                   'select',
                   {
@@ -1185,41 +1326,75 @@
             var statusNode = status
               ? React.createElement(
                   'span',
-                  { key: 'status', style: status === 'saved' ? styles.ok : styles.error },
+                  {
+                    key: 'status',
+                    style: mergeStyle(styles.status, status === 'saved' ? styles.ok : styles.error),
+                  },
                   t(status),
                 )
               : null
 
+            // 分组只加容器与标题，控件种类、数量、顺序、取值与事件完全沿用原实现。
             return React.createElement(
               'div',
               { style: styles.page },
-              checkbox('enabled'),
-              number('maxFiles', 1, 8, 1),
-              number('maxSide', 512, 8192, 256),
-              select('outputFormat', FORMAT_OPTIONS),
-              React.createElement('div', { key: 'formatHint', style: styles.note }, t('formatHint')),
-              number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
-              React.createElement('div', { key: 'qualityHint', style: styles.note }, t('qualityHint')),
-              checkbox('convertXpm'),
-              checkbox('convertBmp'),
-              checkbox('convertSvg'),
-              checkbox('convertIco'),
-              checkbox('logConversions'),
-              React.createElement(
-                'div',
-                { key: 'actions', style: styles.buttons },
+              section('groupSwitch', [checkbox('enabled')], true),
+              section('groupLimits', [number('maxFiles', 1, 8, 1), number('maxSide', 512, 8192, 256)]),
+              section('groupOutput', [
+                select('outputFormat', FORMAT_OPTIONS),
+                React.createElement('div', { key: 'formatHint', style: styles.hint }, t('formatHint')),
+                number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
+                React.createElement('div', { key: 'qualityHint', style: styles.hint }, t('qualityHint')),
+              ]),
+              section('groupConvert', [
+                checkbox('convertXpm'),
+                checkbox('convertBmp'),
+                checkbox('convertSvg'),
+                checkbox('convertIco'),
+              ]),
+              section('groupSystem', [checkbox('logConversions')]),
+              section('groupActions', [
                 React.createElement(
-                  'button',
-                  { key: 'save', type: 'button', style: styles.button, onClick: save },
-                  t('save'),
+                  'div',
+                  { key: 'actions', style: styles.buttons },
+                  React.createElement(
+                    'button',
+                    {
+                      key: 'save',
+                      type: 'button',
+                      style:
+                        hovered === 'save'
+                          ? mergeStyle(styles.buttonPrimary, styles.buttonPrimaryHover)
+                          : styles.buttonPrimary,
+                      onMouseEnter: function () {
+                        setHovered('save')
+                      },
+                      onMouseLeave: function () {
+                        setHovered('')
+                      },
+                      onClick: save,
+                    },
+                    t('save'),
+                  ),
+                  React.createElement(
+                    'button',
+                    {
+                      key: 'reset',
+                      type: 'button',
+                      style: hovered === 'reset' ? mergeStyle(styles.button, styles.buttonHover) : styles.button,
+                      onMouseEnter: function () {
+                        setHovered('reset')
+                      },
+                      onMouseLeave: function () {
+                        setHovered('')
+                      },
+                      onClick: reset,
+                    },
+                    t('reset'),
+                  ),
+                  statusNode,
                 ),
-                React.createElement(
-                  'button',
-                  { key: 'reset', type: 'button', style: styles.button, onClick: reset },
-                  t('reset'),
-                ),
-                statusNode,
-              ),
+              ]),
               React.createElement('div', { key: 'note', style: styles.note }, t('note')),
             )
           }
