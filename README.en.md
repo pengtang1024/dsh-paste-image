@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 Paste or drop almost any image into DeepSeek Harness — even when the clipboard says `image/xpm` or lies about the MIME type.
 
@@ -178,7 +178,7 @@ File-like objects without `slice()`/`size` cannot read just a header and fall ba
 
 ## Languages
 
-The plugin ships display metadata for every language the DSH interface supports — English, Simplified Chinese, Japanese, Spanish, French, German, Russian and Portuguese. Each `locale/<language>.json` carries the localized title and description, and points its detail page at the matching README in this repository, so Plugin Manager and its detail page speak the same language as the app.
+The plugin ships display metadata for every language the DSH interface supports — English, Simplified Chinese, Spanish, French, German, Russian and Portuguese. Each `locale/<language>.json` carries the localized title and description, and points its detail page at the matching README in this repository, so Plugin Manager and its detail page speak the same language as the app.
 
 **Simplified Chinese is the source language.** `README.md`, the pages under `docs/`, and `CONTRIBUTING.md`, `CHANGELOG.md` and `SECURITY.md` are written in Chinese; this page and `docs/en/` mirror them. Translations are source files next to the code, not generated text. The test suite checks that every advertised language has a locale file, a detail document, and links to the other READMEs. To fix or add a translation, see [Contributing](CONTRIBUTING.en.md#translations).
 
@@ -201,3 +201,7 @@ The plugin ships display metadata for every language the DSH interface supports 
 ## License
 
 MIT © 2026 pengtang1024. See [LICENSE](LICENSE).
+
+## Support this project
+
+If this plugin has made your day-to-day work easier, consider giving [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) a star ⭐. That little click goes a long way toward keeping me motivated to maintain it.

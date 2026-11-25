@@ -84,11 +84,58 @@ npm run format:check  # npx --yes prettier@3 --check .
 
 `.prettierignore` 排除了 `node_modules/` 和 `package-lock.json`。`LICENSE` 没有扩展名，所以针对目录运行 Prettier 时会跳过它；它是纯 MIT 文本。
 
+## 分支模型
+
+项目采用 Git Flow：`develop` 是集成分支，`master` 是发布分支。两者的历史都只靠合并推进，发布点以签名 tag 标记。
+
+- **长期分支**：`develop`（日常集成）与 `master`（只放已发布状态）。不要在 `master` 上直接开发。
+- **`feature/*` 与 `fix/*`**：从 `develop` 切出，完成后合回 `develop`。这类合并可用 `--no-ff` 保留分支拓扑，但不是强制要求。
+- **`release/*`**：从 `develop` 切出，用来收尾版本号、changelog 等发布准备。完成时**双向合流**：先合入 `master`，在 `master` 上打签名 tag，再把 `master` 合回 `develop`。
+- **`hotfix/*`**：从 `master`（或已发布的 tag）切出，用于紧急修复。完成时同样**双向合流**：先合入 `master` 并打签名 tag，再把 `master` 合回 `develop`。
+
+`release/*`、`hotfix/*` 合入 `master` 与 `develop` 时**必须使用 `--no-ff`**，留下可追溯的合并提交。签名 tag 只在 `master` 上打。
+
+默认不改动 GitHub 的默认分支设置，不 force push，不 rebase 已经发布出去的提交；已发布的 tag 永不移动。确需例外时先由维护者确认。
+
+### 命名与提交约定
+
+- 分支名统一 **kebab-case**（全小写、单词用连字符分隔），例如 `feat/paste-webp`、`fix/settings-locale`。`feature/*` 在实践中常写作 `feat/*`，两者等价。
+- 提交信息遵循 Conventional Commits，格式为 `type(scope): 中文描述`。`scope` 可选，写受影响的模块（如 `decoder`、`locale`、`docs`）；描述用简体中文，不以句号结尾。例如：`fix(decoder): 修正截断 BMP 的越界读取`。
+- `type` 取 `feat`、`fix`、`docs`、`chore`、`refactor`、`perf`。
+
+## 签名约定
+
+本机发布 tag 使用 **SSH 签名**（不是 GPG）。实测生效的 git 配置如下，可用 `git config --get <key>` 复核：
+
+| 配置项 | 值 |
+| --- | --- |
+| `gpg.format` | `ssh` |
+| `user.signingkey` | `/home/pt/.ssh/id_ed25519_github_docker_panel.pub` |
+| `tag.gpgSign` | `true` |
+
+等价的 `git config --list --local` 输出片段：
+
+```text
+gpg.format=ssh
+user.signingkey=/home/pt/.ssh/id_ed25519_github_docker_panel.pub
+tag.gpgSign=true
+```
+
+因此 `master` 上打的 tag 默认带签名。验证签名时，Git 需要一份「受信任公钥」清单；约定把 `gpg.ssh.allowedSignersFile` 指向仓库内的 `.git/allowed_signers`。**该文件位于 `.git/` 内，不会进入版本库**，所以每个新克隆都要在本地配置一次：
+
+```bash
+git config --local gpg.ssh.allowedSignersFile .git/allowed_signers
+# 把公钥行写入该文件；<principal> 是你希望与该密钥关联的标识（如 GitHub 用户名）：
+printf '<principal> %s\n' "$(cat /home/pt/.ssh/id_ed25519_github_docker_panel.pub)" > .git/allowed_signers
+```
+
+之后可用 `git verify-tag v<版本>` 或 `git log --show-signature` 检查签名。不要把私钥提交进仓库，`allowed_signers` 也属于各人本地环境，不需要进版本库。
+
 ## 拉取请求
 
 1. 凡是比错别字或文档修正更大的改动，请先开 issue。
-2. 从 `master` 拉分支：`feat/...`、`fix/...` 或 `docs/...`。
-3. 保持提交聚焦，使用 `type(scope): summary`，type 取 `feat`、`fix`、`docs`、`test` 或 `chore`。
+2. 按上面的[分支模型](#分支模型)从 `develop` 拉分支：`feat/...`、`fix/...` 或 `docs/...`，并使用 kebab-case 命名。
+3. 保持提交聚焦，提交信息遵循上面的[命名与提交约定](#命名与提交约定)。
 4. 在描述里说明改了什么、为什么改、如何验证——贴出命令和相关输出。涉及事件路径的改动，要描述手工粘贴/拖放验证。
 5. CI 会在 Node 20 和 22 上对两个入口文件运行 `node --check`、`npx prettier@3 --check .` 和 `npm test`。三项都要保持通过。
 6. 功能类拉取请求里不要改版本号，也不要改 `CHANGELOG.md`；发版由维护者执行。

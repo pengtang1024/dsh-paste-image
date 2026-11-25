@@ -2,6 +2,6 @@
   "meta": {
     "title": "Pega cualquier imagen",
     "description": "Pega o arrastra una imagen cuyo tipo declarado sea XPM, BMP o DIB, SVG, ICO, o simplemente esté equivocado: el renderer analiza los bytes reales y la convierte a PNG, JPEG o WebP (PNG por defecto) antes de entregarla al compositor. Los PNG, JPEG, WebP y GIF nativos pasan sin modificarse. El número de archivos y el límite del lado largo son configurables (8 archivos y 4096 px por defecto). HEIC y TIFF se reconocen pero no se decodifican, porque el plugin no incluye decodificador para ellos.",
-    "detail": "README.es.md"
+    "detail": "docs/DETAIL.es.md"
   }
 }

@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 Fügen Sie fast jedes Bild in DeepSeek Harness ein oder ziehen Sie es hinein – selbst wenn die Zwischenablage `image/xpm` meldet oder beim MIME-Typ lügt.
 
@@ -114,7 +114,7 @@ Schlägt die Konvertierung fehl, behält das Plugin die Originaldatei und protok
 
 ## Sprachen
 
-Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche unterstützt – Englisch, vereinfachtes Chinesisch, Japanisch, Spanisch, Französisch, Deutsch, Russisch und Portugiesisch. Jede Datei `locale/<language>.json` enthält den lokalisierten Titel und die Beschreibung und verweist mit ihrer Detailseite auf das passende README in diesem Repository, sodass der Plugin Manager und seine Detailseite dieselbe Sprache sprechen wie die App.
+Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche unterstützt – Englisch, vereinfachtes Chinesisch, Spanisch, Französisch, Deutsch, Russisch und Portugiesisch. Jede Datei `locale/<language>.json` enthält den lokalisierten Titel und die Beschreibung und verweist mit ihrer Detailseite auf das passende README in diesem Repository, sodass der Plugin Manager und seine Detailseite dieselbe Sprache sprechen wie die App.
 
 Übersetzungen sind Quelldateien neben dem Code, kein generierter Text. Die Testsuite prüft, dass jede angekündigte Sprache eine Locale-Datei, ein Detaildokument und Links zu den anderen READMEs hat. Wie Sie eine Übersetzung korrigieren oder hinzufügen, steht unter [Mitwirken](CONTRIBUTING.en.md#translations).
 
@@ -136,3 +136,7 @@ Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche 
 ## Lizenz
 
 MIT © 2026 pengtang1024. Siehe [LICENSE](LICENSE).
+
+## Unterstützen Sie dieses Projekt
+
+Wenn Ihnen das Plugin im Alltag hilft, geben Sie [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) doch einen Stern ⭐. Ein kleiner Klick motiviert mich sehr, es weiter zu pflegen.

@@ -1,6 +1,10 @@
 version: 2
 updates:
-  # 本插件零运行时依赖，npm 生态无需自动升级；仅跟踪 GitHub Actions 版本。
+  # 插件零运行时依赖，但仍跟踪 npm 与 GitHub Actions 的版本更新。
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
   - package-ecosystem: github-actions
     directory: '/'
     schedule:

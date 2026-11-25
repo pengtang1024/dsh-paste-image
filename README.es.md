@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 Pega o arrastra casi cualquier imagen en DeepSeek Harness, incluso cuando el portapapeles dice `image/xpm` o miente sobre el tipo MIME.
 
@@ -114,7 +114,7 @@ Si la conversión falla, el plugin conserva el archivo original y en su lugar re
 
 ## Idiomas
 
-El plugin incluye metadatos de presentación para todos los idiomas que admite la interfaz de DSH: inglés, chino simplificado, japonés, español, francés, alemán, ruso y portugués. Cada `locale/<language>.json` lleva el título y la descripción localizados, y apunta su página de detalle al README correspondiente en este repositorio, de modo que el Administrador de plugins y su página de detalle hablan el mismo idioma que la aplicación.
+El plugin incluye metadatos de presentación para todos los idiomas que admite la interfaz de DSH: inglés, chino simplificado, español, francés, alemán, ruso y portugués. Cada `locale/<language>.json` lleva el título y la descripción localizados, y apunta su página de detalle al README correspondiente en este repositorio, de modo que el Administrador de plugins y su página de detalle hablan el mismo idioma que la aplicación.
 
 Las traducciones son archivos fuente junto al código, no texto generado. La suite de pruebas comprueba que cada idioma anunciado tenga un archivo de locale, un documento de detalle y enlaces a los demás README. Para corregir o añadir una traducción, consulta [Contribuir](CONTRIBUTING.en.md#translations).
 
@@ -136,3 +136,7 @@ Las traducciones son archivos fuente junto al código, no texto generado. La sui
 ## Licencia
 
 MIT © 2026 pengtang1024. Consulta [LICENSE](LICENSE).
+
+## Apoya este proyecto
+
+Si este plugin te resulta útil en tu día a día, échale un vistazo a [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) y dale una estrella ⭐. Ese pequeño gesto me anima a seguir manteniéndolo.

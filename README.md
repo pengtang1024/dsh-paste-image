@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 把几乎任何图片粘进或拖进 DeepSeek Harness —— 哪怕剪贴板声称它是 `image/xpm`，或者干脆把 MIME 类型写错了。
 
@@ -180,7 +180,7 @@ npm run check
 
 ## 多语言
 
-插件为 DSH 界面支持的全部语言提供展示元数据——简体中文、英语、日语、西班牙语、法语、德语、俄语和葡萄牙语。每种语言的 `locale/<语言>.json` 各自携带本地化的标题与简介，并把详情页指向本仓库对应语言的 README，因此插件管理器与插件详情页显示的语言与界面一致。
+插件为 DSH 界面支持的全部语言提供展示元数据——简体中文、英语、西班牙语、法语、德语、俄语和葡萄牙语。每种语言的 `locale/<语言>.json` 各自携带本地化的标题与简介，并把详情页指向本仓库对应语言的 README，因此插件管理器与插件详情页显示的语言与界面一致。
 
 **简体中文是源语言。** 本 README、`docs/` 下的文档以及 `CONTRIBUTING.md`、`CHANGELOG.md`、`SECURITY.md` 都用中文撰写；其余语言是紧随其后的译文，其中英语版为 `README.en.md` 与 `docs/en/`。译文随代码一起维护，不是运行时机器翻译。测试会检查每个已声明语言都有 locale 文件、详情文档，并且 README 之间互相链接。要修正或新增翻译，见[贡献指南](CONTRIBUTING.md#翻译)。
 
@@ -203,3 +203,7 @@ npm run check
 ## 许可证
 
 MIT © 2026 pengtang1024，见 [LICENSE](LICENSE)。
+
+## 支持本项目
+
+如果这款插件在日常使用中帮到了你，欢迎到 [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) 点个 star ⭐。一个小小的 star，就是对我继续维护它的最大鼓励。

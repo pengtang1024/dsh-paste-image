@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-25
+
+### 新增
+
+- 补齐五语安全政策译文，安全政策新增五种语言版本，各语言条款保持一致。
+- 补齐 dependabot 配置并核对安全设置，依赖更新与安全告警纳入版本库配置。
+
+### 变更
+
+- 贡献指南写明 Git Flow 分支模型与 SSH 签名约定，新贡献者可依照统一流程建分支与签名提交。
+- 补齐七语 DETAIL 文档并剔除日语，本地化资源收敛为 zh / en / es / fr / de / ru / pt 七种语言。
+- README 增加 star 求取提示，方便读者在 GitHub 上为项目点星。
+
 ### 修复
 
 - 配置页仍不显示：根因是工厂返回对象只声明 `inject: ['slots']`，漏了 `locale`。cordis 要求服务读取先在 fiber 声明（reflect.ts 的 `prop in fiber.inject` 才放行），`apply()` 读 `ctx.locale` 被 guard 抛错、被 try/catch 吞成 `null`，`hasPageServices()` 因此返回 false；随后 `ctx.inject(['slots','locale'], cb)` 兜底并不会真正注册到 `plugins.row.config`，异常又被 `debugUnavailable` 吞掉，配置按钮始终不出现。现改为 `inject: ['slots', 'locale']`，删除无效的延迟兜底与为读服务而设的 try/catch，服务就绪后直接调用 `registerSettingsPage()`（保留 `pageRegistered` 幂等、locale 命名空间 `dsh-paste-image:settings` 与 slot key 不变）。`ctx.effect(install, 'paste-image')` 仍在最前，配置页失败不影响粘贴链路；服务缺失时仅留一行 `console.debug`。
@@ -64,8 +77,8 @@
 
 ### 新增
 
-- 插件转为以中文为主：`README.md` 是简体中文，`README.en.md` 是英文版，另有 `README.ja.md`、`README.es.md`、`README.fr.md`、`README.de.md`、`README.ru.md`、`README.pt.md` 六种译文。每份 README 顶部都有同一行八语言切换链接，并新增「多语言」说明小节。
-- `locale/` 目录为 DSH 界面支持的八种语言提供展示元数据：`locale/en.json`、`locale/zh.json`、`locale/ja.json`、`locale/es.json`、`locale/fr.json`、`locale/de.json`、`locale/ru.json`、`locale/pt.json`，各自携带本地化的 `meta.title`、`meta.description`，以及指向对应语言 README 的 `meta.detail`——中文指向 `README.md`，英文指向 `README.en.md`。插件列表行与详情页因此按界面语言显示，而不是回退到 manifest 名称和英文文案。
+- 插件转为以中文为主：`README.md` 是简体中文，`README.en.md` 是英文版，另有 `README.es.md`、`README.fr.md`、`README.de.md`、`README.ru.md`、`README.pt.md` 五种译文。每份 README 顶部都有同一行语言切换链接，并新增「多语言」说明小节。
+- `locale/` 目录为 DSH 界面支持的语言提供展示元数据：`locale/en.json`、`locale/zh.json`、`locale/es.json`、`locale/fr.json`、`locale/de.json`、`locale/ru.json`、`locale/pt.json`，各自携带本地化的 `meta.title`、`meta.description`，以及指向对应语言 README 的 `meta.detail`——中文指向 `README.md`，英文指向 `README.en.md`。插件列表行与详情页因此按界面语言显示，而不是回退到 manifest 名称和英文文案。
 - 技术文档改为以中文为主：`docs/how-it-works.md`、`docs/formats.md`、`docs/troubleshooting.md`、`docs/releasing.md` 均为中文，英文版位于 `docs/en/` 下的同名文件。
 - `CONTRIBUTING.md`、`CHANGELOG.md`、`SECURITY.md` 同样以中文为主，英文版分别为 `CONTRIBUTING.en.md`、`CHANGELOG.en.md`、`SECURITY.en.md`；`CODE_OF_CONDUCT.md` 保留 Contributor Covenant 英文原文。贡献指南新增「翻译」小节，说明中文是源语言、改动时需要同步哪些文件，以及新增一种语言时如何扩展测试中的 `LOCALES`。
 

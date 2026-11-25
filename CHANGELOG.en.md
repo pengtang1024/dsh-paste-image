@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-25
+
+### Added
+
+- Added five translated versions of the security policy, keeping the terms consistent across languages.
+- Added the Dependabot configuration and reviewed the repository security settings.
+
+### Changed
+
+- The contributing guide now documents the Git Flow branch model and the SSH signing convention.
+- Completed the seven-language DETAIL documents and removed Japanese; localization is now zh / en / es / fr / de / ru / pt.
+- The README now asks readers for a GitHub star.
+
+### Fixed
+
+- The settings page still did not show up: the factory declared only `inject: ['slots']` and missed `locale`. cordis requires a service to be declared on the fiber before it can be read, so the `ctx.locale` read in `apply()` was blocked by the guard and swallowed by a try/catch, making `hasPageServices()` return false; the `ctx.inject(['slots', 'locale'], cb)` fallback never registered the page either and its error was swallowed by `debugUnavailable`. The factory now declares `inject: ['slots', 'locale']`, the ineffective deferred fallback and the try/catch are removed, and `registerSettingsPage()` is called directly once the services are ready (the `pageRegistered` guard, locale namespace `dsh-paste-image:settings` and slot key stay the same). `ctx.effect(install, 'paste-image')` still runs first, so a settings failure cannot affect pasting; a missing service only leaves one `console.debug` line.
+- Added a cordis guard regression case: the factory must declare both `slots` and `locale`, and the old declaration blocks `ctx.locale` reads while the new one can register the settings page directly.
+
 ## [0.4.2] - 2026-11-25
 
 ### Fixed
@@ -59,8 +77,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Chinese-first layout. `README.md` is now Simplified Chinese, `README.en.md` is the English translation, and `README.ja.md`, `README.es.md`, `README.fr.md`, `README.de.md`, `README.ru.md` and `README.pt.md` follow. Every README opens with the same eight-language switcher and carries a Languages section.
-- Display metadata for every language the DSH interface supports. `locale/en.json`, `locale/zh.json`, `locale/ja.json`, `locale/es.json`, `locale/fr.json`, `locale/de.json`, `locale/ru.json` and `locale/pt.json` each carry a localized `meta.title`, `meta.description` and a `meta.detail` pointing at that language's README — Chinese at `README.md`, English at `README.en.md` — so plugin rows and the detail page read in the app's language instead of falling back to the manifest name and English text.
+- Chinese-first layout. `README.md` is now Simplified Chinese, `README.en.md` is the English translation, and `README.es.md`, `README.fr.md`, `README.de.md`, `README.ru.md` and `README.pt.md` follow. Every README opens with the same language switcher and carries a Languages section.
+- Display metadata for every language the DSH interface supports. `locale/en.json`, `locale/zh.json`, `locale/es.json`, `locale/fr.json`, `locale/de.json`, `locale/ru.json` and `locale/pt.json` each carry a localized `meta.title`, `meta.description` and a `meta.detail` pointing at that language's README — Chinese at `README.md`, English at `README.en.md` — so plugin rows and the detail page read in the app's language instead of falling back to the manifest name and English text.
 - Chinese documentation: `docs/how-it-works.md`, `docs/formats.md`, `docs/troubleshooting.md` and `docs/releasing.md` are written in Chinese, with English mirrors under `docs/en/`.
 - `CONTRIBUTING.md`, `CHANGELOG.md` and `SECURITY.md` are Chinese too, mirrored by `CONTRIBUTING.en.md`, `CHANGELOG.en.md` and `SECURITY.en.md`; `CODE_OF_CONDUCT.md` keeps the original Contributor Covenant English text. The new Translations section in the contributing guide names Chinese as the source language, lists the files to update, and explains how to add a language by extending `LOCALES` in the test suite.
 

@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 Cole ou arraste quase qualquer imagem para o DeepSeek Harness — mesmo quando a área de transferência diz `image/xpm` ou mente sobre o tipo MIME.
 
@@ -114,7 +114,7 @@ Se a conversão falhar, o plugin mantém o arquivo original e registra `keep ori
 
 ## Idiomas
 
-O plugin distribui metadados de exibição para todos os idiomas que a interface do DSH suporta — inglês, chinês simplificado, japonês, espanhol, francês, alemão, russo e português. Cada `locale/<language>.json` traz o título e a descrição localizados e aponta sua página de detalhes para o README correspondente neste repositório, para que o Plugin Manager e sua página de detalhes falem o mesmo idioma do app.
+O plugin distribui metadados de exibição para todos os idiomas que a interface do DSH suporta — inglês, chinês simplificado, espanhol, francês, alemão, russo e português. Cada `locale/<language>.json` traz o título e a descrição localizados e aponta sua página de detalhes para o README correspondente neste repositório, para que o Plugin Manager e sua página de detalhes falem o mesmo idioma do app.
 
 As traduções são arquivos-fonte ao lado do código, não texto gerado. A suíte de testes verifica que todo idioma anunciado tem um arquivo de locale, um documento de detalhes e links para os outros READMEs. Para corrigir ou adicionar uma tradução, veja [Contributing](CONTRIBUTING.en.md#translations).
 
@@ -136,3 +136,7 @@ As traduções são arquivos-fonte ao lado do código, não texto gerado. A suí
 ## Licença
 
 MIT © 2026 pengtang1024. Veja [LICENSE](LICENSE).
+
+## Apoie este projeto
+
+Se este plugin tem sido útil no seu dia a dia, dê uma estrela ⭐ ao [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image). Esse pequeno gesto me motiva muito a continuar mantendo-o.
