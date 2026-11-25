@@ -18,13 +18,13 @@ Esa lista blanca rompe dos situaciones que ocurren todo el tiempo en Linux:
 - **Capturas declaradas como XPM.** Algunas herramientas de captura, sobre todo en Ubuntu/Wayland, dejan la imagen en el portapapeles con el tipo `image/xpm`. Los píxeles están bien; la etiqueta no está en la lista blanca, así que el pegado se rechaza.
 - **Bytes BMP con etiqueta PNG.** Algunas aplicaciones entregan un BMP (o TIFF) mientras declaran `image/png`. El tipo declarado pasa la lista blanca, el decodificador falla más adelante y aparece el mismo error en rojo.
 
-`dsh-paste-image` resuelve ambos casos dentro del renderer: mira los bytes reales, decodifica lo que el portapapeles contiene de verdad, lo recodifica como PNG y devuelve el resultado al canal de adjuntos normal.
+`dsh-paste-image` resuelve ambos casos dentro del renderer: mira los bytes reales, decodifica lo que el portapapeles contiene de verdad, lo recodifica en el formato de salida elegido (PNG por defecto) y devuelve el resultado al canal de adjuntos normal.
 
 ## Cómo funciona
 
 1. **Captura.** `install()` registra los listeners `paste` y `drop` sobre `document` en la fase de captura, así el plugin ve el evento antes que el cuadro de entrada.
 2. **Detección.** `handle()` lee los objetos `File` de `clipboardData` o `dataTransfer`, y `sniff()` identifica el formato real a partir de los bytes mágicos, no del tipo MIME declarado.
-3. **Recodificación.** `normalize()` deja pasar intactos los archivos nativos. Todo lo demás se decodifica (rutas dedicadas para XPM, BMP/DIB y SVG; el códec propio del navegador para el resto), se dibuja en un canvas limitado a 4096 px en el lado más largo y se exporta como `image/png` con un nombre de archivo `.png`.
+3. **Recodificación.** `normalize()` deja pasar intactos los archivos nativos. Todo lo demás se decodifica (rutas dedicadas para XPM, BMP/DIB y SVG; el códec propio del navegador para el resto), se dibuja en un canvas limitado a 4096 px en el lado más largo y se exporta en el formato de salida elegido (PNG por defecto); la extensión sigue el MIME real (`.png`/`.jpg`/`.webp`).
 4. **Redirección.** `handle()` despacha un evento `drop` sintético que lleva el nuevo `File` a `[data-composer-card]`, que es el mismo camino que toma un arrastrar y soltar real. Un marcador `__dshPasteImageRerouted` impide que el plugin intercepte su propio evento.
 
 Todo esto ocurre en el cliente. No hay proceso anfitrión, ni sondeo del portapapeles, ni peticiones de red.
@@ -39,15 +39,15 @@ Esta tabla es la versión corta. La [referencia de soporte de formatos](docs/en/
 | JPEG / JFIF                  | `image/jpeg`            | Se deja pasar sin cambios                                                                                                                                      |
 | WebP                         | `image/webp`            | Se deja pasar sin cambios                                                                                                                                      |
 | GIF                          | `image/gif`             | Se deja pasar sin cambios                                                                                                                                      |
-| XPM (texto XPM3)             | `image/xpm`             | Se decodifica con `decodeXpm()` y se recodifica como PNG                                                                                                       |
+| XPM (texto XPM3)             | `image/xpm`             | Se decodifica con `decodeXpm()` y se recodifica en el formato de salida elegido (PNG por defecto)                                                              |
 | BMP / DIB                    | `image/bmp`             | Primero decodifica el navegador; si falla, `decodeBmp()`: 1/4/8/16/24/32 bits, RLE4/RLE8, BITFIELDS, cabeceras OS/2 y DIB sin cabecera                         |
-| SVG                          | `image/svg+xml`         | Se rasteriza mediante un elemento `<img>` y se recodifica como PNG                                                                                             |
+| SVG                          | `image/svg+xml`         | Se rasteriza mediante un elemento `<img>` y se recodifica en el formato de salida elegido (PNG por defecto)                                                    |
 | ICO / CUR                    | `image/x-icon`          | Primero decodifica el navegador; si falla, se usa la entrada PNG comprimida más grande                                                                         |
 | TIFF                         | `image/tiff`            | Se detecta por los bytes mágicos; se decodifica solo si el navegador incluye un códec TIFF (Chromium no lo incluye); de lo contrario se deja pasar el original |
-| AVIF                         | `image/avif`            | Lo decodifica Chromium y se recodifica como PNG                                                                                                                |
+| AVIF                         | `image/avif`            | Lo decodifica Chromium y se recodifica en el formato de salida elegido (PNG por defecto)                                                                       |
 | HEIC / HEIF, otros `image/*` | `image/...`             | Se detecta por los bytes mágicos; se decodifica solo cuando el navegador tiene el códec (Chromium no decodifica HEIC); de lo contrario se deja pasar           |
 
-El paso sin cambios solo ocurre cuando los bytes mágicos coinciden con uno de los cuatro tipos nativos **y** el tipo declarado concuerda. Un archivo cuyos bytes son JPEG pero que declara `image/png` se recodifica como un PNG real, de modo que el tipo declarado ya no puede mentir. Un archivo nativo sin ningún tipo declarado se vuelve a envolver con el tipo detectado en lugar de recodificarse, y las grafías alias habituales (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) cuentan como concordancia.
+El paso sin cambios solo ocurre cuando los bytes mágicos coinciden con uno de los cuatro tipos nativos **y** el tipo declarado concuerda. Un archivo cuyos bytes son JPEG pero que declara `image/png` se recodifica en el formato de salida elegido (PNG por defecto), de modo que el tipo declarado ya no puede mentir. Un archivo nativo sin ningún tipo declarado se vuelve a envolver con el tipo detectado en lugar de recodificarse, y las grafías alias habituales (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) cuentan como concordancia.
 
 Un archivo se toma en cuenta cuando su tipo MIME empieza por `image/` o su nombre termina en `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` o `.heif`. Los archivos que no son imágenes en el mismo pegado se reenvían intactos.
 
