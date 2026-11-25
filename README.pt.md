@@ -95,6 +95,10 @@ Depois confira o fluxo real:
 
 Se a conversão falhar, o plugin mantém o arquivo original e registra `keep original (...)`.
 
+## Configurações
+
+As configurações do plugin agora ficam em **Configurações → Colar qualquer imagem**, que abre diretamente o formulário completo. A entrada anterior pela linha do plugin continua disponível: **Configurações → Extensões → dsh-paste-image → Configurar**; a linha do plugin também mostra um resumo de uma linha (ativado / desativado) que leva ao mesmo formulário. Ambas as entradas compartilham as mesmas configurações, então basta alterar uma.
+
 ## Limitações
 
 - **XPM:** apenas o formato de texto XPM3. O parser lê a chave de cor `c`; outras chaves, como `m`, `g` e `s`, são ignoradas. As cores são resolvidas pelo parser CSS do navegador, então nomes de paleta que não são cores CSS válidas, como o `light gray` de duas palavras, caem para preto opaco.

@@ -81,7 +81,7 @@ A conversão roda por arquivo em um `try/catch`. O sucesso registra uma linha co
 
 ## 8. Configurações e página de configuração
 
-As configurações vivem apenas no `localStorage` do navegador (chave `dsh-paste-image.settings.v1`; no modo privado ou quando o armazenamento está desativado, uma cópia em memória é usada e a colagem continua funcionando). Você pode alterá-las na página de configuração do plugin ou via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
+As configurações vivem apenas no `localStorage` do navegador (chave `dsh-paste-image.settings.v1`; no modo privado ou quando o armazenamento está desativado, uma cópia em memória é usada e a colagem continua funcionando). A entrada principal é **Configurações → Colar qualquer imagem**, que abre diretamente o formulário completo abaixo; a entrada anterior pela linha do plugin (Configurações → Extensões → dsh-paste-image → Configurar) continua disponível e ambas compartilham as mesmas configurações. Você também pode alterá-las via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
 | Configuração | Padrão | Valor / faixa | Efeito |
 | --- | --- | --- | --- |

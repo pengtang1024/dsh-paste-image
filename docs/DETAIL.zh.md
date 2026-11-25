@@ -81,7 +81,7 @@ paste / drop（捕获阶段）
 
 ## 8. 设置与配置页
 
-设置仅存于浏览器 `localStorage`（键 `dsh-paste-image.settings.v1`；隐私模式或被禁用时退回内存副本，粘贴照常工作）。可以通过插件配置页修改，也可以用 `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` 读写。
+设置仅存于浏览器 `localStorage`（键 `dsh-paste-image.settings.v1`；隐私模式或被禁用时退回内存副本，粘贴照常工作）。打开方式：主入口是**设置 → 粘贴任意图片**，直接展开下面的完整表单；原有插件页行配置入口（设置 → 插件 → dsh-paste-image → 配置）保留，两处共用同一份设置。也可以用 `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` 读写。
 
 | 设置项 | 默认值 | 取值 / 范围 | 作用 |
 | --- | --- | --- | --- |

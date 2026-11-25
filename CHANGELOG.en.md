@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- New settings entry: **Settings → Paste any image**. A dedicated item in the Settings sidebar opens the full runtime settings form directly (its label follows the sidebar wording "Paste any image"). The original plugin-row entry (Settings → Plugins → dsh-paste-image → Configure) remains, and both share the same settings.
+- Docs sync: the READMEs (Chinese source plus six translations), both changelogs and all seven DETAIL documents now describe the new primary entry and the retained secondary entry.
+
 ## [0.4.3] - 2026-11-25
 
 ### Added

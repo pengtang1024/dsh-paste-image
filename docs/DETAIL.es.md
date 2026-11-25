@@ -81,7 +81,7 @@ La conversión se ejecuta por archivo en un `try/catch`. El éxito registra una 
 
 ## 8. Ajustes y página de configuración
 
-Los ajustes solo viven en el `localStorage` del navegador (clave `dsh-paste-image.settings.v1`; en modo privado o si está desactivado se usa una copia en memoria y el pegado sigue funcionando). Puedes cambiarlos en la página de configuración del plugin o mediante `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
+Los ajustes solo viven en el `localStorage` del navegador (clave `dsh-paste-image.settings.v1`; en modo privado o si está desactivado se usa una copia en memoria y el pegado sigue funcionando). La entrada principal es **Ajustes → Pegar cualquier imagen**, que muestra directamente el formulario completo de abajo; la entrada anterior en la fila del plugin (Ajustes → Extensiones → dsh-paste-image → Configuración) sigue disponible y ambas comparten los mismos ajustes. También puedes cambiarlos mediante `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
 | Ajuste | Valor por defecto | Valor / rango | Efecto |
 | --- | --- | --- | --- |

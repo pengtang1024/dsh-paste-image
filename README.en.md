@@ -99,7 +99,7 @@ If conversion fails, the plugin keeps the original file and logs `keep original 
 
 ## Configuration
 
-The plugin ships a runtime settings page under **Settings → Plugins → dsh-paste-image → Configure**. The plugin row also shows a one-line summary (enabled / disabled), and the page behind it is the full form. The defaults match the behaviour before this page existed:
+The plugin's settings now live under **Settings → Paste any image**, which opens the full form directly. The original plugin-row entry still works too: **Settings → Plugins → dsh-paste-image → Configure**; the plugin row shows a one-line summary (enabled / disabled) that leads to the same form. Both entry points share the same settings, so changing one is enough. The defaults match the behaviour before this page existed:
 
 | Field                | Default | Range / behaviour                                                                                                     |
 | -------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |

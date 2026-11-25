@@ -95,6 +95,10 @@ Vérifiez ensuite le flux réel :
 
 Si la conversion échoue, le plugin conserve le fichier d'origine et journalise `keep original (...)` à la place.
 
+## Réglages
+
+Les réglages du plugin se trouvent désormais sous **Paramètres → Coller n'importe quelle image**, ce qui ouvre directement le formulaire complet. L'ancienne entrée via la ligne du plugin reste disponible : **Paramètres → Extensions → dsh-paste-image → Configuration** ; la ligne du plugin affiche en outre un résumé d'une ligne (activé / désactivé) qui mène au même formulaire. Les deux entrées partagent les mêmes réglages : une seule modification suffit.
+
 ## Limites
 
 - **XPM :** format texte XPM3 uniquement. Le parseur lit la clé de couleur `c` ; les autres clés comme `m`, `g` et `s` sont ignorées. Les couleurs sont résolues par le parseur CSS du navigateur : les noms de palette qui ne sont pas des couleurs CSS valides, comme le `light gray` en deux mots, retombent sur du noir opaque.

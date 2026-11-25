@@ -81,7 +81,7 @@ Die Konvertierung läuft pro Datei in einem `try/catch`. Erfolg protokolliert ei
 
 ## 8. Einstellungen und Konfigurationsseite
 
-Einstellungen liegen ausschließlich im `localStorage` des Browsers (Schlüssel `dsh-paste-image.settings.v1`; im privaten Modus oder wenn Speicherung deaktiviert ist, wird eine Kopie im Speicher verwendet und das Einfügen funktioniert weiter). Sie können auf der Konfigurationsseite des Plugins oder über `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` geändert werden.
+Einstellungen liegen ausschließlich im `localStorage` des Browsers (Schlüssel `dsh-paste-image.settings.v1`; im privaten Modus oder wenn Speicherung deaktiviert ist, wird eine Kopie im Speicher verwendet und das Einfügen funktioniert weiter). Der Hauptzugang ist **Einstellungen → Beliebiges Bild einfügen** und öffnet das folgende vollständige Formular direkt; der bisherige Eintrag über die Plugin-Zeile (Einstellungen → Erweiterungen → dsh-paste-image → Konfiguration) bleibt erhalten, beide teilen sich dieselben Einstellungen. Sie können die Einstellungen auch über `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` ändern.
 
 | Einstellung | Standard | Wert / Bereich | Wirkung |
 | --- | --- | --- | --- |

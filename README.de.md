@@ -95,6 +95,10 @@ Prüfen Sie dann den echten Ablauf:
 
 Schlägt die Konvertierung fehl, behält das Plugin die Originaldatei und protokolliert stattdessen `keep original (...)`.
 
+## Einstellungen
+
+Die Einstellungen des Plugins liegen jetzt unter **Einstellungen → Beliebiges Bild einfügen** und öffnen direkt das vollständige Formular. Der bisherige Eintrag über die Plugin-Zeile bleibt erhalten: **Einstellungen → Erweiterungen → dsh-paste-image → Konfiguration**; die Plugin-Zeile zeigt außerdem eine einzeilige Zusammenfassung (aktiviert / deaktiviert), die zum selben Formular führt. Beide Einträge teilen sich dieselben Einstellungen – eine Änderung genügt.
+
 ## Einschränkungen
 
 - **XPM:** nur das XPM3-Textformat. Der Parser liest den Farbschlüssel `c`; andere Schlüssel wie `m`, `g` und `s` werden ignoriert. Farben werden vom CSS-Parser des Browsers aufgelöst; Palettennamen, die keine gültigen CSS-Farben sind – etwa das mehrteilige `light gray` –, fallen daher auf opakes Schwarz zurück.

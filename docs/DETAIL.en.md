@@ -81,7 +81,7 @@ Conversion runs per file in a `try/catch`. Success logs a line such as `image/xp
 
 ## 8. Settings and the configuration page
 
-Settings live only in the browser's `localStorage` (key `dsh-paste-image.settings.v1`; in private mode or when disabled, an in-memory copy is used and pasting still works). You can change them in the plugin's configuration page, or via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
+Settings live only in the browser's `localStorage` (key `dsh-paste-image.settings.v1`; in private mode or when disabled, an in-memory copy is used and pasting still works). Open them from the primary entry **Settings → Paste any image**, which shows the full form below directly; the original plugin-row entry (Settings → Plugins → dsh-paste-image → Configure) remains and both share the same settings. You can also change them via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
 | Setting | Default | Value / range | Effect |
 | --- | --- | --- | --- |

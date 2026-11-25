@@ -81,7 +81,7 @@ La conversion s'exécute par fichier dans un `try/catch`. Un succès journalise 
 
 ## 8. Réglages et page de configuration
 
-Les réglages ne vivent que dans le `localStorage` du navigateur (clé `dsh-paste-image.settings.v1` ; en mode privé ou si le stockage est désactivé, une copie en mémoire est utilisée et le collage fonctionne toujours). Vous pouvez les modifier dans la page de configuration du plugin ou via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
+Les réglages ne vivent que dans le `localStorage` du navigateur (clé `dsh-paste-image.settings.v1` ; en mode privé ou si le stockage est désactivé, une copie en mémoire est utilisée et le collage fonctionne toujours). L'entrée principale est **Paramètres → Coller n'importe quelle image**, qui ouvre directement le formulaire complet ci-dessous ; l'ancienne entrée via la ligne du plugin (Paramètres → Extensions → dsh-paste-image → Configuration) reste disponible et les deux partagent les mêmes réglages. Vous pouvez aussi les modifier via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
 | Réglage | Valeur par défaut | Valeur / plage | Effet |
 | --- | --- | --- | --- |

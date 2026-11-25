@@ -95,6 +95,10 @@ Luego comprueba el flujo real:
 
 Si la conversión falla, el plugin conserva el archivo original y en su lugar registra `keep original (...)`.
 
+## Ajustes
+
+Los ajustes del plugin están ahora en **Ajustes → Pegar cualquier imagen**, que abre directamente el formulario completo. La entrada anterior en la fila del plugin sigue disponible: **Ajustes → Extensiones → dsh-paste-image → Configuración**; la fila del plugin muestra además un resumen de una línea (activado / desactivado) que lleva al mismo formulario. Ambas entradas comparten los mismos ajustes, así que basta con cambiar una.
+
 ## Limitaciones
 
 - **XPM:** solo el formato de texto XPM3. El analizador lee la clave de color `c`; otras claves como `m`, `g` y `s` se ignoran. Los colores los resuelve el analizador CSS del navegador, así que los nombres de paleta que no son colores CSS válidos, como el `light gray` de dos palabras, recaen en negro opaco.
