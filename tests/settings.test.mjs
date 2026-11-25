@@ -739,6 +739,54 @@ test('模块加载器把设置侧栏入口注册到 settings.section，label 本
   assert.equal(elements.filter((node) => node.type === 'button').length, 2)
 })
 
+test('分组标题经过 t() 本地化，不显示原始 group* key', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const dictionaries = applied.locales[0].dictionaries
+
+  for (const [lang, expected] of [
+    ['zh', ['开关', '数量与上限', '输出格式与质量', '格式转换', '系统', '操作']],
+    ['en', ['Switch', 'Count & limits', 'Output format & quality', 'Format conversion', 'System', 'Actions']],
+  ]) {
+    const dict = dictionaries[lang]
+    const t = (key) => dict[key] || key
+    const elements = []
+    walk(renderTree(Page({ view: 'page', t })), (node) => elements.push(node))
+
+    // sectionTitle 容器下的第一个 span 就是分组标题。
+    const titles = elements
+      .filter(
+        (node) =>
+          node.props && node.props.style && node.props.style.fontSize === '11px' && node.props.style.fontWeight === 600,
+      )
+      .map((heading) => heading.props.children.find((child) => child && child.props && child.props.key === 'title'))
+      .map((titleNode) => titleNode.props.children[0])
+
+    assert.deepEqual(titles, expected, `${lang} 分组标题必须来自字典，不得是原始 key`)
+    for (const key of ['groupSwitch', 'groupLimits', 'groupOutput', 'groupConvert', 'groupSystem', 'groupActions']) {
+      assert.ok(!titles.includes(key), `${lang} 分组标题不得出现原始 key ${key}`)
+    }
+  }
+})
+
+test('主按钮前景色使用与 DSH 原生一致的令牌，背景仍用主按钮填充令牌', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const elements = []
+  walk(renderTree(Page({ view: 'page', t: (key) => key })), (node) => elements.push(node))
+  const buttons = elements.filter((node) => node.type === 'button')
+
+  const primary = buttons.find((node) => node.props.key === 'save')
+  assert.ok(primary, 'save 按钮必须存在')
+  assert.equal(primary.props.style.color, 'var(--dsw-alias-label-primary-foreground)')
+  assert.equal(primary.props.style.background, 'var(--dsw-alias-button-primary-fill)')
+  assert.ok(!JSON.stringify(primary.props.style).includes('--dsw-alias-label-on-color'))
+})
+
 test('summary 视图输出单行状态字符串并带上输出格式', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
@@ -932,7 +980,10 @@ test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale �
   assert.equal(locales.length, 1)
   assert.equal(locales[0].namespace, 'dsh-paste-image:settings')
   assert.equal(slotInjections.length, 2)
-  assert.deepEqual(slotInjections.map((entry) => entry.name), ['settings.section', 'plugins.row.config'])
+  assert.deepEqual(
+    slotInjections.map((entry) => entry.name),
+    ['settings.section', 'plugins.row.config'],
+  )
   const rowInjection = slotInjections.find((entry) => entry.name === 'plugins.row.config')
   rowInjection.factory()
   assert.equal(registrations.length, 1)
@@ -983,7 +1034,7 @@ test('服务就绪时同步注册配置页，不再走 ctx.inject 延迟兜底',
     return createReactStub()
   })
   plugin.apply(ctx)
-  assert.equal(injectCalls.length, 0, '不得再调用 ctx.inject([\'slots\',\'locale\'], cb) 兜底')
+  assert.equal(injectCalls.length, 0, "不得再调用 ctx.inject(['slots','locale'], cb) 兜底")
   const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))
   assert.equal(debugLines.length, 0)
 })

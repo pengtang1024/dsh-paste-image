@@ -1132,7 +1132,7 @@
               borderRadius: 'var(--dsw-radius-sm)',
               border: '1px solid var(--dsw-alias-button-primary-fill)',
               background: 'var(--dsw-alias-button-primary-fill)',
-              color: 'var(--dsw-alias-label-on-color)',
+              color: 'var(--dsw-alias-label-primary-foreground)',
               fontFamily: 'inherit',
               fontSize: '13px',
               lineHeight: '18px',
@@ -1191,23 +1191,26 @@
             return merged
           }
 
-          function section(title, children, first) {
-            return React.createElement(
-              'div',
-              { key: 'section:' + title, style: first ? styles.sectionFirst : styles.section },
-              React.createElement(
-                'div',
-                { key: 'heading', style: styles.sectionTitle },
-                React.createElement('span', { key: 'title' }, title),
-                React.createElement('span', { key: 'rule', style: styles.sectionRule }),
-              ),
-              children,
-            )
-          }
-
           // 表单只在“保存”时写：draft 是本地状态，离开页面即丢弃。
           function SettingsForm(props) {
             var t = props && typeof props.t === 'function' ? props.t : fallbackText
+
+            // 分组只加容器与标题；title 是字典 key，必须经 t() 本地化后再渲染。
+            // 放在 SettingsForm 作用域内才能复用同一个 t，不改变 key / 结构 / 控件语义。
+            function section(title, children, first) {
+              return React.createElement(
+                'div',
+                { key: 'section:' + title, style: first ? styles.sectionFirst : styles.section },
+                React.createElement(
+                  'div',
+                  { key: 'heading', style: styles.sectionTitle },
+                  React.createElement('span', { key: 'title' }, t(title)),
+                  React.createElement('span', { key: 'rule', style: styles.sectionRule }),
+                ),
+                children,
+              )
+            }
+
             var draftState = React.useState(function () {
               return api.getSettings()
             })
