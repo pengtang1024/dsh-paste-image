@@ -2,6 +2,6 @@
   "meta": {
     "title": "Coller n'importe quelle image",
     "description": "Collez ou déposez une image dont le type déclaré est XPM, BMP ou DIB, SVG, ICO, ou tout simplement erroné : le processus de rendu identifie les octets réels et la convertit en PNG, JPEG ou WebP (PNG par défaut) avant de la remettre à la zone de saisie. Les PNG, JPEG, WebP et GIF natifs passent tels quels. Le nombre de fichiers et la limite du grand côté sont configurables (8 fichiers et 4096 px par défaut). HEIC et TIFF sont reconnus mais non décodés, car le plugin ne fournit aucun décodeur pour eux.",
-    "detail": "README.fr.md"
+    "detail": "docs/DETAIL.fr.md"
   }
 }
