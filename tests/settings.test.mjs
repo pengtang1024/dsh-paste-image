@@ -668,6 +668,12 @@ function applyPlugin(definition, react) {
         locales.push({ namespace, dictionaries })
         return () => {}
       },
+      bind(namespace) {
+        return (key) => {
+          const dictionary = locales.find((entry) => entry.namespace === namespace)?.dictionaries.zh || {}
+          return dictionary[key] || key
+        }
+      },
     },
   }
   const plugin = definition.factory((name) => {
@@ -678,7 +684,7 @@ function applyPlugin(definition, react) {
   return { ctx, effects, injections, registrations, locales, plugin }
 }
 
-test('模块加载器把配置页注册到 plugins.row.config，key 与 locale 固定', () => {
+test('模块加载器保留 plugins.row.config 行配置入口，key 与 locale 固定', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
 
@@ -688,13 +694,14 @@ test('模块加载器把配置页注册到 plugins.row.config，key 与 locale �
   assert.ok(applied.locales[0].dictionaries.zh.summary, 'zh 词典必须带 summary')
   assert.ok(applied.locales[0].dictionaries.en.summary, 'en 词典必须带 summary')
 
-  assert.equal(applied.injections.length, 1)
-  assert.equal(applied.injections[0].name, 'plugins.row.config')
-  const disposer = applied.injections[0].factory()
+  const rowInjection = applied.injections.find((entry) => entry.name === 'plugins.row.config')
+  assert.ok(rowInjection, '必须保留 plugins.row.config 注入')
+  const disposer = rowInjection.factory()
   assert.equal(typeof disposer, 'function')
 
-  assert.equal(applied.registrations.length, 1)
-  const { meta, component } = applied.registrations[0]
+  const rowRegistration = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config')
+  assert.ok(rowRegistration, '必须保留插件页行配置注册')
+  const { meta, component } = rowRegistration
   assert.deepEqual(plain(meta), {
     name: 'plugins.row.config',
     key: 'dsh-paste-image#paste-image',
@@ -703,11 +710,40 @@ test('模块加载器把配置页注册到 plugins.row.config，key 与 locale �
   assert.equal(typeof component, 'function')
 })
 
+test('模块加载器把设置侧栏入口注册到 settings.section，label 本地化且复用表单', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+
+  const dictionaries = applied.locales[0].dictionaries
+  assert.equal(dictionaries.zh['section.title'], '粘贴任意图片')
+  assert.equal(dictionaries.en['section.title'], 'Paste any image')
+
+  const sectionInjection = applied.injections.find((entry) => entry.name === 'settings.section')
+  assert.ok(sectionInjection, '必须注入 settings.section 槽位')
+  sectionInjection.factory()
+  const section = applied.registrations.find((entry) => entry.meta.name === 'settings.section')
+  assert.ok(section, '必须注册 settings.section 条目')
+  assert.deepEqual(plain(section.meta), {
+    name: 'settings.section',
+    id: 'dsh-paste-image#paste-image',
+    order: 27,
+    locale: 'dsh-paste-image:settings',
+  })
+  assert.equal(typeof section.meta.label, 'function')
+  assert.equal(section.meta.label(), '粘贴任意图片')
+
+  // 宿主只传 close，不传 view：Page 必须直接渲染完整表单。
+  const elements = []
+  walk(renderTree(section.component({ close() {} })), (node) => elements.push(node))
+  assert.equal(elements.filter((node) => node.type === 'input' && node.props.type === 'number').length, 3)
+  assert.equal(elements.filter((node) => node.type === 'button').length, 2)
+})
+
 test('summary 视图输出单行状态字符串并带上输出格式', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
-  applied.injections[0].factory()
-  const Page = applied.registrations[0].component
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
   const t = (key) =>
     ({ summary: 'Image paste conversion', summaryEnabled: 'enabled', summaryDisabled: 'disabled' })[key] || key
 
@@ -736,8 +772,8 @@ test('summary 视图输出单行状态字符串并带上输出格式', () => {
 test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个按钮', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
-  applied.injections[0].factory()
-  const Page = applied.registrations[0].component
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
   const t = (key) => key
 
   loaded.api.resetSettings()
@@ -881,6 +917,9 @@ test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale �
         locales.push({ namespace, dictionaries })
         return () => {}
       },
+      bind(namespace) {
+        return (key) => key
+      },
     },
   }
   const ctx = guardedContext(target, Array.from(plugin.inject))
@@ -892,11 +931,14 @@ test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale �
   assert.deepEqual(effects, ['paste-image', 'paste-image: settings dictionaries'])
   assert.equal(locales.length, 1)
   assert.equal(locales[0].namespace, 'dsh-paste-image:settings')
-  assert.equal(slotInjections.length, 1)
-  assert.equal(slotInjections[0].name, 'plugins.row.config')
-  slotInjections[0].factory()
+  assert.equal(slotInjections.length, 2)
+  assert.deepEqual(slotInjections.map((entry) => entry.name), ['settings.section', 'plugins.row.config'])
+  const rowInjection = slotInjections.find((entry) => entry.name === 'plugins.row.config')
+  rowInjection.factory()
   assert.equal(registrations.length, 1)
-  assert.deepEqual(plain(registrations[0].meta), {
+  slotInjections.find((entry) => entry.name === 'settings.section').factory()
+  assert.equal(registrations.length, 2)
+  assert.deepEqual(plain(registrations.find((entry) => entry.meta.name === 'plugins.row.config').meta), {
     name: 'plugins.row.config',
     key: 'dsh-paste-image#paste-image',
     locale: 'dsh-paste-image:settings',
@@ -905,8 +947,8 @@ test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale �
   // pageRegistered 幂等：重复 apply 不重复注册词典/槽位。
   plugin.apply(ctx)
   assert.equal(locales.length, 1)
-  assert.equal(slotInjections.length, 1)
-  assert.equal(registrations.length, 1)
+  assert.equal(slotInjections.length, 2)
+  assert.equal(registrations.length, 2)
   assert.deepEqual(effects, ['paste-image', 'paste-image: settings dictionaries', 'paste-image'])
 
   const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))

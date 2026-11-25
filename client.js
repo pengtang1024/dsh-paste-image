@@ -974,8 +974,11 @@
         }
 
         var NS = 'dsh-paste-image:settings'
+        var SECTION_ID = 'dsh-paste-image#paste-image'
+        var SECTION_ORDER = 27
         var DICTIONARIES = {
           zh: {
+            'section.title': '粘贴任意图片',
             summary: '图片粘贴转换',
             summaryEnabled: '已启用',
             summaryDisabled: '已停用',
@@ -999,6 +1002,7 @@
             note: '设置只保存在这个浏览器里，保存后立即生效；恢复默认会写回全部默认值。',
           },
           en: {
+            'section.title': 'Paste any image',
             summary: 'Image paste conversion',
             summaryEnabled: 'enabled',
             summaryDisabled: 'disabled',
@@ -1273,8 +1277,24 @@
           run(function () {
             return locale.register(NS, DICTIONARIES)
           }, 'paste-image: settings dictionaries')
+          // 设置侧栏主入口：与快捷短语等同一层，宿主只传 close，Page 无 view 时渲染完整表单。
+          slots.inject('settings.section', function () {
+            return slots.register(
+              {
+                name: 'settings.section',
+                id: SECTION_ID,
+                order: SECTION_ORDER,
+                locale: NS,
+                label: function () {
+                  return locale.bind(NS)('section.title')
+                },
+              },
+              Page,
+            )
+          })
+          // 插件页行配置备用入口，保留原有注册。
           slots.inject('plugins.row.config', function () {
-            return slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS }, Page)
+            return slots.register({ name: 'plugins.row.config', key: SECTION_ID, locale: NS }, Page)
           })
           return true
         }
