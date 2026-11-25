@@ -976,6 +976,7 @@
         var NS = 'dsh-paste-image:settings'
         var SECTION_ID = 'dsh-paste-image#paste-image'
         var SECTION_ORDER = 27
+        var REPO_URL = 'https://github.com/pengtang1024/dsh-paste-image'
         var DICTIONARIES = {
           zh: {
             'section.title': '粘贴任意图片',
@@ -1006,6 +1007,8 @@
             saved: '已保存',
             saveFailed: '保存失败',
             note: '设置只保存在这个浏览器里，保存后立即生效；恢复默认会写回全部默认值。',
+            starPrompt: '如果这款插件帮到了你，欢迎到 GitHub 点个 star ⭐',
+            starLink: '去 dsh-paste-image 点个 star',
           },
           en: {
             'section.title': 'Paste any image',
@@ -1036,6 +1039,8 @@
             saved: 'Saved',
             saveFailed: 'Save failed',
             note: 'Settings live in this browser only and take effect immediately. Restoring writes every default back.',
+            starPrompt: 'If this plugin has been useful, give it a star on GitHub ⭐',
+            starLink: 'Star dsh-paste-image on GitHub',
           },
         }
 
@@ -1162,6 +1167,20 @@
               lineHeight: '17px',
               paddingTop: '8px',
               borderTop: '1px solid var(--dsw-alias-border-l1)',
+            },
+            starRow: {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap',
+              minHeight: '28px',
+            },
+            starPrompt: { color: 'var(--dsw-alias-label-secondary)' },
+            starLink: {
+              color: 'var(--dsw-alias-brand-primary)',
+              textDecoration: 'none',
+              cursor: 'pointer',
             },
           }
 
@@ -1398,6 +1417,22 @@
                   statusNode,
                 ),
               ]),
+              React.createElement(
+                'div',
+                { key: 'star', style: styles.starRow },
+                React.createElement('span', { key: 'prompt', style: styles.starPrompt }, t('starPrompt')),
+                React.createElement(
+                  'a',
+                  {
+                    key: 'link',
+                    href: REPO_URL,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    style: styles.starLink,
+                  },
+                  t('starLink'),
+                ),
+              ),
               React.createElement('div', { key: 'note', style: styles.note }, t('note')),
             )
           }

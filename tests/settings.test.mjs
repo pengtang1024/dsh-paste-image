@@ -876,6 +876,59 @@ test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个�
   loaded.api.resetSettings()
 })
 
+test('zh/en 字典包含求 star 文案，页面从字典取词而非显示原始 key', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const dictionaries = applied.locales[0].dictionaries
+
+  const expected = {
+    zh: { prompt: '如果这款插件帮到了你，欢迎到 GitHub 点个 star ⭐', link: '去 dsh-paste-image 点个 star' },
+    en: {
+      prompt: 'If this plugin has been useful, give it a star on GitHub ⭐',
+      link: 'Star dsh-paste-image on GitHub',
+    },
+  }
+  for (const [lang, texts] of Object.entries(expected)) {
+    const dict = dictionaries[lang]
+    assert.equal(dict.starPrompt, texts.prompt, lang + ' 字典必须提供 starPrompt 文案')
+    assert.equal(dict.starLink, texts.link, lang + ' 字典必须提供 starLink 文案')
+
+    const t = (key) => dict[key] || key
+    const elements = []
+    walk(renderTree(Page({ view: 'page', t })), (node) => elements.push(node))
+    const starNodes = elements.filter((node) => node.props && node.props.key === 'star')
+    assert.equal(starNodes.length, 1, lang + ' 页面必须恰好渲染一个 star 行')
+    const textsInTree = JSON.stringify(starNodes[0])
+    assert.ok(textsInTree.includes(texts.prompt), lang + ' star 引导语必须来自字典，不得是原始 key')
+    assert.ok(textsInTree.includes(texts.link), lang + ' star 链接文字必须来自字典，不得是原始 key')
+    assert.ok(!textsInTree.includes('starPrompt'), lang + ' 不得出现原始 key starPrompt')
+    assert.ok(!textsInTree.includes('starLink'), lang + ' 不得出现原始 key starLink')
+  }
+})
+
+test('求 star 外链指向仓库，target/rel 正确且不是表单控件', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const elements = []
+  walk(renderTree(Page({ view: 'page', t: (key) => key })), (node) => elements.push(node))
+
+  const links = elements.filter((node) => node.type === 'a')
+  assert.equal(links.length, 1, '页面必须恰好渲染一个外链')
+  assert.equal(links[0].props.href, 'https://github.com/pengtang1024/dsh-paste-image')
+  assert.equal(links[0].props.target, '_blank')
+  assert.equal(links[0].props.rel, 'noopener noreferrer')
+
+  // 求 star 入口只用 span/a，不引入任何新控件：数量与类型维持原样。
+  assert.equal(elements.filter((node) => node.type === 'input' && node.props.type === 'checkbox').length, 6)
+  assert.equal(elements.filter((node) => node.type === 'input' && node.props.type === 'number').length, 3)
+  assert.equal(elements.filter((node) => node.type === 'select').length, 1)
+  assert.equal(elements.filter((node) => node.type === 'button').length, 2)
+})
+
 test('apply(ctx) 在没有 slots/locale 时仍立即安装 paste/drop 监听', () => {
   const loaded = loadPlugin()
   const effects = []
