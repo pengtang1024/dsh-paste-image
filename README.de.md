@@ -136,3 +136,7 @@ Das Plugin liefert Anzeige-Metadaten für jede Sprache, die die DSH-Oberfläche 
 ## Lizenz
 
 MIT © 2026 pengtang1024. Siehe [LICENSE](LICENSE).
+
+## Unterstützen Sie dieses Projekt
+
+Wenn Ihnen das Plugin im Alltag hilft, geben Sie [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) doch einen Stern ⭐. Ein kleiner Klick motiviert mich sehr, es weiter zu pflegen.

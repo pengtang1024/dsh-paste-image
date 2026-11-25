@@ -203,3 +203,7 @@ npm run check
 ## 许可证
 
 MIT © 2026 pengtang1024，见 [LICENSE](LICENSE)。
+
+## 支持本项目
+
+如果这款插件在日常使用中帮到了你，欢迎到 [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) 点个 star ⭐。一个小小的 star，就是对我继续维护它的最大鼓励。

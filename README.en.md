@@ -201,3 +201,7 @@ The plugin ships display metadata for every language the DSH interface supports 
 ## License
 
 MIT © 2026 pengtang1024. See [LICENSE](LICENSE).
+
+## Support this project
+
+If this plugin has made your day-to-day work easier, consider giving [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image) a star ⭐. That little click goes a long way toward keeping me motivated to maintain it.

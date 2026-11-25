@@ -136,3 +136,7 @@ Les traductions sont des fichiers source à côté du code, pas du texte génér
 ## Licence
 
 MIT © 2026 pengtang1024. Voir [LICENSE](LICENSE).
+
+## Soutenez ce projet
+
+Si ce plugin vous est utile au quotidien, n'hésitez pas à mettre une étoile ⭐ à [dsh-paste-image](https://github.com/pengtang1024/dsh-paste-image). Ce petit geste m'encourage à continuer à le maintenir.
