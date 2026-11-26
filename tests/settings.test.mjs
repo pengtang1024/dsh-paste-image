@@ -12,6 +12,10 @@ const source = readFileSync(clientPath, 'utf8')
 
 const SETTINGS_KEY = 'dsh-paste-image.settings.v1'
 
+// 插件提供本地化的七语（locale/*.json 的文件集合，ja 未提供译文，按 DSH fallback 处理）。
+const SUPPORTED_LOCALES = ['zh', 'en', 'es', 'fr', 'de', 'ru', 'pt']
+const NS = 'dsh-paste-image:settings'
+
 // 默认值必须等于引入配置页之前的硬编码行为（见 client.js 里的 SETTINGS_DEFAULTS）。
 const DEFAULTS = {
   enabled: true,
@@ -643,11 +647,17 @@ function loadPlugin() {
   return { ...loaded, document, definition }
 }
 
-function applyPlugin(definition, react) {
+function applyPlugin(definition, react, options = {}) {
   const effects = []
   const injections = []
   const registrations = []
   const locales = []
+  // 模拟 DSH locale 服务：bind() 返回的函数始终按当前 active locale 解析，
+  // 与真实服务一致——切换语言后无需重新 bind，同一个 t 就能取到新文案。
+  const localeState = { active: options.activeLocale || 'zh' }
+  const setLocale = (lang) => {
+    localeState.active = lang
+  }
   const ctx = {
     effect(callback, label) {
       effects.push(label)
@@ -669,9 +679,14 @@ function applyPlugin(definition, react) {
         return () => {}
       },
       bind(namespace) {
+        // 真实 locale.bind 按 active locale + fallback chain 解析；这里复刻同一语义：
+        // 缺失的语言/键回退到 en，仍缺则回退到 key 本身。每次调用都读当前 active。
         return (key) => {
-          const dictionary = locales.find((entry) => entry.namespace === namespace)?.dictionaries.zh || {}
-          return dictionary[key] || key
+          const entry = locales.find((item) => item.namespace === namespace)
+          const dictionaries = entry ? entry.dictionaries : {}
+          const active = dictionaries[localeState.active] || {}
+          const fallback = dictionaries.en || {}
+          return active[key] || fallback[key] || key
         }
       },
     },
@@ -681,7 +696,7 @@ function applyPlugin(definition, react) {
     return react
   })
   plugin.apply(ctx)
-  return { ctx, effects, injections, registrations, locales, plugin }
+  return { ctx, effects, injections, registrations, locales, plugin, setLocale, localeState }
 }
 
 test('模块加载器保留 plugins.row.config 行配置入口，key 与 locale 固定', () => {
@@ -1127,6 +1142,207 @@ test('guard 语义回归：factory 必须声明 locale，声明后 ctx.locale �
 
   const debugLines = loaded.logs.filter((line) => line.startsWith('[dsh-paste-image] settings page unavailable: '))
   assert.equal(debugLines.length, 0)
+})
+
+// ---------- 多语跟随：设置页文案跟随 DSH 当前语言 ----------
+
+// 宿主是通过 locale.bind(NS) 把 t 传给 Page 的；测试也走同一路径，才能验证真实跟随语义。
+function boundPage(applied, react) {
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  return { Page, t: applied.ctx.locale.bind(NS) }
+}
+
+// 只收集文本叶子，不把 React 节点的 props.key 元数据误判成「原始 key 泄漏」。
+function textLeaves(node, out = []) {
+  if (node === null || node === undefined) return out
+  if (typeof node === 'string' || typeof node === 'number') {
+    out.push(String(node))
+    return out
+  }
+  if (Array.isArray(node)) {
+    node.forEach((child) => textLeaves(child, out))
+    return out
+  }
+  if (typeof node === 'object' && node.props) textLeaves(node.props.children, out)
+  return out
+}
+
+test('设置页字典覆盖插件全部七语，各语 key 集合一致、无空缺、无原始 key', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  const dictionaries = applied.locales[0].dictionaries
+
+  assert.deepEqual(Object.keys(dictionaries).sort(), [...SUPPORTED_LOCALES].sort(), '字典必须恰好覆盖七语')
+  assert.ok(!('ja' in dictionaries), 'ja 没有插件译文，不得编造低质字典，交由 DSH fallback')
+
+  const zhKeys = Object.keys(dictionaries.zh).sort()
+  assert.ok(zhKeys.length >= 30, 'zh 字典必须含设置页全部文案 key')
+  for (const lang of SUPPORTED_LOCALES) {
+    assert.deepEqual(Object.keys(dictionaries[lang]).sort(), zhKeys, lang + ' 字典 key 集合必须与 zh 一致')
+    for (const key of zhKeys) {
+      const value = dictionaries[lang][key]
+      assert.equal(typeof value, 'string', lang + '.' + key + ' 必须是字符串')
+      assert.ok(value.trim().length > 0, lang + '.' + key + ' 不得为空')
+      assert.notEqual(value, key, lang + '.' + key + ' 不得把原始 key 当文案')
+    }
+  }
+  // 每语与 zh 至少在若干核心文案上确实不同，防止「复制英文了事」。
+  for (const lang of SUPPORTED_LOCALES.filter((code) => code !== 'zh')) {
+    const diffs = ['groupOutput', 'enabled', 'save', 'starPrompt'].filter(
+      (key) => dictionaries[lang][key] !== dictionaries.zh[key],
+    )
+    assert.equal(diffs.length, 4, lang + ' 核心文案必须与 zh 有实际差异')
+  }
+})
+
+test('同一个 bind 的 t 随 DSH active locale 切换取到对应语言文案，ja 走 fallback', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  const dictionaries = applied.locales[0].dictionaries
+  const t = applied.ctx.locale.bind(NS)
+  const keys = ['section.title', 'groupOutput', 'enabled', 'formatHint', 'starPrompt', 'summary']
+
+  // zh/en 之外逐语验证：同一个 t，切换 active locale 后立即取到新语言。
+  for (const lang of ['zh', 'es', 'fr', 'de', 'ru', 'pt']) {
+    applied.setLocale(lang)
+    for (const key of keys) assert.equal(t(key), dictionaries[lang][key], lang + '.' + key + ' 必须取到当前语言文案')
+  }
+  applied.setLocale('en')
+  for (const key of keys) assert.equal(t(key), dictionaries.en[key], 'en.' + key + ' 必须取到英文文案')
+
+  // ja 未注册译文，按 DSH fallback chain 回退到 en，而不是原始 key 或中文。
+  applied.setLocale('ja')
+  for (const key of keys) assert.equal(t(key), dictionaries.en[key], 'ja.' + key + ' 应回退到 en')
+})
+
+test('侧栏入口 label 跟随 active locale 切换，无需手动选语言', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  const dictionaries = applied.locales[0].dictionaries
+  applied.injections.find((entry) => entry.name === 'settings.section').factory()
+  const section = applied.registrations.find((entry) => entry.meta.name === 'settings.section')
+  assert.equal(typeof section.meta.label, 'function', 'label 必须是函数，才能随语言切换重算')
+
+  for (const lang of ['zh', 'es', 'de', 'ru']) {
+    applied.setLocale(lang)
+    assert.equal(section.meta.label(), dictionaries[lang]['section.title'], lang + ' 侧栏 label 必须跟随')
+  }
+})
+
+test('多语页面渲染：文案全部来自当前语言字典，无原始 key 泄漏', () => {
+  for (const lang of ['es', 'fr', 'de', 'ru', 'pt']) {
+    const loaded = loadPlugin()
+    const applied = applyPlugin(loaded.definition, createReactStub(), { activeLocale: lang })
+    const page = boundPage(applied)
+    applied.setLocale(lang)
+    const dict = applied.locales[0].dictionaries[lang]
+    const leaves = textLeaves(renderTree(page.Page({ view: 'page', t: page.t })))
+
+    // 展开长说明，覆盖 formatHint / qualityHint / 收起入口等全部文案。
+    const opened = applyPlugin(loaded.definition, statefulReact(true), { activeLocale: lang })
+    const openPage = boundPage(opened)
+    opened.setLocale(lang)
+    const openLeaves = textLeaves(renderTree(openPage.Page({ view: 'page', t: openPage.t })))
+    const all = [...leaves, ...openLeaves]
+
+    for (const key of [
+      'groupSwitch',
+      'groupLimits',
+      'groupOutput',
+      'groupConvert',
+      'groupSystem',
+      'groupActions',
+      'enabled',
+      'maxFiles',
+      'maxSide',
+      'outputFormat',
+      'quality',
+      'moreHints',
+      'lessHints',
+      'formatHint',
+      'qualityHint',
+      'convertXpm',
+      'convertBmp',
+      'convertSvg',
+      'convertIco',
+      'logConversions',
+      'save',
+      'reset',
+      'note',
+      'starPrompt',
+      'starLink',
+    ]) {
+      assert.ok(all.includes(dict[key]), lang + ' 页面必须显示 ' + key + ' 的本地化文案')
+    }
+    // 文本叶子不得恰好等于任何字典 key（key 泄漏的唯一可靠判据）。
+    const keySet = new Set(Object.keys(dict))
+    for (const leaf of all) assert.ok(!keySet.has(leaf), lang + ' 文本叶子不得泄漏原始 key：' + leaf)
+  }
+})
+
+test('summary 单行在多语下跟随 active locale，enabled/disabled 与格式分支不退化', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  const page = boundPage(applied)
+  const dictionaries = applied.locales[0].dictionaries
+
+  for (const lang of ['zh', 'fr', 'ru']) {
+    applied.setLocale(lang)
+    const dict = dictionaries[lang]
+    loaded.api.resetSettings()
+    const enabled = flattenText(renderTree(page.Page({ view: 'summary', t: page.t })))
+    assert.equal(typeof enabled, 'string')
+    assert.ok(!enabled.includes('\n'), lang + ' summary 必须单行')
+    assert.ok(enabled.includes(dict.summary), lang + ' summary 前缀须跟随语言')
+    assert.ok(enabled.includes(dict.summaryEnabled), lang + ' 启用态须跟随语言')
+    assert.match(enabled, /PNG/)
+
+    loaded.api.applySettings({ enabled: false, outputFormat: 'webp' })
+    const disabled = flattenText(renderTree(page.Page({ view: 'summary', t: page.t })))
+    assert.ok(!disabled.includes('\n'), lang + ' summary 必须单行')
+    assert.ok(disabled.includes(dict.summaryDisabled), lang + ' 停用态须跟随语言')
+    assert.match(disabled, /WebP/)
+    assert.doesNotMatch(disabled, /PNG/)
+  }
+  loaded.api.resetSettings()
+})
+
+test('切换 active locale 后控件结构、取值、disabled 与外链零退化', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  const page = boundPage(applied)
+  loaded.api.resetSettings()
+
+  const snapshot = () => {
+    const elements = []
+    walk(renderTree(page.Page({ view: 'page', t: page.t })), (node) => elements.push(node))
+    return {
+      checkboxes: elements.filter((n) => n.type === 'input' && n.props.type === 'checkbox').length,
+      numbers: elements
+        .filter((n) => n.type === 'input' && n.props.type === 'number')
+        .map((n) => [n.props.value, n.props.min, n.props.max, n.props.step, n.props.disabled]),
+      selects: elements.filter((n) => n.type === 'select').map((n) => n.props.value),
+      options: elements.filter((n) => n.type === 'option').map((n) => n.props.value),
+      buttons: elements.filter((n) => n.type === 'button').length,
+      links: elements.filter((n) => n.type === 'a').map((n) => [n.props.href, n.props.target, n.props.rel]),
+    }
+  }
+  const zh = snapshot()
+  assert.deepEqual(
+    zh.numbers.map((n) => n[0]),
+    ['8', '4096', '0.92'],
+  )
+  assert.equal(zh.checkboxes, 6)
+  assert.equal(zh.buttons, 2)
+  assert.deepEqual(zh.options, ['png', 'jpeg', 'webp'])
+  assert.equal(zh.numbers[2][4], true, '输出 PNG 时质量输入应禁用')
+
+  for (const lang of ['es', 'de', 'ru']) {
+    applied.setLocale(lang)
+    assert.deepEqual(snapshot(), zh, lang + ' 下功能结构不得随语言变化')
+  }
+  loaded.api.resetSettings()
 })
 
 test('服务就绪时同步注册配置页，不再走 ctx.inject 延迟兜底', () => {
