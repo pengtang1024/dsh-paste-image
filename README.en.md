@@ -71,7 +71,7 @@ dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 
 Replace `<profile>` with the profile your app runs. **Reload the page after installing** (`Ctrl+R`, or `Cmd+R` on macOS). The client module is only injected when the renderer loads, so a freshly installed plugin intercepts nothing until you reload.
 
-**Host requirements:** DSH must satisfy the `engines.dsh` range declared in the package (`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`) and Node >= 20. On an unsupported DSH version the plugin is not loaded, and the plugin detail page says so.
+**Host requirements:** DSH must satisfy the `engines.dsh` range declared in the package (0.2.0-rc.2 and later 0.2.x versions, before 0.4.0) and Node >= 20; per-release compatibility is declared in `dsh.compatibility.dshReleases`. On an unsupported DSH version the plugin is not loaded, and the plugin detail page says so.
 
 ## Verify it works
 

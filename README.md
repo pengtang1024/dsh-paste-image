@@ -73,7 +73,7 @@ dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 
 把 `<profile>` 换成应用实际使用的 profile。**装完必须重载页面**（`Ctrl+R`，macOS 上是 `Cmd+R`）：客户端模块只在渲染进程加载时注入，没重载之前插件不会拦截任何东西。
 
-**宿主要求：** DSH 需满足包内声明的 `engines.dsh`（`>=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1`），Node >= 20。DSH 版本不满足时插件不会被加载，插件详情页也会给出对应提示。
+**宿主要求：** DSH 需满足包内声明的 `engines.dsh`（覆盖 0.2.0-rc.2 起的 0.2.x 各版本，至 0.4.0 之前），Node >= 20；逐版本兼容性见包内 `dsh.compatibility.dshReleases`。DSH 版本不满足时插件不会被加载，插件详情页也会给出对应提示。
 
 ## 验证
 

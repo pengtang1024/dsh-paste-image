@@ -2,6 +2,7 @@
   "name": "dsh-paste-image",
   "version": "0.5.1",
   "description": "Paste any image into DeepSeek Harness: converts XPM/BMP/DIB/SVG/TIFF/etc. and MIME-lying images to PNG, JPEG or WebP (WebP by default) in the renderer.",
+  "category": "productivity",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -51,6 +52,23 @@
         "@deepseek-ai/dsh-client-ui-settings-plugins",
         "@deepseek-ai/dsh-client-locale"
       ]
+    },
+    "engines": {
+      "dsh": ">=0.2.0-rc.2 <0.4.0-0 || >=0.2.1-rc.2 <0.4.0-0 || >=0.2.2-rc.1 <0.4.0-0"
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.0-rc.2": "compatible",
+        "0.2.1-rc.2": "compatible",
+        "0.2.1-rc.3": "compatible",
+        "0.2.1-rc.4": "compatible",
+        "0.2.1-rc.5": "compatible",
+        "0.2.2-rc.1": "compatible",
+        "0.2.2-rc.2": "compatible",
+        "0.2.2-rc.3": "compatible",
+        "0.2.2-rc.4": "compatible",
+        "0.2.2-rc.5": "compatible"
+      }
     }
   },
   "scripts": {
@@ -75,7 +93,7 @@
   "author": "pengtang1024",
   "engines": {
     "node": ">=20",
-    "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1"
+    "dsh": ">=0.2.0-rc.2 <0.4.0-0 || >=0.2.1-rc.2 <0.4.0-0 || >=0.2.2-rc.1 <0.4.0-0"
   },
   "license": "MIT"
 }
