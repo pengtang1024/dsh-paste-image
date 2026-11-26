@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-26
+
+### Changed
+
+- Slimmed down the settings page: tighter padding, gaps, line height and input/button sizes cut the vertical footprint by roughly 20–25%. The control kinds, count, order, values and save semantics are unchanged, with no functional regression.
+- The long `formatHint` / `qualityHint` notes are now expandable on demand (Details / Less), with the full text preserved and identical in Chinese and English; the `note` text is trimmed without dropping information.
+- The GitHub star prompt and link stay fully present and clickable, with localized wording and `noopener noreferrer` unchanged — no localization regression.
+
 ## [0.5.0] - 2026-11-26
 
 ### Added
