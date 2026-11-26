@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-26
+
+### Added
+
+- The settings page localization dictionary now covers all seven languages (Chinese source plus English, Spanish, French, German, Russian and Portuguese), and the interface follows the DSH display language automatically; previously only Chinese and English were covered, so other locales showed untranslated English text.
+- package.json now declares per-release DSH compatibility (dsh.compatibility.dshReleases, covering 0.2.0-rc.2 through 0.2.2-rc.5) and a plugin category of productivity, so the detail page can show compatibility per host release and the marketplace can file the plugin by category.
+
+### Changed
+
+- The default output format for pasted images is now WebP instead of PNG (PNG and JPEG remain fully supported and can be selected at any time); the wording across the seven-language READMEs, SECURITY and DETAIL pages, docs and locale descriptions now says WebP is the default, keeping documentation in sync with the runtime default.
+
 ## [0.5.1] - 2026-11-26
 
 ### Changed
