@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-26
+
+### Fixed
+
+- Fixed the red master CI left behind by v0.6.0: the benchmark fixture still asserted a PNG default even though the default output had moved to WebP. The fixture assertion and benchmark label now expect WebP, and CI is green again.
+- Formatted the contributing guides (Chinese and English) to clear the longstanding format WARN; `format:check` now reports zero warnings.
+
 ## [0.6.0] - 2026-11-26
 
 ### Added
