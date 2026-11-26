@@ -21,7 +21,7 @@ const DEFAULTS = {
   enabled: true,
   maxFiles: 8,
   maxSide: 4096,
-  outputFormat: 'png',
+  outputFormat: 'webp',
   quality: 0.92,
   convertXpm: true,
   convertBmp: true,
@@ -258,7 +258,7 @@ test('损坏的 JSON 与越界的历史值都回退到安全默认', () => {
   const broken = load({ localStorage: createStorage({ [SETTINGS_KEY]: '{"maxFiles":' }) })
   const brokenSettings = plain(broken.api.getSettings())
   assert.deepEqual(brokenSettings, DEFAULTS)
-  assert.equal(brokenSettings.outputFormat, 'png')
+  assert.equal(brokenSettings.outputFormat, 'webp')
   assert.equal(brokenSettings.quality, 0.92)
 
   const stale = load({
@@ -273,7 +273,7 @@ test('旧版 localStorage 只有 enabled/maxFiles 时补齐 outputFormat 与 qua
   })
   const settings = plain(legacy.api.getSettings())
   assert.deepEqual(settings, { ...DEFAULTS, enabled: false, maxFiles: 3 })
-  assert.equal(settings.outputFormat, 'png')
+  assert.equal(settings.outputFormat, 'webp')
   assert.equal(settings.quality, 0.92)
 })
 
@@ -292,7 +292,7 @@ test('localStorage 抛错时退回内存设置且不崩溃', () => {
   const first = load({ localStorage: throwing })
   const defaults = plain(first.api.getSettings())
   assert.deepEqual(defaults, DEFAULTS)
-  assert.equal(defaults.outputFormat, 'png')
+  assert.equal(defaults.outputFormat, 'webp')
   assert.equal(defaults.quality, 0.92)
   assert.equal(first.api.applySettings({ maxSide: 2048 }).maxSide, 2048)
   assert.deepEqual(plain(first.api.getSettings()), { ...DEFAULTS, maxSide: 2048 })
@@ -318,7 +318,7 @@ test('resetSettings 恢复全部默认值（含 outputFormat/quality）并写回
 
   const reset = plain(api.resetSettings())
   assert.deepEqual(reset, DEFAULTS)
-  assert.equal(reset.outputFormat, 'png')
+  assert.equal(reset.outputFormat, 'webp')
   assert.equal(reset.quality, 0.92)
   assert.deepEqual(plain(api.getSettings()), DEFAULTS)
 
@@ -329,10 +329,10 @@ test('resetSettings 恢复全部默认值（含 outputFormat/quality）并写回
 
 // ---------- 输出格式与质量 ----------
 
-test('非法 outputFormat 回退 png，枚举值大小写归一', () => {
+test('非法 outputFormat 回退 webp，枚举值大小写归一', () => {
   const { api } = load()
-  assert.equal(api.applySettings({ outputFormat: 'gif' }).outputFormat, 'png')
-  assert.equal(api.applySettings({ outputFormat: 42 }).outputFormat, 'png')
+  assert.equal(api.applySettings({ outputFormat: 'gif' }).outputFormat, 'webp')
+  assert.equal(api.applySettings({ outputFormat: 42 }).outputFormat, 'webp')
   assert.equal(api.applySettings({ outputFormat: 'WEBP' }).outputFormat, 'webp')
   assert.equal(api.applySettings({ outputFormat: 'JPEG' }).outputFormat, 'jpeg')
 })
@@ -365,16 +365,14 @@ test('outputFormat=webp 时 BMP 冒充 PNG 转成 WebP，quality 传给 toBlob',
   assert.deepEqual(formatDocument.blobCalls[0], { type: 'image/webp', quality: 0.5, argCount: 3 })
 })
 
-test('默认 outputFormat=png 时输出 PNG，toBlob 只收 mime 不收 quality', async () => {
+test('默认 outputFormat=webp 时输出 WebP，toBlob 带上默认 quality', async () => {
   const { out, formatDocument } = await convertBmpWith({})
   assert.ok(out)
-  assert.equal(out.file.type, 'image/png')
-  assert.equal(out.file.name.endsWith('.png'), true)
-  assert.equal(out.to, 'image/png')
+  assert.equal(out.file.type, 'image/webp')
+  assert.equal(out.file.name.endsWith('.webp'), true)
+  assert.equal(out.to, 'image/webp')
   assert.equal(formatDocument.blobCalls.length, 1)
-  assert.equal(formatDocument.blobCalls[0].type, 'image/png')
-  assert.equal(formatDocument.blobCalls[0].argCount, 2)
-  assert.equal(formatDocument.blobCalls[0].quality, undefined)
+  assert.deepEqual(formatDocument.blobCalls[0], { type: 'image/webp', quality: 0.92, argCount: 3 })
 })
 
 test('请求 jpeg 但 canvas 实际返回 PNG 时以实际类型为准回退 .png', async () => {
@@ -463,7 +461,7 @@ async function settle(rounds = 4) {
 
 function loadBridge() {
   const document = createEventDocument()
-  // 事件桩只负责监听器；转换路径（BMP -> canvas -> PNG）还需要 createElement。
+  // 事件桩只负责监听器；转换路径（BMP -> canvas -> WebP）还需要 createElement。
   document.createElement = createDocument().createElement
   const sink = createDropSink(document)
   const loaded = load({ document, DataTransfer: FakeDataTransfer, DragEvent: FakeDragEvent })
@@ -527,7 +525,7 @@ test('enabled=false 时普通粘贴不被接管，enabled=true 时接管并重�
   bridge.release()
 })
 
-test('convertBmp=false 时 BMP 冒充 PNG 原样保留，true 时转成 PNG', async () => {
+test('convertBmp=false 时 BMP 冒充 PNG 原样保留，true 时转成默认 WebP', async () => {
   const { api } = load()
   const bmp = makeBmp(2, 2, [
     [255, 0, 0],
@@ -542,7 +540,7 @@ test('convertBmp=false 时 BMP 冒充 PNG 原样保留，true 时转成 PNG', as
   api.applySettings({ convertBmp: true })
   const out = await api.normalize(new File([bmp], 'wechat.png', { type: 'image/png' }))
   assert.ok(out)
-  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.file.type, 'image/webp')
   assert.equal(api.sniff(new Uint8Array(await out.file.arrayBuffer())), 'image/png')
 })
 
@@ -556,7 +554,7 @@ test('maxSide=512 时长边 1024 的 BMP 输出 512 宽', async () => {
   assert.ok(out)
   assert.equal(out.width, 512)
   assert.equal(out.height, 2)
-  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.file.type, 'image/webp')
 })
 
 test('logConversions=false 时不打调试日志，true 时打一条', async () => {
@@ -577,7 +575,7 @@ test('logConversions=false 时不打调试日志，true 时打一条', async () 
   bridge.paste.listener(pasteEvent([new File([bmp], 'wechat.png', { type: 'image/png' })]))
   await bridge.sink.wait(2)
   assert.equal(bridge.logs.length, 1)
-  assert.match(bridge.logs[0], /^\[dsh-paste-image\] image\/png -> image\/png 2x2$/)
+  assert.match(bridge.logs[0], /^\[dsh-paste-image\] image\/png -> image\/webp 2x2$/)
   bridge.release()
 })
 
@@ -814,21 +812,21 @@ test('summary 视图输出单行状态字符串并带上输出格式', () => {
   const enabled = flattenText(renderTree(Page({ view: 'summary', t })))
   assert.equal(typeof enabled, 'string')
   assert.ok(!enabled.includes('\n'), 'summary 必须是单行')
-  assert.match(enabled, /PNG/)
+  assert.match(enabled, /WebP/)
   assert.match(enabled, /enabled/)
 
   loaded.api.applySettings({ enabled: false })
   const disabled = flattenText(renderTree(Page({ view: 'summary', t })))
   assert.equal(typeof disabled, 'string')
   assert.match(disabled, /disabled/)
-  assert.match(disabled, /PNG/)
+  assert.match(disabled, /WebP/)
 
   loaded.api.applySettings({ outputFormat: 'jpeg' })
   const jpeg = flattenText(renderTree(Page({ view: 'summary', t })))
   assert.equal(typeof jpeg, 'string')
   assert.ok(!jpeg.includes('\n'), 'summary 必须是单行')
   assert.match(jpeg, /JPEG/)
-  assert.doesNotMatch(jpeg, /PNG/)
+  assert.doesNotMatch(jpeg, /WebP/)
   loaded.api.resetSettings()
 })
 
@@ -870,7 +868,7 @@ test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个�
     [1, 256, 0.01],
   )
 
-  assert.equal(selects[0].props.value, 'png')
+  assert.equal(selects[0].props.value, 'webp')
   const options = []
   walk(selects[0], (node) => {
     if (node.type === 'option') options.push(node)
@@ -880,8 +878,13 @@ test('page 视图渲染 6 个 checkbox、3 个 number、1 个 select 与 2 个�
     ['png', 'jpeg', 'webp'],
   )
 
-  // PNG 是无损编码，质量输入应禁用；切到 JPEG 后启用。
-  assert.equal(numbers[2].props.disabled, true)
+  // 默认 WebP 时质量可编辑；PNG 无损才禁用，JPEG/WebP 都启用。
+  assert.equal(numbers[2].props.disabled, false)
+  loaded.api.applySettings({ outputFormat: 'png' })
+  const pngElements = []
+  walk(renderTree(Page({ view: 'page', t })), (node) => pngElements.push(node))
+  const pngNumbers = pngElements.filter((node) => node.type === 'input' && node.props.type === 'number')
+  assert.equal(pngNumbers[2].props.disabled, true)
   loaded.api.applySettings({ outputFormat: 'jpeg' })
   const jpegElements = []
   walk(renderTree(Page({ view: 'page', t })), (node) => jpegElements.push(node))
@@ -1296,7 +1299,7 @@ test('summary 单行在多语下跟随 active locale，enabled/disabled 与格�
     assert.ok(!enabled.includes('\n'), lang + ' summary 必须单行')
     assert.ok(enabled.includes(dict.summary), lang + ' summary 前缀须跟随语言')
     assert.ok(enabled.includes(dict.summaryEnabled), lang + ' 启用态须跟随语言')
-    assert.match(enabled, /PNG/)
+    assert.match(enabled, /WebP/)
 
     loaded.api.applySettings({ enabled: false, outputFormat: 'webp' })
     const disabled = flattenText(renderTree(page.Page({ view: 'summary', t: page.t })))
@@ -1336,7 +1339,7 @@ test('切换 active locale 后控件结构、取值、disabled 与外链零退�
   assert.equal(zh.checkboxes, 6)
   assert.equal(zh.buttons, 2)
   assert.deepEqual(zh.options, ['png', 'jpeg', 'webp'])
-  assert.equal(zh.numbers[2][4], true, '输出 PNG 时质量输入应禁用')
+  assert.equal(zh.numbers[2][4], false, '默认 WebP 时质量输入应可编辑')
 
   for (const lang of ['es', 'de', 'ru']) {
     applied.setLocale(lang)

@@ -491,7 +491,7 @@ test('兼容性 A：MIME 别名按规范类型判定（image/jpg、image/x-png�
   const bmpOut = await api.normalize(new File([bmp], 'alias.bmp', { type: 'image/x-bmp' }))
   assert.ok(bmpOut)
   assert.equal(bmpOut.from, 'image/bmp')
-  assert.equal(bmpOut.to, 'image/png')
+  assert.equal(bmpOut.to, 'image/webp')
 
   const xpmOut = await api.normalize(
     new File(
@@ -516,7 +516,7 @@ test('兼容性 A：MIME 别名按规范类型判定（image/jpg、image/x-png�
   assert.equal(svgOut.height, 20)
 })
 
-test('兼容性 A：BMP 字节声明为 image/png 时重新编码为真 PNG', async () => {
+test('兼容性 A：BMP 字节声明为 image/png 时按默认格式重新编码为 WebP', async () => {
   const bmp = makeBmp(2, 2, [
     [255, 0, 0],
     [0, 255, 0],
@@ -525,8 +525,8 @@ test('兼容性 A：BMP 字节声明为 image/png 时重新编码为真 PNG', as
   ])
   const out = await api.normalize(new File([bmp], 'wechat.png', { type: 'image/png' }))
   assert.ok(out)
-  assert.equal(out.file.type, 'image/png')
-  assert.equal(out.file.name, 'wechat.png')
+  assert.equal(out.file.type, 'image/webp')
+  assert.equal(out.file.name, 'wechat.webp')
   assert.equal(out.width, 2)
   assert.equal(out.height, 2)
   assert.equal(api.sniff(new Uint8Array(await out.file.arrayBuffer())), 'image/png')
@@ -549,7 +549,7 @@ test('兼容性 A：8 个文件仍走转换，9 个以上文件交回原生路�
     const converted = harness.dropEvents[0].dataTransfer.files
     assert.equal(converted.length, 8)
     assert.equal(
-      converted.every((file) => file.type === 'image/png'),
+      converted.every((file) => file.type === 'image/webp'),
       true,
     )
     assert.equal(api.sniff(new Uint8Array(await converted[0].arrayBuffer())), 'image/png')
@@ -592,7 +592,7 @@ test('兼容性 A：非图片文件原样透传，图片按需转换', async () 
     assert.equal(event.defaultPrevented, true)
     const out = harness.dropEvents[0].dataTransfer.files
     assert.equal(out.length, 2)
-    assert.equal(out[0].type, 'image/png')
+    assert.equal(out[0].type, 'image/webp')
     assert.equal(api.sniff(new Uint8Array(await out[0].arrayBuffer())), 'image/png')
     assert.equal(out[1], text)
     assert.equal(out[1].type, 'text/plain')

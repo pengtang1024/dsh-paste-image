@@ -137,7 +137,7 @@ test('decodeBmp 把 BGR 还原成 RGBA', () => {
   assert.deepEqual([...data.slice(4, 8)], [0, 255, 0, 255])
 })
 
-test('normalize 把 BMP 字节声称 PNG 的粘贴转成真 PNG', async () => {
+test('normalize 把 BMP 字节声称 PNG 的粘贴转成默认 WebP', async () => {
   const bmp = makeBmp(2, 2, [
     [255, 0, 0],
     [0, 255, 0],
@@ -147,8 +147,8 @@ test('normalize 把 BMP 字节声称 PNG 的粘贴转成真 PNG', async () => {
   const file = new File([bmp], 'wechat.png', { type: 'image/png' })
   const out = await api.normalize(file)
   assert.ok(out, 'should convert')
-  assert.equal(out.file.type, 'image/png')
-  assert.equal(out.file.name, 'wechat.png')
+  assert.equal(out.file.type, 'image/webp')
+  assert.equal(out.file.name, 'wechat.webp')
   assert.equal(out.width, 2)
   assert.equal(out.height, 2)
   const bytes = new Uint8Array(await out.file.arrayBuffer())
@@ -284,7 +284,7 @@ test('normalize 转换路径仍读取完整文件', async () => {
   const { file, stats } = countingFile(bmp, { name: 'wechat.png', type: 'image/png' })
   const out = await api.normalize(file)
   assert.ok(out)
-  assert.equal(out.file.type, 'image/png')
+  assert.equal(out.file.type, 'image/webp')
   assert.equal(out.width, 64)
   assert.equal(out.height, 64)
   assert.equal(stats.headCalls, 1)

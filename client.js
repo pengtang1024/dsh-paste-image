@@ -27,14 +27,14 @@
   var MAX_PIXELS = 64 * 1024 * 1024
 
   // ---------- 运行时设置 ----------
-  // 默认值就是引入配置页之前的行为：开启、最多 8 个文件、长边 4096、输出 PNG、质量 0.92、
+  // 运行时设置默认值：开启、最多 8 个文件、长边 4096、输出 WebP、质量 0.92、
   // 四种格式全转换、转换日志开。只存在浏览器 localStorage 里（隐私模式或被禁用时退回内存），Host 侧不参与。
   var SETTINGS_KEY = 'dsh-paste-image.settings.v1'
   var SETTINGS_DEFAULTS = {
     enabled: true,
     maxFiles: 8,
     maxSide: 4096,
-    outputFormat: 'png',
+    outputFormat: 'webp',
     quality: 0.92,
     convertXpm: true,
     convertBmp: true,
@@ -814,6 +814,7 @@
       }
     }
     var canvas = await toCanvas(file, bytes, kind)
+    // 兜底固定 PNG：settings.outputFormat 经 sanitize 后必为合法枚举，这里只防运行时污染，取最广泛支持的编码。
     var profile = OUTPUT_FORMATS[settings.outputFormat] || OUTPUT_FORMATS.png
     var encoded = profile.mime === 'image/jpeg' ? flattenOnWhite(canvas) : canvas
     var blob = await encodeCanvas(encoded, profile.mime, profile.quality ? settings.quality : null)
