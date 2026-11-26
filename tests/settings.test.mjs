@@ -944,20 +944,7 @@ test('求 star 外链指向仓库，target/rel 正确且不是表单控件', () 
   assert.equal(elements.filter((node) => node.type === 'button').length, 2)
 })
 
-// 支持预置展开态的 React stub：只覆盖第 4 个 useState（hintsState）。
-// SettingsForm 的 hook 顺序固定为 draft / status / hover / hints，前三个维持原语义。
-function statefulReact(initialHintsOpen) {
-  const react = createReactStub()
-  let call = 0
-  react.useState = (value) => {
-    const at = call++
-    const resolved = at === 3 ? initialHintsOpen : typeof value === 'function' ? value() : value
-    return [resolved, () => {}]
-  }
-  return react
-}
-
-test('瘦身布局：长说明默认收起，展开后全文仍在，信息一条不丢', () => {
+test('瘦身布局：描述默认完整可见，无折叠入口、无省略号截断', () => {
   const loaded = loadPlugin()
   const applied = applyPlugin(loaded.definition, createReactStub())
   applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
@@ -967,31 +954,43 @@ test('瘦身布局：长说明默认收起，展开后全文仍在，信息一�
   for (const lang of ['zh', 'en']) {
     const dict = dictionaries[lang]
     const t = (key) => dict[key] || key
-    const collapsed = []
-    walk(renderTree(Page({ view: 'page', t })), (node) => collapsed.push(node))
+    const elements = []
+    walk(renderTree(Page({ view: 'page', t })), (node) => elements.push(node))
+    const full = JSON.stringify(elements)
 
-    // 默认不渲染长说明正文，只留一个「详情」入口，纵向不再被长段落撑开。
-    assert.ok(!JSON.stringify(collapsed).includes(dict.formatHint), lang + ' 默认不应常驻 formatHint 全文')
-    assert.ok(!JSON.stringify(collapsed).includes(dict.qualityHint), lang + ' 默认不应常驻 qualityHint 全文')
-    const toggles = collapsed.filter((node) => node.type === 'span' && node.props.key === 'more')
-    assert.equal(toggles.length, 1, lang + ' 必须有一个展开入口')
-    assert.equal(flattenText(toggles[0]), dict.moreHints, lang + ' 展开入口文案须来自字典')
-
-    // 展开分支必须让 formatHint / qualityHint / note / star 文案全部可达，一个字都没删。
-    const opened = applyPlugin(loaded.definition, statefulReact(true))
-    opened.injections.find((entry) => entry.name === 'plugins.row.config').factory()
-    const OpenPage = opened.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
-    const expanded = []
-    walk(renderTree(OpenPage({ view: 'page', t })), (node) => expanded.push(node))
-    const full = JSON.stringify(expanded)
+    // 用户要的是紧凑与完整并存：长说明默认完整渲染，不许折叠入口，也不许 CSS 截断。
     for (const key of ['formatHint', 'qualityHint', 'note', 'starPrompt', 'starLink']) {
-      assert.ok(full.includes(dict[key]), lang + ' 展开后必须保留 ' + key + ' 文案')
+      assert.ok(full.includes(dict[key]), lang + ' 默认页面必须完整显示 ' + key + ' 文案')
+      assert.ok(!dict[key].endsWith('...') && !dict[key].endsWith('…'), lang + ' 字典文案自身不得被截断')
     }
-    assert.equal(
-      flattenText(expanded.find((node) => node.props.key === 'more')),
-      dict.lessHints,
-      lang + ' 展开后应显示收起',
+    assert.ok(!elements.some((node) => node.props && node.props.key === 'more'), lang + ' 不得保留详情/收起入口')
+    assert.ok(
+      !elements.some((node) => node.props && node.props.role === 'button'),
+      lang + ' 说明文字不得伪装成可点击按钮',
     )
+    assert.ok(
+      !elements.some(
+        (node) =>
+          node.props &&
+          node.props.style &&
+          (node.props.style.textOverflow === 'ellipsis' ||
+            node.props.style.whiteSpace === 'nowrap' ||
+            typeof node.props.style.lineClamp !== 'undefined'),
+      ),
+      lang + ' 说明样式不得包含省略号或 line-clamp 截断',
+    )
+    const hints = elements.find((node) => node.props && node.props.key === 'hints')
+    assert.ok(hints, lang + ' 说明容器必须常驻渲染')
+    assert.deepEqual(
+      hints.props.children.map((child) => flattenText(child)),
+      [dict.formatHint, dict.qualityHint],
+      lang + ' formatHint / qualityHint 必须默认全文可见且顺序固定',
+    )
+    for (const key of ['formatHint', 'qualityHint', 'note']) {
+      const node = elements.find((item) => item.props && item.props.key === key)
+      assert.ok(node, lang + ' ' + key + ' 必须有独立文本节点承载全文')
+      assert.equal(flattenText(node), dict[key], lang + ' ' + key + ' 节点必须逐字完整')
+    }
   }
 })
 
@@ -1177,7 +1176,7 @@ test('设置页字典覆盖插件全部七语，各语 key 集合一致、无空
   assert.ok(!('ja' in dictionaries), 'ja 没有插件译文，不得编造低质字典，交由 DSH fallback')
 
   const zhKeys = Object.keys(dictionaries.zh).sort()
-  assert.ok(zhKeys.length >= 30, 'zh 字典必须含设置页全部文案 key')
+  assert.ok(zhKeys.length >= 28, 'zh 字典必须含设置页全部文案 key')
   for (const lang of SUPPORTED_LOCALES) {
     assert.deepEqual(Object.keys(dictionaries[lang]).sort(), zhKeys, lang + ' 字典 key 集合必须与 zh 一致')
     for (const key of zhKeys) {
@@ -1239,12 +1238,8 @@ test('多语页面渲染：文案全部来自当前语言字典，无原始 key 
     const dict = applied.locales[0].dictionaries[lang]
     const leaves = textLeaves(renderTree(page.Page({ view: 'page', t: page.t })))
 
-    // 展开长说明，覆盖 formatHint / qualityHint / 收起入口等全部文案。
-    const opened = applyPlugin(loaded.definition, statefulReact(true), { activeLocale: lang })
-    const openPage = boundPage(opened)
-    opened.setLocale(lang)
-    const openLeaves = textLeaves(renderTree(openPage.Page({ view: 'page', t: openPage.t })))
-    const all = [...leaves, ...openLeaves]
+    // 所有说明默认完整渲染，不依赖展开动作：逐语验证页面首屏就带全文。
+    const all = leaves
 
     for (const key of [
       'groupSwitch',
@@ -1258,8 +1253,6 @@ test('多语页面渲染：文案全部来自当前语言字典，无原始 key 
       'maxSide',
       'outputFormat',
       'quality',
-      'moreHints',
-      'lessHints',
       'formatHint',
       'qualityHint',
       'convertXpm',

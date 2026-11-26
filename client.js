@@ -995,8 +995,6 @@
             outputFormat: '输出格式',
             quality: '质量',
             qualityHint: 'PNG 无损；质量仅对 JPEG / WebP 生效。',
-            moreHints: '详情',
-            lessHints: '收起',
             formatHint:
               '照片用 JPEG/WebP 通常比 PNG 小约 80%；截图与像素画多用 PNG 更小；需透明选 PNG 或 WebP。实测见 docs/output-formats.md。',
             convertXpm: '转换 XPM',
@@ -1029,8 +1027,6 @@
             outputFormat: 'Output format',
             quality: 'Quality',
             qualityHint: 'PNG is lossless; quality applies to JPEG / WebP only.',
-            moreHints: 'Details',
-            lessHints: 'Less',
             formatHint:
               'Photos: JPEG/WebP are ~80% smaller than PNG; screenshots and pixel art are often smaller as PNG; use PNG or WebP for transparency. Measurements: docs/output-formats.md.',
             convertXpm: 'Convert XPM',
@@ -1063,8 +1059,6 @@
             outputFormat: 'Formato de salida',
             quality: 'Calidad',
             qualityHint: 'PNG es sin pérdida; la calidad solo se aplica a JPEG / WebP.',
-            moreHints: 'Detalles',
-            lessHints: 'Ocultar',
             formatHint:
               'Las fotos suelen ser ~80 % más pequeñas en JPEG/WebP que en PNG; las capturas y el arte de píxeles suelen ser más pequeños en PNG; para transparencia usa PNG o WebP. Mediciones: docs/output-formats.md.',
             convertXpm: 'Convertir XPM',
@@ -1097,8 +1091,6 @@
             outputFormat: 'Format de sortie',
             quality: 'Qualité',
             qualityHint: 'PNG est sans perte ; la qualité ne s’applique qu’à JPEG / WebP.',
-            moreHints: 'Détails',
-            lessHints: 'Réduire',
             formatHint:
               'Les photos sont généralement ~80 % plus petites en JPEG/WebP qu’en PNG ; les captures et le pixel art sont souvent plus petits en PNG ; pour la transparence, utilisez PNG ou WebP. Mesures : docs/output-formats.md.',
             convertXpm: 'Convertir XPM',
@@ -1131,8 +1123,6 @@
             outputFormat: 'Ausgabeformat',
             quality: 'Qualität',
             qualityHint: 'PNG ist verlustfrei; die Qualität gilt nur für JPEG / WebP.',
-            moreHints: 'Details',
-            lessHints: 'Weniger',
             formatHint:
               'Fotos sind in JPEG/WebP meist ~80 % kleiner als in PNG; Screenshots und Pixelart sind oft als PNG kleiner; für Transparenz PNG oder WebP verwenden. Messwerte: docs/output-formats.md.',
             convertXpm: 'XPM konvertieren',
@@ -1165,8 +1155,6 @@
             outputFormat: 'Формат вывода',
             quality: 'Качество',
             qualityHint: 'PNG без потерь; качество действует только для JPEG / WebP.',
-            moreHints: 'Подробнее',
-            lessHints: 'Свернуть',
             formatHint:
               'Фотографии в JPEG/WebP обычно примерно на 80 % меньше, чем в PNG; скриншоты и пиксель-арт часто меньше в PNG; для прозрачности используйте PNG или WebP. Замеры: docs/output-formats.md.',
             convertXpm: 'Преобразовать XPM',
@@ -1199,8 +1187,6 @@
             outputFormat: 'Formato de saída',
             quality: 'Qualidade',
             qualityHint: 'PNG é sem perdas; a qualidade só se aplica a JPEG / WebP.',
-            moreHints: 'Detalhes',
-            lessHints: 'Ocultar',
             formatHint:
               'Fotos em JPEG/WebP costumam ser ~80 % menores que em PNG; capturas e pixel art costumam ser menores em PNG; para transparência, use PNG ou WebP. Medições: docs/output-formats.md.',
             convertXpm: 'Converter XPM',
@@ -1219,7 +1205,7 @@
         }
 
         function createPage() {
-          // Apple 式克制设置面板：纵向紧凑、层级靠留白与次级色建立，长说明按需展开。
+          // Apple 式克制设置面板：纵向紧凑、层级靠留白与次级色建立，说明全文常驻可见、自然换行。
           // 所有取色与圆角都走 DSH 令牌，不硬编码颜色、不引入依赖。
           var styles = {
             summary: { color: 'var(--dsw-alias-label-secondary)', fontSize: '13px', lineHeight: '20px' },
@@ -1268,18 +1254,6 @@
               fontSize: '11px',
               lineHeight: '15px',
               paddingTop: '2px',
-            },
-            // 次级说明默认收起：不占常驻高度，点开才展开，信息一条不删。
-            more: {
-              background: 'none',
-              border: 'none',
-              padding: '0 0 2px',
-              alignSelf: 'flex-start',
-              color: 'var(--dsw-alias-brand-primary)',
-              fontFamily: 'inherit',
-              fontSize: '11px',
-              lineHeight: '15px',
-              cursor: 'pointer',
             },
             checkRow: {
               display: 'flex',
@@ -1428,12 +1402,6 @@
             var hoverState = React.useState('')
             var hovered = hoverState[0]
             var setHovered = hoverState[1]
-            // 长说明默认收起，点开才展开：信息不删，但不再常驻占用纵向空间。
-            // 用 span 而非 button，保持页面恰好 2 个按钮的既有契约。
-            var hintsState = React.useState(false)
-            var hintsOpen = hintsState[0]
-            var setHintsOpen = hintsState[1]
-
             var update = function (key, value) {
               setDraft(function (current) {
                 var next = {}
@@ -1557,32 +1525,11 @@
                 select('outputFormat', FORMAT_OPTIONS),
                 number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
                 React.createElement(
-                  'span',
-                  {
-                    key: 'more',
-                    style: styles.more,
-                    role: 'button',
-                    tabIndex: 0,
-                    onClick: function () {
-                      setHintsOpen(!hintsOpen)
-                    },
-                    onKeyDown: function (event) {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setHintsOpen(!hintsOpen)
-                      }
-                    },
-                  },
-                  hintsOpen ? t('lessHints') : t('moreHints'),
+                  'div',
+                  { key: 'hints', style: styles.hints },
+                  React.createElement('div', { key: 'formatHint' }, t('formatHint')),
+                  React.createElement('div', { key: 'qualityHint' }, t('qualityHint')),
                 ),
-                hintsOpen
-                  ? React.createElement(
-                      'div',
-                      { key: 'hints', style: styles.hints },
-                      React.createElement('div', { key: 'formatHint' }, t('formatHint')),
-                      React.createElement('div', { key: 'qualityHint' }, t('qualityHint')),
-                    )
-                  : null,
               ]),
               section('groupConvert', [
                 checkbox('convertXpm'),
