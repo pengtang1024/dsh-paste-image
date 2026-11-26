@@ -929,6 +929,76 @@ test('求 star 外链指向仓库，target/rel 正确且不是表单控件', () 
   assert.equal(elements.filter((node) => node.type === 'button').length, 2)
 })
 
+// 支持预置展开态的 React stub：只覆盖第 4 个 useState（hintsState）。
+// SettingsForm 的 hook 顺序固定为 draft / status / hover / hints，前三个维持原语义。
+function statefulReact(initialHintsOpen) {
+  const react = createReactStub()
+  let call = 0
+  react.useState = (value) => {
+    const at = call++
+    const resolved = at === 3 ? initialHintsOpen : typeof value === 'function' ? value() : value
+    return [resolved, () => {}]
+  }
+  return react
+}
+
+test('瘦身布局：长说明默认收起，展开后全文仍在，信息一条不丢', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const dictionaries = applied.locales[0].dictionaries
+
+  for (const lang of ['zh', 'en']) {
+    const dict = dictionaries[lang]
+    const t = (key) => dict[key] || key
+    const collapsed = []
+    walk(renderTree(Page({ view: 'page', t })), (node) => collapsed.push(node))
+
+    // 默认不渲染长说明正文，只留一个「详情」入口，纵向不再被长段落撑开。
+    assert.ok(!JSON.stringify(collapsed).includes(dict.formatHint), lang + ' 默认不应常驻 formatHint 全文')
+    assert.ok(!JSON.stringify(collapsed).includes(dict.qualityHint), lang + ' 默认不应常驻 qualityHint 全文')
+    const toggles = collapsed.filter((node) => node.type === 'span' && node.props.key === 'more')
+    assert.equal(toggles.length, 1, lang + ' 必须有一个展开入口')
+    assert.equal(flattenText(toggles[0]), dict.moreHints, lang + ' 展开入口文案须来自字典')
+
+    // 展开分支必须让 formatHint / qualityHint / note / star 文案全部可达，一个字都没删。
+    const opened = applyPlugin(loaded.definition, statefulReact(true))
+    opened.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+    const OpenPage = opened.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+    const expanded = []
+    walk(renderTree(OpenPage({ view: 'page', t })), (node) => expanded.push(node))
+    const full = JSON.stringify(expanded)
+    for (const key of ['formatHint', 'qualityHint', 'note', 'starPrompt', 'starLink']) {
+      assert.ok(full.includes(dict[key]), lang + ' 展开后必须保留 ' + key + ' 文案')
+    }
+    assert.equal(
+      flattenText(expanded.find((node) => node.props.key === 'more')),
+      dict.lessHints,
+      lang + ' 展开后应显示收起',
+    )
+  }
+})
+
+test('瘦身布局保持紧凑：分组行距、输入框与 star 行都下调', () => {
+  const loaded = loadPlugin()
+  const applied = applyPlugin(loaded.definition, createReactStub())
+  applied.injections.find((entry) => entry.name === 'plugins.row.config').factory()
+  const Page = applied.registrations.find((entry) => entry.meta.name === 'plugins.row.config').component
+  const elements = []
+  walk(renderTree(Page({ view: 'page', t: (key) => key })), (node) => elements.push(node))
+
+  const page = elements.find((node) => node.props && node.props.style && node.props.style.padding === '8px 12px 9px')
+  assert.ok(page, '外层容器必须使用紧凑 padding')
+  assert.equal(page.props.style.lineHeight, '18px')
+  const rows = elements.filter((node) => node.props && node.props.style && node.props.style.minHeight === '24px')
+  assert.ok(rows.length >= 4, '表单行与按钮行须压到 24px')
+  const starRow = elements.find((node) => node.props && node.props.key === 'star')
+  assert.equal(starRow.props.style.minHeight, '20px', 'star 行须紧凑但保留可点击高度')
+  const link = elements.find((node) => node.type === 'a')
+  assert.ok(link.props.style.cursor === 'pointer', 'star 外链须保持可点击的光标反馈')
+})
+
 test('apply(ctx) 在没有 slots/locale 时仍立即安装 paste/drop 监听', () => {
   const loaded = loadPlugin()
   const effects = []

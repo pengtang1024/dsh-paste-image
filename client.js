@@ -994,9 +994,11 @@
             maxSide: '长边上限 (px)',
             outputFormat: '输出格式',
             quality: '质量',
-            qualityHint: 'PNG 为无损编码；质量只对 JPEG / WebP 生效。',
+            qualityHint: 'PNG 无损；质量仅对 JPEG / WebP 生效。',
+            moreHints: '详情',
+            lessHints: '收起',
             formatHint:
-              '照片类内容 JPEG/WebP 通常比 PNG 小约 80%；截图、文字和像素画往往 PNG 更小；需要透明请选 PNG 或 WebP。完整实测见 docs/output-formats.md。',
+              '照片用 JPEG/WebP 通常比 PNG 小约 80%；截图与像素画多用 PNG 更小；需透明选 PNG 或 WebP。实测见 docs/output-formats.md。',
             convertXpm: '转换 XPM',
             convertBmp: '转换 BMP / DIB',
             convertSvg: '转换 SVG',
@@ -1006,7 +1008,7 @@
             reset: '恢复默认',
             saved: '已保存',
             saveFailed: '保存失败',
-            note: '设置只保存在这个浏览器里，保存后立即生效；恢复默认会写回全部默认值。',
+            note: '仅存于本浏览器，保存后立即生效。',
             starPrompt: '如果这款插件帮到了你，欢迎到 GitHub 点个 star ⭐',
             starLink: '去 dsh-paste-image 点个 star',
           },
@@ -1027,8 +1029,10 @@
             outputFormat: 'Output format',
             quality: 'Quality',
             qualityHint: 'PNG is lossless; quality applies to JPEG / WebP only.',
+            moreHints: 'Details',
+            lessHints: 'Less',
             formatHint:
-              'For photos, JPEG/WebP are usually about 80% smaller than PNG; for screenshots, text and pixel art PNG is often smaller; choose PNG or WebP when you need transparency. Full measurements: docs/output-formats.md.',
+              'Photos: JPEG/WebP are ~80% smaller than PNG; screenshots and pixel art are often smaller as PNG; use PNG or WebP for transparency. Measurements: docs/output-formats.md.',
             convertXpm: 'Convert XPM',
             convertBmp: 'Convert BMP / DIB',
             convertSvg: 'Convert SVG',
@@ -1038,14 +1042,14 @@
             reset: 'Restore defaults',
             saved: 'Saved',
             saveFailed: 'Save failed',
-            note: 'Settings live in this browser only and take effect immediately. Restoring writes every default back.',
+            note: 'Stored in this browser only; changes apply on save.',
             starPrompt: 'If this plugin has been useful, give it a star on GitHub ⭐',
             starLink: 'Star dsh-paste-image on GitHub',
           },
         }
 
         function createPage() {
-          // 克制型设置面板：宿主面板里的紧凑表单，靠分组、留白与细分隔建立层次，
+          // Apple 式克制设置面板：纵向紧凑、层级靠留白与次级色建立，长说明按需展开。
           // 所有取色与圆角都走 DSH 令牌，不硬编码颜色、不引入依赖。
           var styles = {
             summary: { color: 'var(--dsw-alias-label-secondary)', fontSize: '13px', lineHeight: '20px' },
@@ -1054,26 +1058,26 @@
               flexDirection: 'column',
               boxSizing: 'border-box',
               width: '100%',
-              padding: '10px 12px 12px',
+              padding: '8px 12px 9px',
               border: '1px solid var(--dsw-alias-border-l2)',
               borderRadius: 'var(--dsw-radius-md)',
               background: 'var(--dsw-alias-bg-layer-1)',
               color: 'var(--dsw-alias-label-primary)',
               fontSize: '13px',
-              lineHeight: '20px',
+              lineHeight: '18px',
             },
             section: {
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
-              padding: '10px 0',
+              gap: '3px',
+              padding: '6px 0',
               borderTop: '1px solid var(--dsw-alias-border-l1)',
             },
-            sectionFirst: { display: 'flex', flexDirection: 'column', gap: '6px', padding: '0 0 10px' },
+            sectionFirst: { display: 'flex', flexDirection: 'column', gap: '3px', padding: '0 0 6px' },
             sectionTitle: {
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '8px',
               fontSize: '11px',
               fontWeight: 600,
               letterSpacing: '0.06em',
@@ -1084,23 +1088,35 @@
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '10px',
+              gap: '8px',
               flexWrap: 'wrap',
-              minHeight: '28px',
+              minHeight: '24px',
             },
             label: { color: 'var(--dsw-alias-label-secondary)', flexShrink: 0 },
-            hint: {
+            hints: {
               color: 'var(--dsw-alias-label-tertiary)',
               fontSize: '11px',
-              lineHeight: '17px',
-              marginTop: '-2px',
+              lineHeight: '15px',
+              paddingTop: '2px',
+            },
+            // 次级说明默认收起：不占常驻高度，点开才展开，信息一条不删。
+            more: {
+              background: 'none',
+              border: 'none',
+              padding: '0 0 2px',
+              alignSelf: 'flex-start',
+              color: 'var(--dsw-alias-brand-primary)',
+              fontFamily: 'inherit',
+              fontSize: '11px',
+              lineHeight: '15px',
+              cursor: 'pointer',
             },
             checkRow: {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               cursor: 'pointer',
-              padding: '5px 6px',
+              padding: '3px 6px',
               margin: '0 -6px',
               borderRadius: 'var(--dsw-radius-sm)',
             },
@@ -1110,7 +1126,7 @@
               width: '132px',
               maxWidth: '100%',
               boxSizing: 'border-box',
-              padding: '4px 8px',
+              padding: '3px 8px',
               borderRadius: 'var(--dsw-radius-sm)',
               border: '1px solid var(--dsw-alias-border-l2)',
               background: 'var(--dsw-alias-bg-layer-2)',
@@ -1119,9 +1135,9 @@
               fontSize: '13px',
             },
             inputDisabled: { opacity: '0.55', cursor: 'not-allowed' },
-            buttons: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minHeight: '28px' },
+            buttons: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minHeight: '24px' },
             button: {
-              padding: '5px 14px',
+              padding: '4px 14px',
               borderRadius: 'var(--dsw-radius-sm)',
               border: '1px solid var(--dsw-alias-border-l2)',
               background: 'var(--dsw-alias-bg-layer-2)',
@@ -1133,7 +1149,7 @@
             },
             buttonHover: { background: 'var(--dsw-alias-interactive-bg-hover-solid)' },
             buttonPrimary: {
-              padding: '5px 14px',
+              padding: '4px 14px',
               borderRadius: 'var(--dsw-radius-sm)',
               border: '1px solid var(--dsw-alias-button-primary-fill)',
               background: 'var(--dsw-alias-button-primary-fill)',
@@ -1164,23 +1180,23 @@
             note: {
               color: 'var(--dsw-alias-label-tertiary)',
               fontSize: '11px',
-              lineHeight: '17px',
-              paddingTop: '8px',
-              borderTop: '1px solid var(--dsw-alias-border-l1)',
+              lineHeight: '15px',
+              paddingTop: '4px',
             },
             starRow: {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '10px',
+              gap: '8px',
               flexWrap: 'wrap',
-              minHeight: '28px',
+              minHeight: '20px',
             },
-            starPrompt: { color: 'var(--dsw-alias-label-secondary)' },
+            starPrompt: { color: 'var(--dsw-alias-label-tertiary)', fontSize: '11px', lineHeight: '15px' },
             starLink: {
               color: 'var(--dsw-alias-brand-primary)',
               textDecoration: 'none',
               cursor: 'pointer',
+              fontSize: '11px',
             },
           }
 
@@ -1242,6 +1258,11 @@
             var hoverState = React.useState('')
             var hovered = hoverState[0]
             var setHovered = hoverState[1]
+            // 长说明默认收起，点开才展开：信息不删，但不再常驻占用纵向空间。
+            // 用 span 而非 button，保持页面恰好 2 个按钮的既有契约。
+            var hintsState = React.useState(false)
+            var hintsOpen = hintsState[0]
+            var setHintsOpen = hintsState[1]
 
             var update = function (key, value) {
               setDraft(function (current) {
@@ -1364,9 +1385,34 @@
               section('groupLimits', [number('maxFiles', 1, 8, 1), number('maxSide', 512, 8192, 256)]),
               section('groupOutput', [
                 select('outputFormat', FORMAT_OPTIONS),
-                React.createElement('div', { key: 'formatHint', style: styles.hint }, t('formatHint')),
                 number('quality', 0.1, 1, 0.01, { disabled: draft.outputFormat === 'png' }),
-                React.createElement('div', { key: 'qualityHint', style: styles.hint }, t('qualityHint')),
+                React.createElement(
+                  'span',
+                  {
+                    key: 'more',
+                    style: styles.more,
+                    role: 'button',
+                    tabIndex: 0,
+                    onClick: function () {
+                      setHintsOpen(!hintsOpen)
+                    },
+                    onKeyDown: function (event) {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setHintsOpen(!hintsOpen)
+                      }
+                    },
+                  },
+                  hintsOpen ? t('lessHints') : t('moreHints'),
+                ),
+                hintsOpen
+                  ? React.createElement(
+                      'div',
+                      { key: 'hints', style: styles.hints },
+                      React.createElement('div', { key: 'formatHint' }, t('formatHint')),
+                      React.createElement('div', { key: 'qualityHint' }, t('qualityHint')),
+                    )
+                  : null,
               ]),
               section('groupConvert', [
                 checkbox('convertXpm'),
