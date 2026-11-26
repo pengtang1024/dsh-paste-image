@@ -6,10 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-26
+
 ### Added
 
-- New settings entry: **Settings → Paste any image**. A dedicated item in the Settings sidebar opens the full runtime settings form directly (its label follows the sidebar wording "Paste any image"). The original plugin-row entry (Settings → Plugins → dsh-paste-image → Configure) remains, and both share the same settings.
-- Docs sync: the READMEs (Chinese source plus six translations), both changelogs and all seven DETAIL documents now describe the new primary entry and the retained secondary entry.
+- A dedicated **Paste any image** entry in the Settings sidebar, alongside entries such as Quick phrases, opens the full runtime settings form directly; its label follows the sidebar wording. The original plugin-row entry (Settings → Plugins → dsh-paste-image → Configure) remains, and both share the same settings and registration ID.
+- A localized GitHub star prompt at the bottom of the settings page: the Chinese and English prompt and link text follow the interface language, and the link opens the repository in a new tab with `noopener noreferrer`.
+
+### Changed
+
+- Reworked the settings form's visual design: controls are grouped into Switch / Count & limits / Output format & quality / Format conversion / System / Actions, with thin separators, section headings, hover feedback, a status pill and a primary button style. All colours and radii come from DSH design tokens, and the controls, their order, values and save semantics are unchanged.
+- Documentation wording is now consistent: the READMEs (Chinese source plus six translations), the localized SECURITY files and both `docs/formats.md` pages describe the transcoded output as the selected format (PNG by default) instead of always PNG. The Chinese and translated READMEs, both changelogs and all seven DETAIL documents describe the new sidebar entry and the retained plugin-row entry.
+
+### Fixed
+
+- The six settings-section headings used to render raw dictionary keys instead of localized text; they now go through `t()` so both Chinese and English interfaces show the proper translated headings.
+- The primary button's foreground colour used `--dsw-alias-label-on-color`, which no longer matches the current theme tokens; it now uses `--dsw-alias-label-primary-foreground`, keeping the button label legible.
 
 ## [0.4.3] - 2026-11-25
 
