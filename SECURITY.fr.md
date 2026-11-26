@@ -2,10 +2,10 @@
 
 ## Versions prises en charge
 
-| Version | Prise en charge                                      |
-| ------- | ---------------------------------------------------- |
-| 0.2.x   | Oui — ligne de publication actuelle                  |
-| 0.1.x   | Non — veuillez passer à 0.2.x, qui succède à 0.1.x   |
+| Version | Prise en charge                                    |
+| ------- | -------------------------------------------------- |
+| 0.2.x   | Oui — ligne de publication actuelle                |
+| 0.1.x   | Non — veuillez passer à 0.2.x, qui succède à 0.1.x |
 
 Le plugin n'a pas encore publié de version 1.0 ; les correctifs de sécurité sont donc publiés dans une nouvelle version corrective de la branche mineure actuelle, et non rétroportés vers des lignes de versions antérieures.
 
@@ -25,7 +25,7 @@ Nous confirmerons la réception des rapports dans la mesure du possible ; une fo
 
 ## Périmètre
 
-`dsh-paste-image` s'exécute entièrement dans le processus de rendu de DSH. Il n'accède pas au réseau, n'a pas de processus en arrière-plan, n'interroge pas le presse-papiers en continu et ne modifie pas le code hôte de DSH. Toute son activité consiste à : lire des fichiers à partir des événements `paste` ou `drop`, les décoder localement, les réencoder dans le format de sortie choisi (PNG par défaut), puis distribuer un événement `drop` synthétique dans la même fenêtre.
+`dsh-paste-image` s'exécute entièrement dans le processus de rendu de DSH. Il n'accède pas au réseau, n'a pas de processus en arrière-plan, n'interroge pas le presse-papiers en continu et ne modifie pas le code hôte de DSH. Toute son activité consiste à : lire des fichiers à partir des événements `paste` ou `drop`, les décoder localement, les réencoder dans le format de sortie choisi (WebP par défaut), puis distribuer un événement `drop` synthétique dans la même fenêtre.
 
 Dans le périmètre :
 

@@ -2,9 +2,9 @@
 
 ## Versões suportadas
 
-| Versão | É suportada                                              |
-| ------ | -------------------------------------------------------- |
-| 0.2.x  | Sim — linha de lançamento atual                          |
+| Versão | É suportada                                                 |
+| ------ | ----------------------------------------------------------- |
+| 0.2.x  | Sim — linha de lançamento atual                             |
 | 0.1.x  | Não — atualize para 0.2.x, que substituiu a versão anterior |
 
 O plugin ainda não lançou a versão 1.0; portanto, as correções de segurança são publicadas em uma nova versão de patch da versão minor atual, e não são portadas para linhas de versão mais antigas.
@@ -25,7 +25,7 @@ Faremos o possível para confirmar o recebimento do relatório; após a confirma
 
 ## Escopo
 
-O `dsh-paste-image` executa-se inteiramente no processo de renderização do DSH. Ele não acessa a rede, não tem processos em segundo plano, não consulta a área de transferência periodicamente e não modifica o código do host do DSH. Todo o seu trabalho consiste em: ler arquivos de eventos `paste` ou `drop`, decodificá-los localmente, recodificá-los no formato de saída escolhido (PNG por padrão) e, em seguida, despachar um evento `drop` sintético na mesma janela.
+O `dsh-paste-image` executa-se inteiramente no processo de renderização do DSH. Ele não acessa a rede, não tem processos em segundo plano, não consulta a área de transferência periodicamente e não modifica o código do host do DSH. Todo o seu trabalho consiste em: ler arquivos de eventos `paste` ou `drop`, decodificá-los localmente, recodificá-los no formato de saída escolhido (WebP por padrão) e, em seguida, despachar um evento `drop` sintético na mesma janela.
 
 Dentro do escopo:
 

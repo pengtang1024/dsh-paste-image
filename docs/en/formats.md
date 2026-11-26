@@ -11,7 +11,7 @@ Every file in a `paste` or `drop` event goes through the same four questions.
    Everything else in the same event is forwarded untouched.
 2. **What is it really?** `sniff()` reads magic bytes and returns a canonical type, ignoring the declared MIME type. The order matters: the four native formats are checked first, then BMP, TIFF, XPM, the `ftyp` family (AVIF/HEIC), ICO/CUR, SVG and finally headerless DIB.
 3. **Can it pass through?** The file is passed through byte-for-byte only when the sniffed type is native **and** the declared type agrees (including the alias spellings in `MIME_ALIAS`). A native file with no declared type is re-wrapped with the sniffed type instead of being re-encoded, so the host sees a valid `File`. A native file whose bytes disagree with its declared type is re-encoded — this is what stops a BMP from wearing an `image/png` label.
-4. **Otherwise: decode, draw, re-encode.** `toCanvas()` picks a decoder, draws the result onto a canvas capped at 4096 px on the longest side, and the canvas is exported in the selected output format (PNG by default). If every decoder refuses, the original file is kept and the plugin logs `keep original (...)`, so the failure looks exactly like the stock client.
+4. **Otherwise: decode, draw, re-encode.** `toCanvas()` picks a decoder, draws the result onto a canvas capped at 4096 px on the longest side, and the canvas is exported in the selected output format (WebP by default). If every decoder refuses, the original file is kept and the plugin logs `keep original (...)`, so the failure looks exactly like the stock client.
 
 ## Format matrix
 
@@ -56,7 +56,7 @@ Guard rails: a file larger than 64 Mi pixels (or a canvas that would need more t
 - **2-bit and 64-bit BMPs.** Only ever produced by old OS/2 software and a handful of specialised tools.
 - **DIB-only ICO/CUR entries.** Icons whose entries are raw bitmaps rather than PNGs are not re-assembled; the browser may still decode them on its own.
 - **JPEG XL, JPEG 2000, PSD, TGA, DDS, OpenEXR, camera RAW.** Not paste formats. Use the file picker once DSH accepts them natively.
-- **Animated sources.** A converted image is a single still frame in the selected output format (PNG by default); animation, EXIF and colour profiles are dropped. Native GIF/WebP pass through untouched, so they keep their animation.
+- **Animated sources.** A converted image is a single still frame in the selected output format (WebP by default); animation, EXIF and colour profiles are dropped. Native GIF/WebP pass through untouched, so they keep their animation.
 
 ## Adding a format
 

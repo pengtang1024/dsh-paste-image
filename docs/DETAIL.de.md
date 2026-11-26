@@ -83,18 +83,18 @@ Die Konvertierung läuft pro Datei in einem `try/catch`. Erfolg protokolliert ei
 
 Einstellungen liegen ausschließlich im `localStorage` des Browsers (Schlüssel `dsh-paste-image.settings.v1`; im privaten Modus oder wenn Speicherung deaktiviert ist, wird eine Kopie im Speicher verwendet und das Einfügen funktioniert weiter). Der Hauptzugang ist **Einstellungen → Beliebiges Bild einfügen** und öffnet das folgende vollständige Formular direkt; der bisherige Eintrag über die Plugin-Zeile (Einstellungen → Erweiterungen → dsh-paste-image → Konfiguration) bleibt erhalten, beide teilen sich dieselben Einstellungen. Sie können die Einstellungen auch über `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` ändern.
 
-| Einstellung | Standard | Wert / Bereich | Wirkung |
-| --- | --- | --- | --- |
-| `enabled` | `true` | Boolean | Hauptschalter; aus -> Einfügen nutzt nativen Pfad |
-| `maxFiles` | `8` | Ganzzahl 1–8 | Max. Dateien pro Stapel; darüber passiert der ganze Stapel unverändert |
-| `maxSide` | `4096` | Ganzzahl 512–8192 | Grenze für die längste Seite konvertierter Bilder |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | Ausgabeformat der Konvertierung (PNG bei fehlender Unterstützung) |
-| `quality` | `0.92` | 0.1–1 (2 Dezimalstellen) | JPEG / WebP-Kodierqualität; im Formular bei PNG deaktiviert |
-| `convertXpm` | `true` | Boolean | XPM konvertieren oder nicht |
-| `convertBmp` | `true` | Boolean | BMP / DIB konvertieren oder nicht |
-| `convertSvg` | `true` | Boolean | SVG konvertieren oder nicht |
-| `convertIco` | `true` | Boolean | ICO / CUR konvertieren oder nicht |
-| `logConversions` | `true` | Boolean | Debug-Protokolle für Konvertierungen ausgeben |
+| Einstellung      | Standard | Wert / Bereich           | Wirkung                                                                |
+| ---------------- | -------- | ------------------------ | ---------------------------------------------------------------------- |
+| `enabled`        | `true`   | Boolean                  | Hauptschalter; aus -> Einfügen nutzt nativen Pfad                      |
+| `maxFiles`       | `8`      | Ganzzahl 1–8             | Max. Dateien pro Stapel; darüber passiert der ganze Stapel unverändert |
+| `maxSide`        | `4096`   | Ganzzahl 512–8192        | Grenze für die längste Seite konvertierter Bilder                      |
+| `outputFormat`   | `webp`   | `png` / `jpeg` / `webp`  | Ausgabeformat der Konvertierung (PNG bei fehlender Unterstützung)      |
+| `quality`        | `0.92`   | 0.1–1 (2 Dezimalstellen) | JPEG / WebP-Kodierqualität; im Formular bei PNG deaktiviert            |
+| `convertXpm`     | `true`   | Boolean                  | XPM konvertieren oder nicht                                            |
+| `convertBmp`     | `true`   | Boolean                  | BMP / DIB konvertieren oder nicht                                      |
+| `convertSvg`     | `true`   | Boolean                  | SVG konvertieren oder nicht                                            |
+| `convertIco`     | `true`   | Boolean                  | ICO / CUR konvertieren oder nicht                                      |
+| `logConversions` | `true`   | Boolean                  | Debug-Protokolle für Konvertierungen ausgeben                          |
 
 Das Konfigurationsformular enthält die obigen Kontrollkästchen, ein Dropdown für das Ausgabeformat und drei Zahlenfelder; Entwürfe liegen im Komponentenzustand und werden erst beim Klick auf „Speichern" geschrieben; „Standard wiederherstellen" setzt die Werte der Tabelle zurück.
 
@@ -109,4 +109,4 @@ Das Konfigurationsformular enthält die obigen Kontrollkästchen, ein Dropdown f
 
 ## 10. Designprinzipien
 
-Bytes vor Labels; synchrone Abbrechen in der Capture-Phase; PNG als Standardausgabe (auf der Whitelist, verlustfrei, in Chromium universell); synthetischer Drop statt privater API; kein Host-Prozess und keine Decoder von Dritten.
+Bytes vor Labels; synchrone Abbrechen in der Capture-Phase; WebP als Standardausgabe (auf der Whitelist, transparent und kompakt, in Chromium universell); synthetischer Drop statt privater API; kein Host-Prozess und keine Decoder von Dritten.

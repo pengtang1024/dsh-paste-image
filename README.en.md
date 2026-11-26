@@ -18,13 +18,13 @@ That whitelist breaks two things that happen all the time on Linux:
 - **Screenshots declared as XPM.** Some screenshot tools, notably on Ubuntu/Wayland, put the image on the clipboard with the type `image/xpm`. The pixels are fine; the label is not on the whitelist, so the paste is rejected.
 - **BMP bytes wearing a PNG label.** Some applications hand over a BMP (or TIFF) payload while declaring `image/png`. The declared type passes the whitelist check, the decoder later fails, and you get the same red error.
 
-`dsh-paste-image` handles both cases inside the renderer: it looks at the actual bytes, decodes what the clipboard really contains, re-encodes it in the selected output format (PNG by default), and hands the result back to the normal attachment channel.
+`dsh-paste-image` handles both cases inside the renderer: it looks at the actual bytes, decodes what the clipboard really contains, re-encodes it in the selected output format (WebP by default), and hands the result back to the normal attachment channel.
 
 ## How it works
 
 1. **Capture.** `install()` registers `paste` and `drop` listeners on `document` in the capture phase, so the plugin sees the event before the composer does.
 2. **Sniff.** `handle()` reads the `File` objects from `clipboardData` or `dataTransfer`, and `sniff()` identifies the real format from magic bytes — not from the declared MIME type.
-3. **Re-encode.** `normalize()` lets native files through untouched. Everything else is decoded (dedicated XPM, BMP/DIB and SVG paths, the browser's own codec for the rest), drawn onto a canvas capped at 4096 px on the longest side, and exported in the selected output format (PNG by default); the extension follows the actual encoded MIME (`.png`/`.jpg`/`.webp`).
+3. **Re-encode.** `normalize()` lets native files through untouched. Everything else is decoded (dedicated XPM, BMP/DIB and SVG paths, the browser's own codec for the rest), drawn onto a canvas capped at 4096 px on the longest side, and exported in the selected output format (WebP by default); the extension follows the actual encoded MIME (`.png`/`.jpg`/`.webp`).
 4. **Reroute.** `handle()` dispatches a synthetic `drop` event carrying the new `File` at `[data-composer-card]`, which is the same path a real drag-and-drop takes. A `__dshPasteImageRerouted` marker stops the plugin from intercepting its own event.
 
 All of this is client-side. There is no host process, no clipboard polling and no network request.
@@ -39,15 +39,15 @@ This table is the short version. The [format support reference](docs/en/formats.
 | JPEG / JFIF                  | `image/jpeg`          | Passed through unchanged                                                                                                              |
 | WebP                         | `image/webp`          | Passed through unchanged                                                                                                              |
 | GIF                          | `image/gif`           | Passed through unchanged                                                                                                              |
-| XPM (XPM3 text)              | `image/xpm`           | Decoded by `decodeXpm()`, re-encoded in the selected output format (PNG by default)                                                   |
+| XPM (XPM3 text)              | `image/xpm`           | Decoded by `decodeXpm()`, re-encoded in the selected output format (WebP by default)                                                  |
 | BMP / DIB                    | `image/bmp`           | Browser decode first, `decodeBmp()` fallback: 1/4/8/16/24/32-bit, RLE4/RLE8, BITFIELDS, OS/2 headers and headerless DIBs              |
-| SVG                          | `image/svg+xml`       | Rasterised through an `<img>` element, re-encoded in the selected output format (PNG by default)                                      |
+| SVG                          | `image/svg+xml`       | Rasterised through an `<img>` element, re-encoded in the selected output format (WebP by default)                                     |
 | ICO / CUR                    | `image/x-icon`        | Browser decode first, then falls back to the largest PNG-compressed entry                                                             |
 | TIFF                         | `image/tiff`          | Detected by magic bytes; decoded only if the browser ships a TIFF codec (Chromium does not), otherwise the original is passed through |
-| AVIF                         | `image/avif`          | Decoded by Chromium, re-encoded in the selected output format (PNG by default)                                                        |
+| AVIF                         | `image/avif`          | Decoded by Chromium, re-encoded in the selected output format (WebP by default)                                                       |
 | HEIC / HEIF, other `image/*` | `image/...`           | Detected by magic bytes; decoded only when the browser has the codec (Chromium does not decode HEIC), otherwise passed through        |
 
-Pass-through only happens when the magic bytes match one of the four native types **and** the declared type agrees. A file whose bytes are JPEG but which claims `image/png` is re-encoded in the selected output format (PNG by default), so the declared type can no longer lie. A native file with no declared type at all is re-wrapped with the sniffed type instead of being re-encoded, and common alias spellings (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) count as agreement.
+Pass-through only happens when the magic bytes match one of the four native types **and** the declared type agrees. A file whose bytes are JPEG but which claims `image/png` is re-encoded in the selected output format (WebP by default), so the declared type can no longer lie. A native file with no declared type at all is re-wrapped with the sniffed type instead of being re-encoded, and common alias spellings (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) count as agreement.
 
 A file is considered at all when its MIME type starts with `image/` or its name ends in `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` or `.heif`. Non-image files in the same paste are forwarded untouched.
 
@@ -106,7 +106,7 @@ The plugin's settings now live under **Settings → Paste any image**, which ope
 | Enable plugin        | On      | When off, `handle()` returns immediately and paste/drop goes fully native (listeners stay, so re-enabling is instant) |
 | Max files per paste  | 8       | 1–8; a larger batch is handed to the native path as a whole                                                           |
 | Long-edge limit (px) | 4096    | 512–8192; applies only to converted images, native pass-through is not resized                                        |
-| Output format        | PNG     | PNG / JPEG / WebP; the encoding used for converted output                                                             |
+| Output format        | WebP    | PNG / JPEG / WebP; the encoding used for converted output                                                             |
 | Quality              | 0.92    | 0.1–1, applies to JPEG / WebP only; the field is disabled while PNG is selected                                       |
 | Convert XPM          | On      | When off, `image/xpm` is not converted and goes to the native channel untouched                                       |
 | Convert BMP / DIB    | On      | When off, BMP/DIB (including bytes that are BMP but declare PNG) pass through untouched                               |
@@ -116,7 +116,7 @@ The plugin's settings now live under **Settings → Paste any image**, which ope
 
 Only **Save** writes and applies the values; edits stay an in-page draft and are discarded when you leave the page. **Restore defaults** writes every default in the table back and applies them immediately too. Number inputs are rounded and clamped to their range (clearing a field does not overwrite the stored value with 0).
 
-PNG is the default output: it is lossless. JPEG produces smaller files but composites transparent pixels onto white before encoding, and WebP keeps transparency while staying small. When the browser cannot encode the selected format, the plugin falls back to the type it actually produced, and to PNG when that type is unrecognised — the format table above still describes the default PNG output unless you switch formats.
+WebP is the default output: it keeps transparency while staying small. PNG is lossless; JPEG produces smaller files but composites transparent pixels onto white before encoding. When the browser cannot encode the selected format, the plugin falls back to the type it actually produced, and to PNG when that type is unrecognised — the format table above still describes the default WebP output unless you switch formats.
 
 How much you actually save depends on the image content (q=0.92, sizes in KB, 1 KB = 1000 B):
 
@@ -138,7 +138,7 @@ Settings live only in this browser, under the `localStorage` key `dsh-paste-imag
 - **Other codecs:** SVG is rasterised in-house; ICO/CUR fall back to PNG-compressed entries; AVIF relies on the browser decoder. TIFF and HEIC are detected but Chromium ships no codec for them, so the original is passed through and the host rejects it as before. No third-party decoder is bundled.
 - **Size:** converted images are scaled down to at most 4096 px on the longest side by default; adjust it under [Configuration](#configuration). Native files passed through untouched are not resized.
 - **File count:** one paste or drop may contain at most 8 files by default; adjust it under [Configuration](#configuration). Larger batches are left entirely to the native path.
-- **Flattening:** a converted image becomes a single still frame (PNG by default). Animation, EXIF metadata and embedded colour profiles are not preserved.
+- **Flattening:** a converted image becomes a single still frame (WebP by default). Animation, EXIF metadata and embedded colour profiles are not preserved.
 - **Scope:** only the `paste` and `drop` paths are covered. The file picker and other insertion paths keep their native behaviour.
 
 ## Performance

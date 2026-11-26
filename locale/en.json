@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Paste any image",
-    "description": "Paste or drop an image whose declared type is XPM, BMP or DIB, SVG, ICO, or simply wrong: the renderer sniffs the real bytes and converts it to PNG, JPEG or WebP (PNG by default) before handing it to the composer. Native PNG, JPEG, WebP and GIF pass through untouched. The file count and long-edge limit are configurable (8 files and 4096 px by default). HEIC and TIFF are recognised but not decoded, because the plugin ships no decoder for them.",
+    "description": "Paste or drop an image whose declared type is XPM, BMP or DIB, SVG, ICO, or simply wrong: the renderer sniffs the real bytes and converts it to PNG, JPEG or WebP (WebP by default) before handing it to the composer. Native PNG, JPEG, WebP and GIF pass through untouched. The file count and long-edge limit are configurable (8 files and 4096 px by default). HEIC and TIFF are recognised but not decoded, because the plugin ships no decoder for them.",
     "detail": "docs/DETAIL.en.md"
   }
 }

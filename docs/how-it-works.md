@@ -136,7 +136,7 @@ if (kind && NATIVE_SET.has(kind)) {
 - **MIME 别名。** [`aliasMime()`](../client.js#L154-L156) 把应用实际发出的各种拼写映射到规范类型——`image/jpg`、`image/pjpeg`、`image/x-png`、`image/x-bmp`、`image/x-ms-bmp`、`image/vnd.microsoft.icon`、`image/x-xpixmap`、`image/xpm`、`image/svg+xml`。没有它，一个完好的 `image/jpg` JPEG 会被白白解码再重新编码。
 - **缺失声明。** `type` 为空的 `File` 过去会被原样透传，然后被宿主拒绝，因为白名单跟着标签走。现在会把字节重新包进一个带嗅探类型的 `File`，从而在不重新编码的情况下被接受。
 
-这里的声明类型只有否决权。字节是 JPEG 却声称 `image/png` 的文件通不过 `declared === kind` 检查，于是会被转换成所选输出格式（默认 PNG）。同理，声明为 PNG 的 BMP 也会被转换，因为宿主的白名单和宿主的解码器都跟着标签走。
+这里的声明类型只有否决权。字节是 JPEG 却声称 `image/png` 的文件通不过 `declared === kind` 检查，于是会被转换成所选输出格式（默认 WebP）。同理，声明为 PNG 的 BMP 也会被转换，因为宿主的白名单和宿主的解码器都跟着标签走。
 
 发生转换时会重建文件名：扩展名随实际编码类型替换（默认 `.png`），因此 `shot.xpm` 变成 `shot.png`，而 `wechat.png`（实际装着 BMP 字节）仍是 `wechat.png`。被重标类型的原生文件则保留自己的扩展名（JPEG 是 `.jpg`，以及 `.webp`、`.gif`）。
 
@@ -302,7 +302,7 @@ window.__ModuleLoader__.load({
 
 ## 13. 设置与配置页
 
-运行时设置对象在文件顶部（[`client.js:29-132`](../client.js#L29-L132)）：`SETTINGS_KEY` 是 `dsh-paste-image.settings.v1`，`SETTINGS_DEFAULTS` 保持引入配置页之前的行为（启用、最多 8 个文件、长边 4096、输出 PNG、质量 0.92、四种格式全转换、转换日志开），`SETTINGS_RANGES` 把 `maxFiles` 限制在 1–8、`maxSide` 限制在 512–8192、`quality` 限制在 0.1–1（按两位小数取整），`SETTINGS_ENUMS` 只接受 `outputFormat` 的 `png` / `jpeg` / `webp`。对外的三个入口是 `api.getSettings()`、`api.applySettings(patch)` 和 `api.resetSettings()`：`applySettings()` 先把布尔开关强制布尔化、把枚举值规整或回默认、把数字按各自精度取整并夹进范围，再写入 `localStorage`；`localStorage` 不存在或抛错时只保留内存副本，粘贴照常工作。
+运行时设置对象在文件顶部（[`client.js:29-132`](../client.js#L29-L132)）：`SETTINGS_KEY` 是 `dsh-paste-image.settings.v1`，`SETTINGS_DEFAULTS` 保持引入配置页之前的行为（启用、最多 8 个文件、长边 4096、输出 WebP、质量 0.92、四种格式全转换、转换日志开），`SETTINGS_RANGES` 把 `maxFiles` 限制在 1–8、`maxSide` 限制在 512–8192、`quality` 限制在 0.1–1（按两位小数取整），`SETTINGS_ENUMS` 只接受 `outputFormat` 的 `png` / `jpeg` / `webp`。对外的三个入口是 `api.getSettings()`、`api.applySettings(patch)` 和 `api.resetSettings()`：`applySettings()` 先把布尔开关强制布尔化、把枚举值规整或回默认、把数字按各自精度取整并夹进范围，再写入 `localStorage`；`localStorage` 不存在或抛错时只保留内存副本，粘贴照常工作。
 
 三个消费点各管一段：
 
@@ -355,7 +355,7 @@ window.__ModuleLoader__.load({
 
 - **字节优先于标签。** MIME 类型由来源应用提供；魔数由图片编码器提供。信任字节是同时处理「不支持但诚实」和「支持但在撒谎」的唯一办法。
 - **捕获阶段与同步取消。** 输入框绝不能看到未受支持的原始文件，而 `preventDefault()` 只在事件派发期间有效。
-- **以 PNG 作为默认输出。** 它在白名单里，对已解码的像素无损，而且每个 Chromium 构建都能通过 `canvas.toBlob` 编码它；需要更小的体积时可以切到 JPEG/WebP，浏览器不支持所选编码器时回退 PNG。
+- **以 WebP 作为默认输出。** 它保留透明且体积较小，每个 Chromium 构建都能通过 `canvas.toBlob` 编码它；需要无损可选 PNG，浏览器不支持所选编码器时回退 PNG。
 - **用合成 drop 而不是私有 API。** 复用原生 drop 路径，使插件在不触碰 `[data-composer-card]` 的输入框改动下仍然兼容。
 - **无宿主进程。** 粘贴是 UI 事件。一个渲染进程监听器就够了；宿主侧的剪贴板守护进程只会多出一个进程、权限和轮询，毫无收益。
 - **无第三方解码器。** TIFF 和 HEIC 只检测不解码：内置一个编解码器要么让模块加载器注入的单个脚本膨胀，要么给一个本来完全离线的插件增加运行时拉取。BMP、XPM 和 SVG 覆盖了这个插件为之而写的格式，其余交给浏览器继续覆盖。

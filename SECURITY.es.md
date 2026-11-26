@@ -2,10 +2,10 @@
 
 ## Versiones compatibles
 
-| Versión | ¿Es compatible?                                      |
-| ------- | ---------------------------------------------------- |
-| 0.2.x   | Sí: línea de lanzamiento actual                      |
-| 0.1.x   | No: actualice a 0.2.x, que ha sustituido a esta       |
+| Versión | ¿Es compatible?                                 |
+| ------- | ----------------------------------------------- |
+| 0.2.x   | Sí: línea de lanzamiento actual                 |
+| 0.1.x   | No: actualice a 0.2.x, que ha sustituido a esta |
 
 El complemento aún no ha publicado la versión 1.0, por lo que las correcciones de seguridad se publicarán en una nueva versión de parche de la versión menor actual, y no se trasladarán (backport) a líneas de versión anteriores.
 
@@ -25,7 +25,7 @@ Confirmaremos la recepción del informe en la medida de lo posible; una vez conf
 
 ## Alcance
 
-`dsh-paste-image` se ejecuta completamente en el proceso de renderizado de DSH. No accede a la red, no tiene procesos en segundo plano, no sondea el portapapeles ni modifica el código del host de DSH. Todo su trabajo consiste en: leer archivos de los eventos `paste` o `drop`, decodificarlos localmente, recodificarlos al formato de salida elegido (PNG por defecto) y despachar un evento `drop` sintético en la misma ventana.
+`dsh-paste-image` se ejecuta completamente en el proceso de renderizado de DSH. No accede a la red, no tiene procesos en segundo plano, no sondea el portapapeles ni modifica el código del host de DSH. Todo su trabajo consiste en: leer archivos de los eventos `paste` o `drop`, decodificarlos localmente, recodificarlos al formato de salida elegido (WebP por defecto) y despachar un evento `drop` sintético en la misma ventana.
 
 Dentro del alcance:
 

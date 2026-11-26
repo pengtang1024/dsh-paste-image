@@ -83,18 +83,18 @@ Conversion runs per file in a `try/catch`. Success logs a line such as `image/xp
 
 Settings live only in the browser's `localStorage` (key `dsh-paste-image.settings.v1`; in private mode or when disabled, an in-memory copy is used and pasting still works). Open them from the primary entry **Settings → Paste any image**, which shows the full form below directly; the original plugin-row entry (Settings → Plugins → dsh-paste-image → Configure) remains and both share the same settings. You can also change them via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
-| Setting | Default | Value / range | Effect |
-| --- | --- | --- | --- |
-| `enabled` | `true` | boolean | Master switch; when off, pasting uses the native path |
-| `maxFiles` | `8` | integer 1–8 | Max files per batch; over the limit the whole batch passes through |
-| `maxSide` | `4096` | integer 512–8192 | Long-side limit of converted images |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | Output format for conversion (falls back to PNG if unsupported) |
-| `quality` | `0.92` | 0.1–1 (2 decimals) | JPEG / WebP encoding quality; disabled in the form when PNG is selected |
-| `convertXpm` | `true` | boolean | Whether to convert XPM |
-| `convertBmp` | `true` | boolean | Whether to convert BMP / DIB |
-| `convertSvg` | `true` | boolean | Whether to convert SVG |
-| `convertIco` | `true` | boolean | Whether to convert ICO / CUR |
-| `logConversions` | `true` | boolean | Whether to emit conversion debug logs |
+| Setting          | Default | Value / range           | Effect                                                                  |
+| ---------------- | ------- | ----------------------- | ----------------------------------------------------------------------- |
+| `enabled`        | `true`  | boolean                 | Master switch; when off, pasting uses the native path                   |
+| `maxFiles`       | `8`     | integer 1–8             | Max files per batch; over the limit the whole batch passes through      |
+| `maxSide`        | `4096`  | integer 512–8192        | Long-side limit of converted images                                     |
+| `outputFormat`   | `webp`  | `png` / `jpeg` / `webp` | Output format for conversion (falls back to PNG if unsupported)         |
+| `quality`        | `0.92`  | 0.1–1 (2 decimals)      | JPEG / WebP encoding quality; disabled in the form when PNG is selected |
+| `convertXpm`     | `true`  | boolean                 | Whether to convert XPM                                                  |
+| `convertBmp`     | `true`  | boolean                 | Whether to convert BMP / DIB                                            |
+| `convertSvg`     | `true`  | boolean                 | Whether to convert SVG                                                  |
+| `convertIco`     | `true`  | boolean                 | Whether to convert ICO / CUR                                            |
+| `logConversions` | `true`  | boolean                 | Whether to emit conversion debug logs                                   |
 
 The configuration form contains the checkboxes above, an output-format dropdown and three numeric inputs; drafts live in component state and are written only when you click "Save"; "Restore defaults" returns to the table's values.
 
@@ -109,4 +109,4 @@ The configuration form contains the checkboxes above, an output-format dropdown 
 
 ## 10. Design principles
 
-Bytes over labels; synchronous cancellation in the capture phase; PNG as the default output (whitelisted, lossless, universal in Chromium); a synthetic drop instead of a private API; no host process and no third-party decoders.
+Bytes over labels; synchronous cancellation in the capture phase; WebP as the default output (whitelisted, keeps transparency with a small footprint, universal in Chromium); a synthetic drop instead of a private API; no host process and no third-party decoders.

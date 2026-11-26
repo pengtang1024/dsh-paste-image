@@ -25,7 +25,7 @@ You can expect an acknowledgement on a best-effort basis, a fix in a patch relea
 
 ## Scope
 
-`dsh-paste-image` runs entirely in the DSH renderer. It has no network access, no background process, no clipboard polling and does not modify DSH host code. Its whole job is: read a file from a `paste` or `drop` event, decode it locally, re-encode it in the selected output format (PNG by default), and dispatch a synthetic `drop` event in the same window.
+`dsh-paste-image` runs entirely in the DSH renderer. It has no network access, no background process, no clipboard polling and does not modify DSH host code. Its whole job is: read a file from a `paste` or `drop` event, decode it locally, re-encode it in the selected output format (WebP by default), and dispatch a synthetic `drop` event in the same window.
 
 In scope:
 

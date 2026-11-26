@@ -83,18 +83,18 @@ La conversion s'exécute par fichier dans un `try/catch`. Un succès journalise 
 
 Les réglages ne vivent que dans le `localStorage` du navigateur (clé `dsh-paste-image.settings.v1` ; en mode privé ou si le stockage est désactivé, une copie en mémoire est utilisée et le collage fonctionne toujours). L'entrée principale est **Paramètres → Coller n'importe quelle image**, qui ouvre directement le formulaire complet ci-dessous ; l'ancienne entrée via la ligne du plugin (Paramètres → Extensions → dsh-paste-image → Configuration) reste disponible et les deux partagent les mêmes réglages. Vous pouvez aussi les modifier via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
-| Réglage | Valeur par défaut | Valeur / plage | Effet |
-| --- | --- | --- | --- |
-| `enabled` | `true` | booléen | Interrupteur général ; désactivé, le collage utilise la voie native |
-| `maxFiles` | `8` | entier 1–8 | Nombre max. de fichiers par lot ; au-delà, tout le lot passe sans changement |
-| `maxSide` | `4096` | entier 512–8192 | Limite du grand côté des images converties |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | Format de sortie de la conversion (PNG si non pris en charge) |
-| `quality` | `0.92` | 0.1–1 (2 décimales) | Qualité d'encodage JPEG / WebP ; désactivé dans le formulaire si PNG est choisi |
-| `convertXpm` | `true` | booléen | Convertir ou non les XPM |
-| `convertBmp` | `true` | booléen | Convertir ou non les BMP / DIB |
-| `convertSvg` | `true` | booléen | Convertir ou non les SVG |
-| `convertIco` | `true` | booléen | Convertir ou non les ICO / CUR |
-| `logConversions` | `true` | booléen | Émettre ou non les journaux de débogage des conversions |
+| Réglage          | Valeur par défaut | Valeur / plage          | Effet                                                                           |
+| ---------------- | ----------------- | ----------------------- | ------------------------------------------------------------------------------- |
+| `enabled`        | `true`            | booléen                 | Interrupteur général ; désactivé, le collage utilise la voie native             |
+| `maxFiles`       | `8`               | entier 1–8              | Nombre max. de fichiers par lot ; au-delà, tout le lot passe sans changement    |
+| `maxSide`        | `4096`            | entier 512–8192         | Limite du grand côté des images converties                                      |
+| `outputFormat`   | `webp`            | `png` / `jpeg` / `webp` | Format de sortie de la conversion (PNG si non pris en charge)                   |
+| `quality`        | `0.92`            | 0.1–1 (2 décimales)     | Qualité d'encodage JPEG / WebP ; désactivé dans le formulaire si PNG est choisi |
+| `convertXpm`     | `true`            | booléen                 | Convertir ou non les XPM                                                        |
+| `convertBmp`     | `true`            | booléen                 | Convertir ou non les BMP / DIB                                                  |
+| `convertSvg`     | `true`            | booléen                 | Convertir ou non les SVG                                                        |
+| `convertIco`     | `true`            | booléen                 | Convertir ou non les ICO / CUR                                                  |
+| `logConversions` | `true`            | booléen                 | Émettre ou non les journaux de débogage des conversions                         |
 
 Le formulaire de configuration contient les cases ci-dessus, une liste déroulante de format de sortie et trois champs numériques ; les brouillons vivent dans l'état du composant et ne sont écrits que lors du clic sur « Enregistrer » ; « Restaurer les valeurs par défaut » revient aux valeurs du tableau.
 
@@ -109,4 +109,4 @@ Le formulaire de configuration contient les cases ci-dessus, une liste déroulan
 
 ## 10. Principes de conception
 
-Les octets avant les étiquettes ; annulation synchrone en phase de capture ; PNG comme sortie par défaut (autorisé, sans perte, universel sur Chromium) ; un drop synthétique plutôt qu'une API privée ; aucun processus hôte et aucun décodeur tiers.
+Les octets avant les étiquettes ; annulation synchrone en phase de capture ; WebP comme sortie par défaut (autorisé, conserve la transparence et compact, universel sur Chromium) ; un drop synthétique plutôt qu'une API privée ; aucun processus hôte et aucun décodeur tiers.

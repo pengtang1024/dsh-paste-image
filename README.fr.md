@@ -18,13 +18,13 @@ Cette liste blanche casse deux situations très courantes sous Linux :
 - **Des captures d'écran déclarées en XPM.** Certains outils de capture, notamment sous Ubuntu/Wayland, placent l'image dans le presse-papiers avec le type `image/xpm`. Les pixels sont corrects ; c'est l'étiquette qui n'est pas dans la liste blanche, et le collage est rejeté.
 - **Des octets BMP déguisés en PNG.** Certaines applications fournissent un contenu BMP (ou TIFF) tout en déclarant `image/png`. Le type déclaré passe le contrôle de la liste blanche, le décodeur échoue ensuite, et vous obtenez la même erreur rouge.
 
-`dsh-paste-image` traite les deux cas dans le processus de rendu : il examine les octets réels, décode ce que le presse-papiers contient vraiment, le réencode dans le format de sortie choisi (PNG par défaut), puis renvoie le résultat au canal de pièces jointes habituel.
+`dsh-paste-image` traite les deux cas dans le processus de rendu : il examine les octets réels, décode ce que le presse-papiers contient vraiment, le réencode dans le format de sortie choisi (WebP par défaut), puis renvoie le résultat au canal de pièces jointes habituel.
 
 ## Fonctionnement
 
 1. **Capture.** `install()` enregistre des écouteurs `paste` et `drop` sur `document` en phase de capture, de sorte que le plugin voie l'événement avant la zone de saisie.
 2. **Identification.** `handle()` lit les objets `File` depuis `clipboardData` ou `dataTransfer`, et `sniff()` identifie le format réel à partir des octets magiques — pas à partir du type MIME déclaré.
-3. **Réencodage.** `normalize()` laisse passer tels quels les fichiers natifs. Tout le reste est décodé (chemins dédiés pour XPM, BMP/DIB et SVG, codec du navigateur pour le reste), dessiné sur un canvas limité à 4096 px sur le côté le plus long, puis exporté dans le format de sortie choisi (PNG par défaut) ; l'extension suit le MIME réel (`.png`/`.jpg`/`.webp`).
+3. **Réencodage.** `normalize()` laisse passer tels quels les fichiers natifs. Tout le reste est décodé (chemins dédiés pour XPM, BMP/DIB et SVG, codec du navigateur pour le reste), dessiné sur un canvas limité à 4096 px sur le côté le plus long, puis exporté dans le format de sortie choisi (WebP par défaut) ; l'extension suit le MIME réel (`.png`/`.jpg`/`.webp`).
 4. **Réaiguillage.** `handle()` émet un événement `drop` synthétique transportant le nouveau `File` sur `[data-composer-card]`, soit le même chemin qu'un véritable glisser-déposer. Un marqueur `__dshPasteImageRerouted` empêche le plugin d'intercepter son propre événement.
 
 Tout cela se passe côté client. Il n'y a ni processus hôte, ni interrogation du presse-papiers, ni requête réseau.
@@ -39,15 +39,15 @@ Ce tableau est la version courte. La [référence des formats pris en charge](do
 | JPEG / JFIF                   | `image/jpeg`         | Transmis sans modification                                                                                                                                            |
 | WebP                          | `image/webp`         | Transmis sans modification                                                                                                                                            |
 | GIF                           | `image/gif`          | Transmis sans modification                                                                                                                                            |
-| XPM (texte XPM3)              | `image/xpm`          | Décodé par `decodeXpm()`, réencodé dans le format de sortie choisi (PNG par défaut)                                                                                   |
+| XPM (texte XPM3)              | `image/xpm`          | Décodé par `decodeXpm()`, réencodé dans le format de sortie choisi (WebP par défaut)                                                                                  |
 | BMP / DIB                     | `image/bmp`          | Décodage par le navigateur d'abord, repli sur `decodeBmp()` : 1/4/8/16/24/32 bits, RLE4/RLE8, BITFIELDS, en-têtes OS/2 et DIB sans en-tête                            |
-| SVG                           | `image/svg+xml`      | Rasterisé via un élément `<img>`, réencodé dans le format de sortie choisi (PNG par défaut)                                                                           |
+| SVG                           | `image/svg+xml`      | Rasterisé via un élément `<img>`, réencodé dans le format de sortie choisi (WebP par défaut)                                                                          |
 | ICO / CUR                     | `image/x-icon`       | Décodage par le navigateur d'abord, puis repli sur la plus grande entrée compressée en PNG                                                                            |
 | TIFF                          | `image/tiff`         | Détecté par ses octets magiques ; décodé uniquement si le navigateur embarque un codec TIFF (ce n'est pas le cas de Chromium), sinon l'original est transmis tel quel |
-| AVIF                          | `image/avif`         | Décodé par Chromium, réencodé dans le format de sortie choisi (PNG par défaut)                                                                                        |
+| AVIF                          | `image/avif`         | Décodé par Chromium, réencodé dans le format de sortie choisi (WebP par défaut)                                                                                       |
 | HEIC / HEIF, autres `image/*` | `image/...`          | Détecté par ses octets magiques ; décodé uniquement si le navigateur dispose du codec (Chromium ne décode pas HEIC), sinon transmis tel quel                          |
 
-Le passage direct n'a lieu que si les octets magiques correspondent à l'un des quatre types natifs **et** que le type déclaré concorde. Un fichier dont les octets sont du JPEG mais qui se déclare `image/png` est réencodé dans le format de sortie choisi (PNG par défaut) : le type déclaré ne peut plus mentir. Un fichier natif sans aucun type déclaré est réenveloppé avec le type détecté au lieu d'être réencodé, et les graphies alias courantes (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) valent concordance.
+Le passage direct n'a lieu que si les octets magiques correspondent à l'un des quatre types natifs **et** que le type déclaré concorde. Un fichier dont les octets sont du JPEG mais qui se déclare `image/png` est réencodé dans le format de sortie choisi (WebP par défaut) : le type déclaré ne peut plus mentir. Un fichier natif sans aucun type déclaré est réenveloppé avec le type détecté au lieu d'être réencodé, et les graphies alias courantes (`image/jpg`, `image/x-png`, `image/x-bmp`, `image/x-xpixmap`, `image/svg+xml`, …) valent concordance.
 
 Un fichier n'est pris en compte que si son type MIME commence par `image/` ou si son nom se termine par `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` ou `.heif`. Les fichiers non-image d'un même collage sont transmis tels quels.
 
@@ -106,7 +106,7 @@ Les réglages du plugin se trouvent désormais sous **Paramètres → Coller n'i
 - **Autres codecs :** le SVG est rasterisé en interne ; ICO/CUR retombent sur les entrées compressées en PNG ; AVIF s'appuie sur le décodeur du navigateur. TIFF et HEIC sont détectés, mais Chromium n'embarque aucun codec pour eux : l'original est transmis tel quel et l'hôte le rejette comme avant. Aucun décodeur tiers n'est embarqué.
 - **Taille :** les images converties sont réduites à 4096 px au maximum sur le côté le plus long. Les fichiers natifs transmis tels quels ne sont pas redimensionnés.
 - **Nombre de fichiers :** un collage ou un dépôt peut contenir au plus 8 fichiers. Les lots plus importants sont entièrement laissés au chemin natif.
-- **Aplatissement :** une image convertie devient une seule image fixe dans le format de sortie choisi (PNG par défaut). L'animation, les métadonnées EXIF et les profils de couleur intégrés ne sont pas conservés.
+- **Aplatissement :** une image convertie devient une seule image fixe dans le format de sortie choisi (WebP par défaut). L'animation, les métadonnées EXIF et les profils de couleur intégrés ne sont pas conservés.
 - **Périmètre :** seuls les chemins `paste` et `drop` sont couverts. Le sélecteur de fichiers et les autres chemins d'insertion conservent leur comportement natif.
 
 ## Sécurité et confidentialité

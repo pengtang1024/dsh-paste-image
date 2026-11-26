@@ -83,18 +83,18 @@ paste / drop（捕获阶段）
 
 设置仅存于浏览器 `localStorage`（键 `dsh-paste-image.settings.v1`；隐私模式或被禁用时退回内存副本，粘贴照常工作）。打开方式：主入口是**设置 → 粘贴任意图片**，直接展开下面的完整表单；原有插件页行配置入口（设置 → 插件 → dsh-paste-image → 配置）保留，两处共用同一份设置。也可以用 `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()` 读写。
 
-| 设置项 | 默认值 | 取值 / 范围 | 作用 |
-| --- | --- | --- | --- |
-| `enabled` | `true` | 布尔 | 总开关，关闭后粘贴走原生路径 |
-| `maxFiles` | `8` | 整数 1–8 | 单批最大文件数，超限整批放行 |
-| `maxSide` | `4096` | 整数 512–8192 | 转码后图片长边上限 |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | 转换输出格式（浏览器不支持时回退 PNG） |
-| `quality` | `0.92` | 0.1–1（两位小数） | JPEG / WebP 编码质量；选 PNG 时表单禁用 |
-| `convertXpm` | `true` | 布尔 | 是否转换 XPM |
-| `convertBmp` | `true` | 布尔 | 是否转换 BMP / DIB |
-| `convertSvg` | `true` | 布尔 | 是否转换 SVG |
-| `convertIco` | `true` | 布尔 | 是否转换 ICO / CUR |
-| `logConversions` | `true` | 布尔 | 是否输出转换调试日志 |
+| 设置项           | 默认值 | 取值 / 范围             | 作用                                    |
+| ---------------- | ------ | ----------------------- | --------------------------------------- |
+| `enabled`        | `true` | 布尔                    | 总开关，关闭后粘贴走原生路径            |
+| `maxFiles`       | `8`    | 整数 1–8                | 单批最大文件数，超限整批放行            |
+| `maxSide`        | `4096` | 整数 512–8192           | 转码后图片长边上限                      |
+| `outputFormat`   | `webp` | `png` / `jpeg` / `webp` | 转换输出格式（浏览器不支持时回退 PNG）  |
+| `quality`        | `0.92` | 0.1–1（两位小数）       | JPEG / WebP 编码质量；选 PNG 时表单禁用 |
+| `convertXpm`     | `true` | 布尔                    | 是否转换 XPM                            |
+| `convertBmp`     | `true` | 布尔                    | 是否转换 BMP / DIB                      |
+| `convertSvg`     | `true` | 布尔                    | 是否转换 SVG                            |
+| `convertIco`     | `true` | 布尔                    | 是否转换 ICO / CUR                      |
+| `logConversions` | `true` | 布尔                    | 是否输出转换调试日志                    |
 
 配置页表单包含上述复选框、输出格式下拉框与三个数字输入，草稿放在组件状态里，只有点“保存”才写入设置；“恢复默认”回到上表默认值。
 
@@ -109,4 +109,4 @@ paste / drop（捕获阶段）
 
 ## 10. 设计原则
 
-字节优先于标签；捕获阶段同步取消事件；默认 PNG 输出（白名单内、无损、Chromium 通用）；用合成 drop 而非私有 API；无宿主进程、无第三方解码器。
+字节优先于标签；捕获阶段同步取消事件；默认 WebP 输出（白名单内、保留透明且体积较小、Chromium 通用）；用合成 drop 而非私有 API；无宿主进程、无第三方解码器。

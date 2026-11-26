@@ -83,18 +83,18 @@ La conversión se ejecuta por archivo en un `try/catch`. El éxito registra una 
 
 Los ajustes solo viven en el `localStorage` del navegador (clave `dsh-paste-image.settings.v1`; en modo privado o si está desactivado se usa una copia en memoria y el pegado sigue funcionando). La entrada principal es **Ajustes → Pegar cualquier imagen**, que muestra directamente el formulario completo de abajo; la entrada anterior en la fila del plugin (Ajustes → Extensiones → dsh-paste-image → Configuración) sigue disponible y ambas comparten los mismos ajustes. También puedes cambiarlos mediante `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
-| Ajuste | Valor por defecto | Valor / rango | Efecto |
-| --- | --- | --- | --- |
-| `enabled` | `true` | booleano | Interruptor general; apagado, el pegado usa la ruta nativa |
-| `maxFiles` | `8` | entero 1–8 | Máximo de archivos por lote; al superarse, todo el lote pasa sin cambios |
-| `maxSide` | `4096` | entero 512–8192 | Límite del lado largo de las imágenes convertidas |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | Formato de salida de la conversión (PNG si no es compatible) |
-| `quality` | `0.92` | 0.1–1 (2 decimales) | Calidad de codificación JPEG / WebP; desactivado en el formulario con PNG |
-| `convertXpm` | `true` | booleano | Si convertir XPM |
-| `convertBmp` | `true` | booleano | Si convertir BMP / DIB |
-| `convertSvg` | `true` | booleano | Si convertir SVG |
-| `convertIco` | `true` | booleano | Si convertir ICO / CUR |
-| `logConversions` | `true` | booleano | Si emitir registros de depuración de conversiones |
+| Ajuste           | Valor por defecto | Valor / rango           | Efecto                                                                    |
+| ---------------- | ----------------- | ----------------------- | ------------------------------------------------------------------------- |
+| `enabled`        | `true`            | booleano                | Interruptor general; apagado, el pegado usa la ruta nativa                |
+| `maxFiles`       | `8`               | entero 1–8              | Máximo de archivos por lote; al superarse, todo el lote pasa sin cambios  |
+| `maxSide`        | `4096`            | entero 512–8192         | Límite del lado largo de las imágenes convertidas                         |
+| `outputFormat`   | `webp`            | `png` / `jpeg` / `webp` | Formato de salida de la conversión (PNG si no es compatible)              |
+| `quality`        | `0.92`            | 0.1–1 (2 decimales)     | Calidad de codificación JPEG / WebP; desactivado en el formulario con PNG |
+| `convertXpm`     | `true`            | booleano                | Si convertir XPM                                                          |
+| `convertBmp`     | `true`            | booleano                | Si convertir BMP / DIB                                                    |
+| `convertSvg`     | `true`            | booleano                | Si convertir SVG                                                          |
+| `convertIco`     | `true`            | booleano                | Si convertir ICO / CUR                                                    |
+| `logConversions` | `true`            | booleano                | Si emitir registros de depuración de conversiones                         |
 
 El formulario de configuración contiene las casillas anteriores, un desplegable de formato de salida y tres entradas numéricas; los borradores viven en el estado del componente y solo se escriben al pulsar "Guardar"; "Restaurar valores predeterminados" vuelve a los valores de la tabla.
 
@@ -109,4 +109,4 @@ El formulario de configuración contiene las casillas anteriores, un desplegable
 
 ## 10. Principios de diseño
 
-Los bytes por encima de las etiquetas; cancelación sincrónica en la fase de captura; PNG como salida predeterminada (en la lista blanca, sin pérdidas, universal en Chromium); un drop sintético en lugar de una API privada; sin proceso de host y sin decodificadores de terceros.
+Los bytes por encima de las etiquetas; cancelación sincrónica en la fase de captura; WebP como salida predeterminada (en la lista blanca, conserva transparencia y es compacta, universal en Chromium); un drop sintético en lugar de una API privada; sin proceso de host y sin decodificadores de terceros.

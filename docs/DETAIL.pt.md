@@ -83,18 +83,18 @@ A conversão roda por arquivo em um `try/catch`. O sucesso registra uma linha co
 
 As configurações vivem apenas no `localStorage` do navegador (chave `dsh-paste-image.settings.v1`; no modo privado ou quando o armazenamento está desativado, uma cópia em memória é usada e a colagem continua funcionando). A entrada principal é **Configurações → Colar qualquer imagem**, que abre diretamente o formulário completo abaixo; a entrada anterior pela linha do plugin (Configurações → Extensões → dsh-paste-image → Configurar) continua disponível e ambas compartilham as mesmas configurações. Você também pode alterá-las via `api.getSettings()` / `api.applySettings(patch)` / `api.resetSettings()`.
 
-| Configuração | Padrão | Valor / faixa | Efeito |
-| --- | --- | --- | --- |
-| `enabled` | `true` | booleano | Interruptor geral; desligado, a colagem usa o caminho nativo |
-| `maxFiles` | `8` | inteiro 1–8 | Máx. de arquivos por lote; acima disso, todo o lote passa sem alteração |
-| `maxSide` | `4096` | inteiro 512–8192 | Limite do lado maior das imagens convertidas |
-| `outputFormat` | `png` | `png` / `jpeg` / `webp` | Formato de saída da conversão (PNG se não suportado) |
-| `quality` | `0.92` | 0.1–1 (2 casas) | Qualidade de codificação JPEG / WebP; desativado no formulário com PNG |
-| `convertXpm` | `true` | booleano | Converter ou não XPM |
-| `convertBmp` | `true` | booleano | Converter ou não BMP / DIB |
-| `convertSvg` | `true` | booleano | Converter ou não SVG |
-| `convertIco` | `true` | booleano | Converter ou não ICO / CUR |
-| `logConversions` | `true` | booleano | Emitir ou não registros de depuração das conversões |
+| Configuração     | Padrão | Valor / faixa           | Efeito                                                                  |
+| ---------------- | ------ | ----------------------- | ----------------------------------------------------------------------- |
+| `enabled`        | `true` | booleano                | Interruptor geral; desligado, a colagem usa o caminho nativo            |
+| `maxFiles`       | `8`    | inteiro 1–8             | Máx. de arquivos por lote; acima disso, todo o lote passa sem alteração |
+| `maxSide`        | `4096` | inteiro 512–8192        | Limite do lado maior das imagens convertidas                            |
+| `outputFormat`   | `webp` | `png` / `jpeg` / `webp` | Formato de saída da conversão (PNG se não suportado)                    |
+| `quality`        | `0.92` | 0.1–1 (2 casas)         | Qualidade de codificação JPEG / WebP; desativado no formulário com PNG  |
+| `convertXpm`     | `true` | booleano                | Converter ou não XPM                                                    |
+| `convertBmp`     | `true` | booleano                | Converter ou não BMP / DIB                                              |
+| `convertSvg`     | `true` | booleano                | Converter ou não SVG                                                    |
+| `convertIco`     | `true` | booleano                | Converter ou não ICO / CUR                                              |
+| `logConversions` | `true` | booleano                | Emitir ou não registros de depuração das conversões                     |
 
 O formulário de configuração contém as caixas acima, um seletor de formato de saída e três campos numéricos; os rascunhos ficam no estado do componente e só são gravados ao clicar em "Salvar"; "Restaurar padrões" volta aos valores da tabela.
 
@@ -109,4 +109,4 @@ O formulário de configuração contém as caixas acima, um seletor de formato d
 
 ## 10. Princípios de design
 
-Bytes antes de rótulos; cancelamento síncrono na fase de captura; PNG como saída padrão (na lista de permissões, sem perdas, universal no Chromium); drop sintético em vez de API privada; sem processo host e sem decodificadores de terceiros.
+Bytes antes de rótulos; cancelamento síncrono na fase de captura; WebP como saída padrão (na lista de permissões, preserva transparência e compacta, universal no Chromium); drop sintético em vez de API privada; sem processo host e sem decodificadores de terceiros.

@@ -136,7 +136,7 @@ Two details are new in 0.2.0:
 - **MIME aliases.** [`aliasMime()`](../../client.js#L154-L156) maps the spellings applications actually emit onto the canonical type — `image/jpg`, `image/pjpeg`, `image/x-png`, `image/x-bmp`, `image/x-ms-bmp`, `image/vnd.microsoft.icon`, `image/x-xpixmap`, `image/xpm`, `image/svg+xml`. Without it, a perfectly good `image/jpg` JPEG would be decoded and re-encoded for nothing.
 - **Missing declaration.** A `File` with an empty `type` used to be passed through unchanged, and the host then rejected it because the whitelist follows the label. Now the bytes are re-wrapped in a `File` that carries the sniffed type, so the file is accepted without a re-encode.
 
-The declared type only has veto power here. A file whose bytes are JPEG but which claims `image/png` fails the `declared === kind` test, so it is converted into the selected output format (PNG by default). Likewise a BMP declared as PNG is converted, because the host's whitelist and the host's decoder both follow the label.
+The declared type only has veto power here. A file whose bytes are JPEG but which claims `image/png` fails the `declared === kind` test, so it is converted into the selected output format (WebP by default). Likewise a BMP declared as PNG is converted, because the host's whitelist and the host's decoder both follow the label.
 
 When a conversion happens, the file name is rebuilt: the extension follows the actual encoded type (`.png` by default), so `shot.xpm` becomes `shot.png`, and `wechat.png` (which actually contained BMP bytes) stays `wechat.png`. A retyped native file keeps its own extension instead (`.jpg` for JPEG, `.webp`, `.gif`).
 
@@ -302,7 +302,7 @@ The settings page is strictly optional: `hasPageServices()` checks the shape of 
 
 ## 13. Settings and the configuration page
 
-The runtime settings object sits at the top of the file ([`client.js:29-132`](../../client.js#L29-L132)): `SETTINGS_KEY` is `dsh-paste-image.settings.v1`, `SETTINGS_DEFAULTS` matches the behaviour before this page existed (enabled, at most 8 files, a 4096 px long edge, PNG output, quality 0.92, all four conversion switches on, conversion logging on), `SETTINGS_RANGES` keeps `maxFiles` at 1–8, `maxSide` at 512–8192 and `quality` at 0.1–1 (rounded to two decimals), and `SETTINGS_ENUMS` accepts only `png` / `jpeg` / `webp` for `outputFormat`. The public entry points are `api.getSettings()`, `api.applySettings(patch)` and `api.resetSettings()`: `applySettings()` coerces the boolean switches, normalises or defaults the enum, rounds and clamps the numbers to their ranges, then writes to `localStorage`; when `localStorage` is missing or throws, it keeps an in-memory copy and paste keeps working.
+The runtime settings object sits at the top of the file ([`client.js:29-132`](../../client.js#L29-L132)): `SETTINGS_KEY` is `dsh-paste-image.settings.v1`, `SETTINGS_DEFAULTS` matches the behaviour before this page existed (enabled, at most 8 files, a 4096 px long edge, WebP output, quality 0.92, all four conversion switches on, conversion logging on), `SETTINGS_RANGES` keeps `maxFiles` at 1–8, `maxSide` at 512–8192 and `quality` at 0.1–1 (rounded to two decimals), and `SETTINGS_ENUMS` accepts only `png` / `jpeg` / `webp` for `outputFormat`. The public entry points are `api.getSettings()`, `api.applySettings(patch)` and `api.resetSettings()`: `applySettings()` coerces the boolean switches, normalises or defaults the enum, rounds and clamps the numbers to their ranges, then writes to `localStorage`; when `localStorage` is missing or throws, it keeps an in-memory copy and paste keeps working.
 
 Three consumers each read one slice:
 
@@ -355,7 +355,7 @@ The measured size impact of these settings is covered in the [output format meas
 
 - **Bytes over labels.** MIME types are supplied by the source application; magic bytes are supplied by the image encoder. Trusting the bytes is the only way to handle both "unsupported but honest" and "supported but lying".
 - **Capture and synchronous cancel.** The composer must never see the raw unsupported file, and `preventDefault()` is only effective while the event is being dispatched.
-- **PNG as the default output.** It is on the whitelist, lossless for the pixels that were decoded, and every Chromium build can encode it through `canvas.toBlob`; switch to JPEG/WebP for smaller files, and an unsupported encoder falls back to PNG.
+- **WebP as the default output.** It keeps transparency with a small footprint, and every Chromium build can encode it through `canvas.toBlob`; choose PNG for lossless output, and an unsupported encoder falls back to PNG.
 - **Synthetic drop instead of a private API.** Reusing the native drop path keeps the plugin compatible with composer changes that do not touch `[data-composer-card]`.
 - **No host process.** A paste is a UI event. A renderer listener is enough; a host-side clipboard daemon would add a process, permissions and polling for no benefit.
 - **No third-party decoder.** TIFF and HEIC are detected but not decoded: shipping a codec would either bloat the single script the module loader injects or add a runtime fetch to a plugin that is otherwise offline-only. BMP, XPM and SVG cover the formats this plugin was written for, and the browser keeps covering the rest.

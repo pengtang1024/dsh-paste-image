@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Beliebiges Bild einfügen",
-    "description": "Fügen Sie ein Bild ein oder ziehen Sie es hinein, dessen deklarierter Typ XPM, BMP oder DIB, SVG, ICO – oder einfach falsch – ist: Der Renderer erkennt die echten Bytes und wandelt das Bild in PNG, JPEG oder WebP um (standardmäßig PNG), bevor er es an den Composer übergibt. Native PNG, JPEG, WebP und GIF werden unverändert durchgereicht. Dateianzahl und Kantenlänge sind konfigurierbar (standardmäßig 8 Dateien und 4096 px). HEIC und TIFF werden erkannt, aber nicht dekodiert, da das Plugin keinen Decoder dafür mitliefert.",
+    "description": "Fügen Sie ein Bild ein oder ziehen Sie es hinein, dessen deklarierter Typ XPM, BMP oder DIB, SVG, ICO – oder einfach falsch – ist: Der Renderer erkennt die echten Bytes und wandelt das Bild in PNG, JPEG oder WebP um (standardmäßig WebP), bevor er es an den Composer übergibt. Native PNG, JPEG, WebP und GIF werden unverändert durchgereicht. Dateianzahl und Kantenlänge sind konfigurierbar (standardmäßig 8 Dateien und 4096 px). HEIC und TIFF werden erkannt, aber nicht dekodiert, da das Plugin keinen Decoder dafür mitliefert.",
     "detail": "docs/DETAIL.de.md"
   }
 }
