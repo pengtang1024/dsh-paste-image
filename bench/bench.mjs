@@ -366,11 +366,11 @@ if (api.sniff(new TextEncoder().encode(xpmText)) !== 'image/xpm') throw new Erro
   const steps = plan(6, 2, 5)
   const counted = countingFile(bmp24, 'wechat.png', 'image/png')
   const first = await api.normalize(counted.file)
-  if (!first || first.file.type !== 'image/png' || first.width !== 1024) {
-    throw new Error('fixture check: BMP-as-PNG conversion did not produce a 1024px PNG')
+  if (!first || first.file.type !== 'image/webp' || first.width !== 1024) {
+    throw new Error('fixture check: BMP-as-PNG conversion did not produce a 1024px WebP')
   }
   const measured = await measureAsync(() => api.normalize(counted.file), steps, counted.reset)
-  record('normalize BMP->PNG 1024x1024', measured, {
+  record('normalize BMP->WebP 1024x1024', measured, {
     inputBytes: bmp24.length,
     bytesRead: counted.stats.bytes / measured.iterations,
   })
@@ -393,7 +393,7 @@ const metadata = {
 const notes = [
   'sniff() only inspects the signature (plus a bounded 1 KiB text probe for SVG), so MB/s over the 20 MiB buffer is not a meaningful rate.',
   'normalize() native pass-through reads at most a 1 KiB header through file.slice(); it only falls back to a full-file arrayBuffer() read when the bytes need re-wrapping or conversion.',
-  'normalize() BMP->PNG runs the JS decodeBmp fallback because createImageBitmap is unavailable in Node; in a browser the native decoder would be used instead.',
+  'normalize() BMP->WebP runs the JS decodeBmp fallback because createImageBitmap is unavailable in Node; in a browser the native decoder would be used instead.',
   'MB/s uses 1 MB = 1,000,000 bytes; fixture sizes use MiB. For the RLE8 case it is the compressed stream rate, not the decoded pixel rate.',
   'decodeBmp 32-bit includes the extra pass that treats all-zero alpha as opaque.',
   'ms/op is the median of per-round means; iters counts every timed call across all rounds.',

@@ -107,11 +107,11 @@ npm run format:check  # npx --yes prettier@3 --check .
 
 本机发布 tag 使用 **SSH 签名**（不是 GPG）。实测生效的 git 配置如下，可用 `git config --get <key>` 复核：
 
-| 配置项 | 值 |
-| --- | --- |
-| `gpg.format` | `ssh` |
+| 配置项            | 值                                                 |
+| ----------------- | -------------------------------------------------- |
+| `gpg.format`      | `ssh`                                              |
 | `user.signingkey` | `/home/pt/.ssh/id_ed25519_github_docker_panel.pub` |
-| `tag.gpgSign` | `true` |
+| `tag.gpgSign`     | `true`                                             |
 
 等价的 `git config --list --local` 输出片段：
 

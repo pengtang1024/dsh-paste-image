@@ -107,11 +107,11 @@ By default, do not change GitHub's default branch setting, do not force push, an
 
 Release tags on this machine are signed with **SSH** (not GPG). The effective git configuration, which you can re-check with `git config --get <key>`, is:
 
-| Setting | Value |
-| --- | --- |
-| `gpg.format` | `ssh` |
+| Setting           | Value                                              |
+| ----------------- | -------------------------------------------------- |
+| `gpg.format`      | `ssh`                                              |
 | `user.signingkey` | `/home/pt/.ssh/id_ed25519_github_docker_panel.pub` |
-| `tag.gpgSign` | `true` |
+| `tag.gpgSign`     | `true`                                             |
 
 The equivalent `git config --list --local` excerpt:
 
