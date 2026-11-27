@@ -2,6 +2,8 @@
 
 Releases are cut from `master` by the maintainer. Everything here is a checklist you can copy; the repository has no build step, so "releasing" is version bump + changelog + tag + notes.
 
+> 🚦 **Release flow at a glance:** version policy → pre-flight → six-step release → post-release checks → npm publishing → hotfixes. **CI must be green** before a release goes out.
+
 ## Version policy
 
 The project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) with the usual pre-1.0 caveat:
@@ -14,7 +16,7 @@ A format addition is always a minor bump: users pin the plugin by version and wa
 
 ## Pre-flight
 
-Run all of this from a clean checkout of `master`:
+Run all of this from a clean checkout of `master` (the test suite has 102 cases and must pass in full):
 
 ```bash
 git switch master
@@ -25,7 +27,7 @@ npm run check
 npm run format:check            # CI runs the same thing
 ```
 
-Also confirm the GitHub Actions run for the newest `master` commit is green — a red run means the release does not go out, even if your local copy passes.
+> 🚦 **CI gate:** also confirm the GitHub Actions run for the newest `master` commit is green — even if everything passes locally, a red CI run blocks the release.
 
 ## Cut the release
 
@@ -84,9 +86,9 @@ Also confirm the GitHub Actions run for the newest `master` commit is green — 
 
   Open that profile, paste an image, then remove the profile.
 
-- **Inspect the package payload.** `npm pack --dry-run` prints the file list; it must contain `client.js`, `lib/`, `cordis.patch.yml`, all eight locales, every translated README, `LICENSE` and `CHANGELOG.md`, and nothing from `tests/` or `docs/`.
+- **Inspect the package payload.** `npm pack --dry-run` prints the file list; it must contain `client.js`, `lib/`, `cordis.patch.yml`, all seven locales, every translated README, `LICENSE` and `CHANGELOG.md`, and nothing from `tests/` or `docs/`.
 
-- **Update the marketplace entry.** The plugin-market submission lives in a different repository: [`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml). If a release changes the supported-format list, update `description.en` / `description.zh` in the same pull request that mentions the new formats. The catalog schema only carries those two languages; the eight-language text lives in the plugin's `locale/` directory and is read after installation. The catalog regenerates nightly after the marketplace pull request merges.
+- **Update the marketplace entry.** The plugin-market submission lives in a different repository: [`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml). If a release changes the supported-format list, update `description.en` / `description.zh` in the same pull request that mentions the new formats. The catalog schema only carries those two languages; the seven-language text lives in the plugin's `locale/` directory and is read after installation. The catalog regenerates nightly after the marketplace pull request merges.
 
 ## Publishing to npm
 

@@ -4,16 +4,32 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+[![version](https://img.shields.io/badge/version-0.6.1-blue.svg)](CHANGELOG.md)
 
 [简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 把几乎任何图片粘进或拖进 DeepSeek Harness —— 哪怕剪贴板声称它是 `image/xpm`，或者干脆把 MIME 类型写错了。
 
+| 当前版本 | 默认输出 | 运行时依赖 | Node 要求 |
+| -------- | -------- | ---------- | --------- |
+| 0.6.1    | WebP     | 零         | ≥ 20      |
+
+> 📌 **一句话：** 字节优先于标签 —— 嗅探真实格式、在渲染进程内转码为白名单内的格式（默认 WebP），再交回原生附件通道。
+
+## 快速导航
+
+| 想做什么       | 去哪里                                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| 了解它解决什么 | [为什么需要它](#为什么需要它) · [工作原理](#工作原理) · [支持的格式](#支持的格式)             |
+| 装好并用起来   | [安装](#安装) · [验证](#验证) · [配置](#配置)                                                 |
+| 深入技术细节   | [限制](#限制) · [性能](#性能) · [兼容性](#兼容性) · [实现原理](docs/how-it-works.md)          |
+| 排查与参与     | [安全与隐私](#安全与隐私) · [常见问题](docs/troubleshooting.md) · [贡献指南](CONTRIBUTING.md) |
+
 ## 为什么需要它
 
 DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型：`image/png`、`image/jpeg`、`image/webp`、`image/gif`。其它类型一律报红：
 
-> 仅支持 PNG、JPG、WebP、GIF
+> ⚠️ **宿主提示：** 仅支持 PNG、JPG、WebP、GIF
 
 这份白名单会打断两种在 Linux 上很常见的场景：
 
@@ -23,6 +39,17 @@ DSH 桌面客户端（Electron/Chromium）的附件通道只接受四种类型�
 `dsh-paste-image` 在渲染进程里把这两类问题一起解决：看真实字节、解出剪贴板里真正的内容、重编码为所选输出格式（默认 WebP），再交回原生附件通道。
 
 ## 工作原理
+
+```mermaid
+flowchart LR
+  A["paste / drop"] --> B["嗅探真实字节"]
+  B --> C{"原生格式且声明一致?"}
+  C -- 是 --> D["原样放行"]
+  C -- 否 --> E["解码 → 画布"]
+  E --> F["重编码（默认 WebP）"]
+  D --> G["合成 drop 回投输入框"]
+  F --> G
+```
 
 1. **捕获。** `install()` 在 `document` 上以捕获阶段挂 `paste` 和 `drop` 监听，确保先于输入框自己的处理逻辑看到事件。
 2. **嗅探。** `handle()` 从 `clipboardData` 或 `dataTransfer` 取出 `File`，`sniff()` 按魔数判断真实格式 —— 不看声明的 MIME 类型。
@@ -71,7 +98,9 @@ dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image
 dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 ```
 
-把 `<profile>` 换成应用实际使用的 profile。**装完必须重载页面**（`Ctrl+R`，macOS 上是 `Cmd+R`）：客户端模块只在渲染进程加载时注入，没重载之前插件不会拦截任何东西。
+把 `<profile>` 换成应用实际使用的 profile。
+
+> 🔄 **装完必须重载页面**（`Ctrl+R`，macOS 上是 `Cmd+R`）：客户端模块只在渲染进程加载时注入，没重载之前插件不会拦截任何东西。
 
 **宿主要求：** DSH 需满足包内声明的 `engines.dsh`（覆盖 0.2.0-rc.2 起的 0.2.x 各版本，至 0.4.0 之前），Node >= 20；逐版本兼容性见包内 `dsh.compatibility.dshReleases`。DSH 版本不满足时插件不会被加载，插件详情页也会给出对应提示。
 
@@ -116,7 +145,7 @@ npm run check
 | 转换 ICO / CUR | 开     | 关掉后图标不再转码，原样交给原生通道                                                 |
 | 控制台转换日志 | 开     | 关掉后不再打印 `[dsh-paste-image] ...` 的 `console.debug` 日志                       |
 
-点**保存**才会写入并立即生效；表单项的改动只是页面内的草稿，离开页面即丢弃。**恢复默认**把上表全部默认值写回并同样立即生效。数字输入会取整并夹到范围内（清空输入框不会把已保存的值打成 0）。
+> 💡 **生效方式：** 点**保存**才会写入并立即生效；表单项的改动只是页面内的草稿，离开页面即丢弃。**恢复默认**把上表全部默认值写回并同样立即生效。数字输入会取整并夹到范围内（清空输入框不会把已保存的值打成 0）。
 
 默认输出 WebP：WebP 同时保留透明与较小体积；PNG 无损；JPEG 体积更小，但编码前会把透明像素合成到白底。浏览器不支持所选编码器时按实际编码类型回退，识别不了就回到 PNG——上面的格式表里没切换格式时，转码产物仍按默认 WebP 输出。
 
@@ -169,7 +198,7 @@ npm run check
 | `DataTransfer` / `DragEvent` | `handle()` 在 claim 事件与 `preventDefault()` 之前返回，浏览器原生 paste/drop 路径完全不受影响 |
 | `[data-composer-card]`       | `handle()` 拿不到目标就直接返回：不 claim、不 `preventDefault()`，原生粘贴保持原样             |
 
-缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 90 个测试（41 个客户端/多语言 + 21 个兼容性 + 28 个配置页/设置），覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面四条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
+缺少 `slice()`/`size` 的类 `File` 对象无法只读文件头，会退回原有的全量读取路径。CI 在 Node 20、22、24 上运行全部测试，并额外跑一个 `bench/bench.mjs --quick` 冒烟任务；当前共 102 个测试，覆盖无头 DIB、1/4/8/16/24/32 位 BMP、RLE4/RLE8、BITFIELDS、OS/2 core header、TIFF/HEIC/AVIF 嗅探、MIME 别名直通、BMP 冒充 PNG、8 文件上限、非图片透传、上面四条降级路径，以及配置页的注册契约与设置行为。逐格式的平台差异与浏览器能力依赖见[格式支持](docs/formats.md)。
 
 ## 安全与隐私
 

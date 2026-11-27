@@ -2,6 +2,8 @@
 
 本文说明 dsh-paste-image 如何把几乎任何图片（哪怕声明类型标错）粘贴或拖入 DeepSeek Harness 的输入框。内容以 [`how-it-works.md`](how-it-works.md) 为准，并反映当前实现：PNG / JPEG / WebP 输出、逐格式的转换开关、保存在浏览器 `localStorage` 的设置。
 
+> 📖 **定位：** 本文是面向用户的流程概览；逐函数代码地图与行号引用见[实现原理](how-it-works.md)。
+
 ## 流程概览
 
 ```text
@@ -32,6 +34,19 @@ paste / drop（捕获阶段）
   new File(name.<ext>, 按实际 blob.type 取类型)
         v
   reroute(files) -> 在 [data-composer-card] 上派发合成 DragEvent('drop')
+```
+
+```mermaid
+flowchart TD
+  A["paste / drop"] --> B{"有图片候选?"}
+  B -- 否 --> Z["原生路径"]
+  B -- 是 --> C["sniff 魔数"]
+  C --> D{"原生且声明一致 / 开关关闭?"}
+  D -- 是 --> E["原样放行"]
+  D -- 否 --> F["解码 → 画布（长边 ≤ 4096）"]
+  F --> G["按输出格式编码（默认 WebP）"]
+  G --> H["合成 drop 回投"]
+  E --> H
 ```
 
 ## 1. 捕获阶段
@@ -96,7 +111,7 @@ paste / drop（捕获阶段）
 | `convertIco`     | `true` | 布尔                    | 是否转换 ICO / CUR                      |
 | `logConversions` | `true` | 布尔                    | 是否输出转换调试日志                    |
 
-配置页表单包含上述复选框、输出格式下拉框与三个数字输入，草稿放在组件状态里，只有点“保存”才写入设置；“恢复默认”回到上表默认值。
+> 💡 **表单行为：** 草稿放在组件状态里，只有点“保存”才写入设置；“恢复默认”回到上表默认值。
 
 ## 9. 边界与不支持项
 

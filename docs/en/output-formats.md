@@ -2,7 +2,7 @@
 
 This page records what `dsh-paste-image` really produces when it re-encodes an image as PNG, JPEG or WebP: file sizes and encode times, measured on one set of fixtures, one real Chromium build and the same `normalize()` code users paste through. The short version for users is in the [README's configuration section](../../README.en.md#configuration); the type-detection rules are in [format support](formats.md).
 
-The headline first: **size ratios depend on content, and no single percentage is a promise.** JPEG and WebP shrink photos by roughly 82%, but with the same settings JPEG makes a UI screenshot 49% larger than PNG; pixel art and small icons are better served by PNG or WebP than by JPEG.
+> 📊 **The headline first:** size ratios depend on content, and no single percentage is a promise. JPEG and WebP shrink photos by roughly 82%, but with the same settings JPEG makes a UI screenshot 49% larger than PNG; pixel art and small icons are better served by PNG or WebP than by JPEG.
 
 ## Environment
 
@@ -41,6 +41,8 @@ The first four are synthetic, covering both ends of the content spectrum — har
 ## q=0.92 (default quality)
 
 Percentages are relative to the same fixture's PNG.
+
+> ✅ **Correctness check:** the plugin's PNG output is byte-identical to a direct `canvas.toBlob('image/png')`, on all five fixtures.
 
 | Fixture              | Dimensions | PNG                     | JPEG                 | JPEG vs PNG                              | WebP                 | WebP vs PNG | PNG ms | JPEG ms | WebP ms |
 | -------------------- | ---------- | ----------------------- | -------------------- | ---------------------------------------- | -------------------- | ----------- | ------ | ------- | ------- |
@@ -89,4 +91,4 @@ No measurement script is committed to this repository: it needs a real Chromium 
 4. Call `api.applySettings({ outputFormat, quality })`, then `api.normalize(file)`, where `file` is a `File` holding PNG bytes and declaring `image/bmp`.
 5. One warm-up plus nine timed runs per format, median; size from `file.size`, type from `file.type`. Also run `canvas.toBlob('image/png')` once per fixture for the byte-for-byte comparison.
 
-Pin the browser version and DPR when reproducing, or the numbers are not comparable. The codec implementation and settings are described in [How it works · 13. Settings and the configuration page](how-it-works.md#13-settings-and-the-configuration-page); defaults and ranges are in the [README configuration table](../../README.en.md#configuration).
+> ⚠️ **Reproduction prerequisite:** pin the browser version and DPR, or the numbers are not comparable. The codec implementation and settings are described in [How it works · 13. Settings and the configuration page](how-it-works.md#13-settings-and-the-configuration-page); defaults and ranges are in the [README configuration table](../../README.en.md#configuration).

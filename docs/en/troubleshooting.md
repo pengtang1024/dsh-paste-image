@@ -2,15 +2,26 @@
 
 The plugin has no UI. Every success and every failure is written to the browser console, so the first step is always the same: open DevTools, enable the Verbose level and filter for `[dsh-paste-image]`.
 
-- DevTools: `Ctrl+Shift+I` (`Cmd+Option+I` on macOS).
-- Console → the level dropdown → tick **Verbose**. `console.debug` messages are hidden at the default level.
-- Filter box: `dsh-paste-image`.
+> 🔎 **The universal first step:** DevTools (`Ctrl+Shift+I`, or `Cmd+Option+I` on macOS) → Console → tick **Verbose** in the level dropdown (`console.debug` messages are hidden at the default level) → type `dsh-paste-image` in the filter box.
+
+## Log quick reference
 
 | Message                                                 | Meaning                                                          |
 | ------------------------------------------------------- | ---------------------------------------------------------------- |
 | `[dsh-paste-image] image/xpm -> image/png 1440x900`     | Converted successfully; the composer receives a PNG.             |
 | `[dsh-paste-image] keep original (image/bmp): bmp: ...` | Conversion failed; the original file was passed on unchanged.    |
 | No message at all                                       | The event never reached the plugin, or the plugin is not loaded. |
+
+### Find it by symptom
+
+| Symptom                                     | Section to read first                                                                                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nothing happens at all after installing     | [Nothing happens after installing](#nothing-happens-after-installing)                                                                                      |
+| Paste does nothing, no attachment, no error | [Pasting images does nothing](#pasting-images-does-nothing)                                                                                                |
+| Host still shows the red format error       | [The red "only PNG, JPG, WebP, GIF" error](#the-red-only-png-jpg-webp-gif-error-is-still-there)                                                            |
+| Large images fail or the renderer slows     | [Large images fail](#large-images-fail)                                                                                                                    |
+| XPM / BMP / SVG logs look wrong             | [XPM decoding fails](#xpm-decoding-fails) · [BMP decoding fails](#bmp-decoding-fails-or-looks-wrong) · [SVG or icon pastes fail](#svg-or-icon-pastes-fail) |
+| Need to uninstall                           | [Uninstalling](#uninstalling)                                                                                                                              |
 
 ## Nothing happens after installing
 
@@ -32,7 +43,7 @@ You paste or drop an image and no attachment shows up in the composer, with no o
 5. **Confirm the event really carries images, within the limit.** Plain text and non-image files never enter the plugin; a paste with more files than "max files per paste" (8 by default) goes to the native path as a whole batch.
 6. **Still nothing? File an issue with evidence.** Include the DSH version, the plugin version (`0.4.1`), how it was installed, the OS and desktop session, plus the full `[dsh-paste-image]` lines at Verbose level and the first red error.
 
-## The red "仅支持 PNG、JPG、WebP、GIF" error is still there
+## The red "only PNG, JPG, WebP, GIF" error is still there
 
 There are two different failures behind the same message.
 

@@ -2,12 +2,14 @@
 
 ## Versions prises en charge
 
-| Version | Prise en charge                                    |
-| ------- | -------------------------------------------------- |
-| 0.2.x   | Oui — ligne de publication actuelle                |
-| 0.1.x   | Non — veuillez passer à 0.2.x, qui succède à 0.1.x |
+| Version              | Prise en charge                             |
+| -------------------- | ------------------------------------------- |
+| 0.6.x                | Oui — ligne de publication actuelle         |
+| 0.5.x et antérieures | Non — veuillez passer à la dernière version |
 
 Le plugin n'a pas encore publié de version 1.0 ; les correctifs de sécurité sont donc publiés dans une nouvelle version corrective de la branche mineure actuelle, et non rétroportés vers des lignes de versions antérieures.
+
+> 🔒 **Veuillez signaler les vulnérabilités en privé.** Utilisez le signalement privé de vulnérabilité de GitHub (onglet **Security** du dépôt → **Report a vulnerability**) ; ne divulguez pas les détails d'exploitation dans une issue publique.
 
 ## Signaler une vulnérabilité
 
@@ -17,7 +19,7 @@ Un bon rapport doit contenir :
 
 - La version de DSH, ainsi que la méthode d'installation du plugin.
 - Le système d'exploitation et la session de bureau.
-- Les formats ou décodeurs concernés (XPM, BMP, détection, chemin de réinjection).
+- Les formats ou décodeurs concernés (XPM, BMP, détection, chemin de réacheminement).
 - Un matériel de reproduction minimal : le fichier ou les octets exacts, ainsi que les étapes de reproduction.
 - La sortie de la Console au niveau Verbose, incluant toutes les lignes `[dsh-paste-image]`.
 
@@ -31,7 +33,7 @@ Dans le périmètre :
 
 - Les plantages, blocages ou épuisements de mémoire provoqués par des fichiers XPM ou BMP spécialement conçus.
 - Les défauts du parseur produisant des pixels erronés et pouvant induire l'utilisateur en erreur.
-- Le contournement des limites documentées (8 fichiers par événement, 4096 px pour le plus grand côté de l'image après conversion).
+- Le contournement des limites documentées (8 fichiers par événement, 4096 px pour le grand côté de l'image après conversion).
 - Les moyens permettant au plugin de lire ou de transmettre des données allant au-delà des fichiers collés ou déposés.
 
 Hors périmètre :

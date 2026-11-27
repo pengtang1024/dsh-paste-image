@@ -2,12 +2,14 @@
 
 ## Versiones compatibles
 
-| Versión | ¿Es compatible?                                 |
-| ------- | ----------------------------------------------- |
-| 0.2.x   | Sí: línea de lanzamiento actual                 |
-| 0.1.x   | No: actualice a 0.2.x, que ha sustituido a esta |
+| Versión            | ¿Es compatible?                   |
+| ------------------ | --------------------------------- |
+| 0.6.x              | Sí: línea de lanzamiento actual   |
+| 0.5.x y anteriores | No: actualice a la última versión |
 
 El complemento aún no ha publicado la versión 1.0, por lo que las correcciones de seguridad se publicarán en una nueva versión de parche de la versión menor actual, y no se trasladarán (backport) a líneas de versión anteriores.
+
+> 🔒 **Informa de las vulnerabilidades en privado.** Usa el informe privado de vulnerabilidades de GitHub (pestaña **Security** del repositorio → **Report a vulnerability**); no divulges los detalles del exploit en un issue público.
 
 ## Informar de vulnerabilidades
 

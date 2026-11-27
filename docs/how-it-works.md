@@ -2,6 +2,8 @@
 
 本文自上而下带读 `client.js`。行号引用都指向当前文件；文末的代码地图是一份快速索引。
 
+> 🔍 **导航提示：** 13 个小节按事件生命周期排列；需要按函数定位时直接跳到[代码地图](#代码地图)。
+
 ```text
 paste / drop (capture phase)
         |
@@ -32,6 +34,23 @@ paste / drop (capture phase)
         |
         v
   reroute(files) -> synthetic DragEvent('drop') on [data-composer-card]
+```
+
+```mermaid
+flowchart LR
+  subgraph 捕获与分发
+    A["paste / drop"] --> B["handle() 前置校验"]
+  end
+  subgraph 逐文件处理
+    C["sniff() 魔数"] --> D{"原生且声明一致?"}
+    D -- 是 --> E["原样放行"]
+    D -- 否 --> F["toCanvas() 解码"]
+    F --> G["canvasOf() 钳制长边 ≤ 4096"]
+    G --> H["encodeCanvas() 按格式编码"]
+  end
+  B --> C
+  E --> I["reroute() 合成 drop"]
+  H --> I
 ```
 
 ## 1. 捕获阶段
@@ -316,7 +335,7 @@ window.__ModuleLoader__.load({
 
 配置页注册在模块加载器的 factory 里：`slots.inject('plugins.row.config', ...)` 之后调用 `slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS })`，`NS = 'dsh-paste-image:settings'`（[`client.js:1276-1277`](../client.js#L1276-L1277)）。`Page` 在 `view === 'summary'` 时返回一行摘要（含当前输出格式），否则渲染表单：6 个复选框（启用、XPM/BMP-DIB/SVG/ICO-CUR 转换、日志）、1 个输出格式下拉框（PNG / JPEG / WebP）、3 个数字输入（文件数、长边、质量；质量为 0.1–1、步进 0.01，选 PNG 时禁用），以及保存与恢复默认。表单草稿放在 `React.useState` 里，只有点“保存”才调用 `applySettings()`；`ctx.locale.register()` 注册中英两份字典，样式全部使用 `--dsw-alias-*` 变量。Node 测试没有 `window`，factory 不会执行，因此 `require('react')` 只出现在 factory 内部，不影响顶层加载。
 
-这些设置对实际体积的影响另见[输出格式实测](output-formats.md)：照片用 JPEG/WebP 约小 82%，UI 截图用 PNG 往往更小。
+> 📊 **实测数据：** 这些设置对实际体积的影响另见[输出格式实测](output-formats.md)：照片用 JPEG/WebP 约小 82%，UI 截图用 PNG 往往更小。
 
 ## 代码地图
 

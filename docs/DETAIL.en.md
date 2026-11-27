@@ -2,6 +2,8 @@
 
 This page explains how dsh-paste-image gets almost any image — even one with a mislabeled type — into the DeepSeek Harness composer when you paste or drop it. It follows [`how-it-works.md`](how-it-works.md) and reflects the current implementation: PNG / JPEG / WebP output, per-format conversion toggles, and settings stored in the browser's `localStorage`.
 
+> 📖 **Orientation:** this page is the user-facing flow overview; for a function-by-function code map with line references, see [Implementation details](how-it-works.md).
+
 ## Flow at a glance
 
 ```text
@@ -9,7 +11,7 @@ paste / drop (capture phase)
         |
         v
   handle(event, data)
-        |  no files, more than maxFiles, or no image candidate -> return, native path
+        |  no files, over maxFiles, or no image candidate -> return, native path
         |  preventDefault() + stopPropagation()
         v
   for each candidate file -> normalize(file)
@@ -32,6 +34,19 @@ paste / drop (capture phase)
   new File(name.<ext>, type taken from the actual blob.type)
         v
   reroute(files) -> synthetic DragEvent('drop') on [data-composer-card]
+```
+
+```mermaid
+flowchart TD
+  A["paste / drop"] --> B{"any image candidates?"}
+  B -- no --> Z["native path"]
+  B -- yes --> C["sniff magic bytes"]
+  C --> D{"native and declaration agrees / toggle off?"}
+  D -- yes --> E["pass through untouched"]
+  D -- no --> F["decode -> canvas (long side <= 4096)"]
+  F --> G["encode in the output format (WebP by default)"]
+  G --> H["synthetic drop rerouted into the composer"]
+  E --> H
 ```
 
 ## 1. Capture phase
@@ -96,7 +111,7 @@ Settings live only in the browser's `localStorage` (key `dsh-paste-image.setting
 | `convertIco`     | `true`  | boolean                 | Whether to convert ICO / CUR                                            |
 | `logConversions` | `true`  | boolean                 | Whether to emit conversion debug logs                                   |
 
-The configuration form contains the checkboxes above, an output-format dropdown and three numeric inputs; drafts live in component state and are written only when you click "Save"; "Restore defaults" returns to the table's values.
+> 💡 **Form behaviour:** drafts live in component state and are written only when you click "Save"; "Restore defaults" returns to the table's values.
 
 ## 9. Limits and unsupported cases
 

@@ -2,6 +2,8 @@
 
 Cette page explique comment dsh-paste-image insère dans le compositeur de DeepSeek Harness presque n'importe quelle image — même une image dont le type est mal déclaré — lorsque vous la collez ou la déposez. Elle suit [`how-it-works.md`](how-it-works.md) et reflète l'implémentation actuelle : sortie PNG / JPEG / WebP, interrupteurs de conversion par format et réglages stockés dans le `localStorage` du navigateur.
 
+> 📖 **Rôle de cette page :** elle offre une vue d'ensemble du flux pour les utilisateurs ; la carte du code fonction par fonction avec références de lignes se trouve dans [Fonctionnement détaillé](how-it-works.md).
+
 ## Vue d'ensemble du flux
 
 ```text
@@ -9,7 +11,7 @@ coller / déposer (phase de capture)
         |
         v
   handle(event, data)
-        |  aucun fichier, plus de maxFiles ou aucun candidat image -> retour, voie native
+        |  aucun fichier, plus de maxFiles, ou aucun candidat image -> retour, voie native
         |  preventDefault() + stopPropagation()
         v
   pour chaque fichier candidat -> normalize(file)
@@ -32,6 +34,19 @@ coller / déposer (phase de capture)
   new File(name.<ext>, type pris du blob.type réel)
         v
   reroute(files) -> DragEvent('drop') synthétique sur [data-composer-card]
+```
+
+```mermaid
+flowchart TD
+  A["paste / drop"] --> B{"Candidat image ?"}
+  B -- Non --> Z["Voie native"]
+  B -- Oui --> C["sniff des octets magiques"]
+  C --> D{"Natif et déclaration concordante / interrupteur désactivé ?"}
+  D -- Oui --> E["Transmis tel quel"]
+  D -- Non --> F["Décodage → canvas (grand côté ≤ 4096)"]
+  F --> G["Encodage au format de sortie (WebP par défaut)"]
+  G --> H["drop synthétique réinjecté"]
+  E --> H
 ```
 
 ## 1. Phase de capture
@@ -61,13 +76,13 @@ Chaque fichier candidat est converti dans son propre `try/catch` ; en cas d'éch
 - L'interrupteur de conversion de ce format est désactivé : le fichier original passe sans même lire les octets complets.
 - Un type natif (PNG/JPEG/WebP/GIF) dont la déclaration concorde avec les octets réels : passe après lecture de l'en-tête de 1 Kio. Les vraies captures conservent donc intégralement leurs octets, métadonnées et animation.
 - Le type déclaré est vide : les octets sont réemballés dans un `File` avec le type détecté (sans réencodage), afin de passer la liste blanche de l'hôte.
-- Le type déclaré ne concorde pas avec les octets réels (par exemple un BMP qui se dit PNG) : il est converti et réencodé au format de sortie choisi.
+- Le type déclaré ne concorde pas avec les octets réels (par exemple des octets BMP déclarés `image/png`) : le fichier est converti et réencodé au format de sortie choisi.
 
 Lors d'une conversion, l'extension est remplacée par l'encodage réel (`shot.xpm` -> `shot.png`) ; les fichiers natifs retypés gardent leur extension. Une table d'alias MIME (`image/jpg`, `image/x-png`, `image/svg+xml`, etc.) normalise d'abord les graphies, pour éviter de réencoder inutilement des fichiers valides.
 
 ## 5. Décodage et encodage
 
-Chemins de décodage : XPM utilise le décodeur intégré ; SVG est rastérisé via `<img>` (Chromium n'a pas de `createImageBitmap()` pour les blobs SVG) ; le reste passe par `createImageBitmap()`, avec repli `decodeBmp()` ou extraction du JPEG/PNG intégré pour BMP, et repli sur l'entrée PNG la plus grande pour ICO. La taille est mise à l'échelle selon `scale = min(1, maxSide / plus grand côté)` ; les petites images passent telles quelles.
+Chemins de décodage : XPM utilise le décodeur intégré ; SVG est rastérisé via `<img>` (Chromium n'a pas de `createImageBitmap()` pour les blobs SVG) ; le reste passe par `createImageBitmap()`, avec repli `decodeBmp()` ou extraction du JPEG/PNG intégré pour BMP, et repli sur l'entrée PNG la plus grande pour ICO. La taille est mise à l'échelle selon `scale = min(1, maxSide / grand côté)` ; les petites images passent telles quelles.
 
 L'encodage est assuré par `encodeCanvas()` : PNG est sans perte et ne reçoit aucun paramètre de qualité ; JPEG est d'abord composé sur un fond blanc opaque (les pixels transparents ne deviennent pas noirs), WebP conserve la transparence, et les deux reçoivent `quality`. Le type final est pris du `blob.type` réel du navigateur, avec repli sur PNG s'il n'est pas reconnu.
 
@@ -96,7 +111,7 @@ Les réglages ne vivent que dans le `localStorage` du navigateur (clé `dsh-past
 | `convertIco`     | `true`            | booléen                 | Convertir ou non les ICO / CUR                                                  |
 | `logConversions` | `true`            | booléen                 | Émettre ou non les journaux de débogage des conversions                         |
 
-Le formulaire de configuration contient les cases ci-dessus, une liste déroulante de format de sortie et trois champs numériques ; les brouillons vivent dans l'état du composant et ne sont écrits que lors du clic sur « Enregistrer » ; « Restaurer les valeurs par défaut » revient aux valeurs du tableau.
+> 💡 **Comportement du formulaire :** les brouillons restent dans l'état du composant ; seul le clic sur « Enregistrer » écrit les réglages. « Restaurer les valeurs par défaut » revient aux valeurs du tableau ci-dessus.
 
 ## 9. Limites et cas non pris en charge
 

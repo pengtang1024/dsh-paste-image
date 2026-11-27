@@ -2,6 +2,8 @@
 
 发版由维护者从 `master` 切出。本文所有内容都是可以直接照抄的检查清单；仓库没有构建步骤，所以「发版」就是改版本号 + 更新 changelog + 打 tag + 写发布说明。
 
+> 🚦 **发版流程一览：** 版本策略 → 发版前检查 → 六步发版流程 → 发布后验证 → npm 发布 → 热修复。**CI 必须全绿**才允许发布。
+
 ## 版本策略
 
 项目遵循[语义化版本](https://semver.org/spec/v2.0.0.html)，并保留 1.0 之前的常见约定：
@@ -14,7 +16,7 @@
 
 ## 发版前检查
 
-以下命令全部在 `master` 的干净检出上执行（测试套件共 37 个用例，必须全部通过）：
+以下命令全部在 `master` 的干净检出上执行（测试套件共 102 个用例，必须全部通过）：
 
 ```bash
 git switch master
@@ -25,7 +27,7 @@ npm run check
 npm run format:check            # CI runs the same thing
 ```
 
-同时确认最新 `master` 提交对应的 GitHub Actions 运行是绿的——即使本地全部通过，只要 CI 红了，这次发布就不能发。
+> 🚦 **CI 门禁：** 同时确认最新 `master` 提交对应的 GitHub Actions 运行是绿的——即使本地全部通过，只要 CI 红了，这次发布就不能发。
 
 ## 发版流程
 
@@ -84,9 +86,9 @@ npm run format:check            # CI runs the same thing
 
   打开那个 profile，粘贴一张图片，然后删除该 profile。
 
-- **检查打包内容。** `npm pack --dry-run` 会打印文件列表；其中必须包含 `client.js`、`lib/`、`cordis.patch.yml`、全部八个 locale、每个翻译版 README、`LICENSE` 和 `CHANGELOG.md`，并且不能有 `tests/` 或 `docs/` 里的任何文件。
+- **检查打包内容。** `npm pack --dry-run` 会打印文件列表；其中必须包含 `client.js`、`lib/`、`cordis.patch.yml`、全部七个 locale、每个翻译版 README、`LICENSE` 和 `CHANGELOG.md`，并且不能有 `tests/` 或 `docs/` 里的任何文件。
 
-- **更新市场上的条目。** 插件市场的提交位于另一个仓库：[`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml)。如果发布改变了支持的格式列表，就在提到这些新格式的同一个 pull request 里更新 `description.en` / `description.zh`。目录的 schema 只承载这两种语言；八种语言的文案存放在插件的 `locale/` 目录里，在安装之后才会被读取。市场 pull request 合并后，目录每晚重新生成。
+- **更新市场上的条目。** 插件市场的提交位于另一个仓库：[`data/plugins/pengtang1024__dsh-paste-image.yml`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/pengtang1024__dsh-paste-image.yml)。如果发布改变了支持的格式列表，就在提到这些新格式的同一个 pull request 里更新 `description.en` / `description.zh`。目录的 schema 只承载这两种语言；七种语言的文案存放在插件的 `locale/` 目录里，在安装之后才会被读取。市场 pull request 合并后，目录每晚重新生成。
 
 ## 发布到 npm
 

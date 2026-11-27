@@ -2,16 +2,31 @@
 
 This page is the reference for what happens to a pasted or dropped file: how the type is decided, which decoder handles it, what the output is, and which formats are intentionally left alone. The user-facing summary lives in the [README](../../README.en.md#supported-formats); this document is the detail behind it.
 
+> 🧭 **Reading route:** decision pipeline → format matrix → BMP variants → unsupported formats → checklist for adding a format.
+
 ## Decision pipeline
 
 Every file in a `paste` or `drop` event goes through the same four questions.
 
-1. **Is it a candidate at all?** `isImageCandidate()` accepts a file when `file.type` starts with `image/` or when the file name matches
-   `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` or `.heif`.
-   Everything else in the same event is forwarded untouched.
+1. **Is it a candidate at all?** When `file.type` starts with `image/` or the file name matches
+   `.png`, `.jpg`, `.jpeg`, `.jfif`, `.gif`, `.webp`, `.bmp`, `.dib`, `.tif`, `.tiff`, `.xpm`, `.avif`, `.ico`, `.cur`, `.svg`, `.heic` or `.heif`,
+   `isImageCandidate()` accepts the file. Everything else in the same event is forwarded untouched.
 2. **What is it really?** `sniff()` reads magic bytes and returns a canonical type, ignoring the declared MIME type. The order matters: the four native formats are checked first, then BMP, TIFF, XPM, the `ftyp` family (AVIF/HEIC), ICO/CUR, SVG and finally headerless DIB.
 3. **Can it pass through?** The file is passed through byte-for-byte only when the sniffed type is native **and** the declared type agrees (including the alias spellings in `MIME_ALIAS`). A native file with no declared type is re-wrapped with the sniffed type instead of being re-encoded, so the host sees a valid `File`. A native file whose bytes disagree with its declared type is re-encoded — this is what stops a BMP from wearing an `image/png` label.
-4. **Otherwise: decode, draw, re-encode.** `toCanvas()` picks a decoder, draws the result onto a canvas capped at 4096 px on the longest side, and the canvas is exported in the selected output format (WebP by default). If every decoder refuses, the original file is kept and the plugin logs `keep original (...)`, so the failure looks exactly like the stock client.
+4. **Otherwise: decode, draw, re-encode.** `toCanvas()` picks a decoder, draws the result onto a canvas capped at 4096 px on the longest side, and exports it in the selected output format (WebP by default). If every decoder refuses, the original file is kept and the plugin logs `keep original (...)`, so the failure looks exactly like the stock client.
+
+```mermaid
+flowchart TD
+  A["file enters paste / drop"] --> B{"is it an image candidate?"}
+  B -- no --> Z["forwarded untouched"]
+  B -- yes --> C["sniff magic bytes"]
+  C --> D{"native format and declaration agrees?"}
+  D -- yes --> E["passed through byte-for-byte"]
+  D -- no --> F["decode -> canvas (<= 4096 px) -> re-encode"]
+  F --> G{"decode succeeded?"}
+  G -- yes --> H["export in the output format (WebP by default)"]
+  G -- no --> I["keep original + keep original log"]
+```
 
 ## Format matrix
 
@@ -46,7 +61,7 @@ Every file in a `paste` or `drop` event goes through the same four questions.
 | Alpha       | Bit masks when declared; otherwise an all-zero alpha channel on a 32-bit image is treated as opaque                                                             |
 | Byte order  | Little-endian, as the format specifies                                                                                                                          |
 
-Guard rails: a file larger than 64 Mi pixels (or a canvas that would need more than that) is rejected before allocation, every row read is bounds-checked, and RLE streams stop at `EOF`, `delta` or the end of the buffer.
+> 🛡️ **Guard rails:** a file larger than 64 Mi pixels (or a canvas that would need more than that) is rejected before allocation, every row read is bounds-checked, and RLE streams stop at `EOF`, `delta` or the end of the buffer.
 
 ## What is not supported, and why
 

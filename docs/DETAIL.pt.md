@@ -2,6 +2,8 @@
 
 Esta página explica como o dsh-paste-image insere no compositor do DeepSeek Harness quase qualquer imagem — mesmo uma com o tipo declarado incorreto — quando você a cola ou arrasta. Ela segue [`how-it-works.md`](how-it-works.md) e reflete a implementação atual: saída PNG / JPEG / WebP, interruptores de conversão por formato e configurações armazenadas no `localStorage` do navegador.
 
+> 📖 **Posicionamento:** esta página é uma visão geral do fluxo voltada ao usuário; o mapa do código função por função com referências de linha está em [Como funciona](how-it-works.md).
+
 ## Resumo do fluxo
 
 ```text
@@ -34,6 +36,19 @@ colar / arrastar (fase de captura)
   reroute(files) -> DragEvent('drop') sintético em [data-composer-card]
 ```
 
+```mermaid
+flowchart TD
+  A["colar / soltar"] --> B{"há candidatos de imagem?"}
+  B -- não --> Z["caminho nativo"]
+  B -- sim --> C["sniff dos bytes mágicos"]
+  C --> D{"nativo com declaração compatível / interruptor desligado?"}
+  D -- sim --> E["passar sem alterações"]
+  D -- não --> F["decodificar → canvas (lado maior ≤ 4096)"]
+  F --> G["codificar no formato de saída (WebP por padrão)"]
+  G --> H["drop sintético de volta ao composer"]
+  E --> H
+```
+
 ## 1. Fase de captura
 
 O plugin escuta `paste` e `drop` em `document` no modo de captura (`addEventListener(..., true)`). A captura vai de `document` até o alvo, então o plugin vê o evento antes do manipulador próprio do compositor; se houver conversão, ele pode chamar `preventDefault()` antes de o compositor ler `clipboardData`.
@@ -63,7 +78,7 @@ Cada arquivo candidato é convertido em seu próprio `try/catch`; em caso de fal
 - O tipo declarado está vazio: os bytes são reembalados em um `File` com o tipo detectado (sem recodificação), para passar pela lista de permissões do host.
 - O tipo declarado discorda dos bytes reais (por exemplo, BMP se dizendo PNG): ele é convertido e recodificado no formato de saída escolhido.
 
-Na conversão, a extensão é substituída pela codificação real (`shot.xpm` -> `shot.png`); arquivos nativos retipados mantêm sua extensão. Uma tabela de aliases MIME (`image/jpg`, `image/x-png`, `image/svg+xml`, etc.) normaliza as grafias primeiro, para que arquivos íntegros não sejam recodificados sem necessidade.
+Na conversão, a extensão é substituída pela codificação real (`shot.xpm` → `shot.png`); arquivos nativos retipados mantêm sua extensão. Uma tabela de aliases MIME (`image/jpg`, `image/x-png`, `image/svg+xml`, etc.) normaliza as grafias primeiro, para que arquivos íntegros não sejam recodificados sem necessidade.
 
 ## 5. Decodificação e codificação
 
@@ -96,7 +111,7 @@ As configurações vivem apenas no `localStorage` do navegador (chave `dsh-paste
 | `convertIco`     | `true` | booleano                | Converter ou não ICO / CUR                                              |
 | `logConversions` | `true` | booleano                | Emitir ou não registros de depuração das conversões                     |
 
-O formulário de configuração contém as caixas acima, um seletor de formato de saída e três campos numéricos; os rascunhos ficam no estado do componente e só são gravados ao clicar em "Salvar"; "Restaurar padrões" volta aos valores da tabela.
+> 💡 **Comportamento do formulário:** os rascunhos ficam no estado do componente e só são gravados ao clicar em "Salvar"; "Restaurar padrões" volta aos valores da tabela.
 
 ## 9. Limites e casos não suportados
 

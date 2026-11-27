@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-28
+
+### Changed
+
+- Comprehensively polished and beautified the seven-language READMEs, DETAIL, SECURITY, CONTRIBUTING and docs reference pages: added version badges, at-a-glance tables, quick-navigation tables, Mermaid diagrams and callouts; corrected stale facts — the seven languages are zh / en / es / fr / de / ru / pt (no Japanese), the suite is 102 tests, the current release line is 0.6.x, CI covers Node 20/22/24, and the wording now states explicitly how BMP bytes disguised as PNG are handled.
+- Fixed three broken anchors.
+
 ## [0.6.1] - 2026-11-26
 
 ### Fixed

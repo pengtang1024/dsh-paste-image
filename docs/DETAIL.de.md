@@ -2,6 +2,8 @@
 
 Diese Seite erklärt, wie dsh-paste-image fast jedes Bild — selbst eines mit falsch deklariertem Typ — beim Einfügen oder Ziehen in den Composer von DeepSeek Harness übernimmt. Sie folgt [`how-it-works.md`](how-it-works.md) und spiegelt die aktuelle Implementierung wider: PNG / JPEG / WebP als Ausgabe, Konvertierungsschalter pro Format und Einstellungen im `localStorage` des Browsers.
 
+> 📖 **Einordnung:** Diese Seite ist ein benutzerorientierter Ablaufüberblick; die Code-Landkarte Funktion für Funktion mit Zeilenverweisen finden Sie unter [Funktionsweise im Detail](how-it-works.md).
+
 ## Ablauf im Überblick
 
 ```text
@@ -34,6 +36,19 @@ Einfügen / Ziehen (Capture-Phase)
   reroute(files) -> synthetisches DragEvent('drop') auf [data-composer-card]
 ```
 
+```mermaid
+flowchart TD
+  A["Einfügen / Ziehen"] --> B{"Bildkandidat vorhanden?"}
+  B -- Nein --> Z["Nativer Pfad"]
+  B -- Ja --> C["Magic Bytes erkennen"]
+  C --> D{"Nativ und Deklaration passend / Schalter aus?"}
+  D -- Ja --> E["Unverändert durchreichen"]
+  D -- Nein --> F["Decodieren → Canvas (längste Seite ≤ 4096)"]
+  F --> G["Im Ausgabeformat codieren (Standard: WebP)"]
+  G --> H["Synthetischen drop zurückleiten"]
+  E --> H
+```
+
 ## 1. Capture-Phase
 
 Das Plugin horcht im Capture-Modus (`addEventListener(..., true)`) auf `paste` und `drop` bei `document`. Die Capture-Phase verläuft von `document` abwärts zum Ziel, daher sieht das Plugin das Ereignis vor dem eigenen Handler des Composers; bei einer Konvertierung kann es `preventDefault()` aufrufen, bevor der Composer `clipboardData` liest.
@@ -63,7 +78,7 @@ Jede Kandidatendatei wird in einem eigenen `try/catch` konvertiert; bei Misserfo
 - Der deklarierte Typ ist leer: die Bytes werden in ein `File` mit dem erkannten Typ neu verpackt (ohne Neukodierung), damit sie die Whitelist des Hosts passieren.
 - Der deklarierte Typ widerspricht den echten Bytes (z. B. BMP behauptet PNG): er wird konvertiert und in das gewählte Ausgabeformat neu kodiert.
 
-Bei der Konvertierung wird die Endung durch die tatsächliche Kodierung ersetzt (`shot.xpm` -> `shot.png`); neu typisierte native Dateien behalten ihre Endung. Eine MIME-Aliastabelle (`image/jpg`, `image/x-png`, `image/svg+xml`, usw.) normalisiert Schreibweisen zuerst, damit intakte Dateien nicht unnötig neu kodiert werden.
+Bei der Konvertierung wird die Endung durch die tatsächliche Kodierung ersetzt (`shot.xpm` → `shot.png`); neu typisierte native Dateien behalten ihre Endung. Eine MIME-Aliastabelle (`image/jpg`, `image/x-png`, `image/svg+xml`, usw.) normalisiert Schreibweisen zuerst, damit intakte Dateien nicht unnötig neu kodiert werden.
 
 ## 5. Dekodierung und Kodierung
 
@@ -96,7 +111,7 @@ Einstellungen liegen ausschließlich im `localStorage` des Browsers (Schlüssel 
 | `convertIco`     | `true`   | Boolean                  | ICO / CUR konvertieren oder nicht                                      |
 | `logConversions` | `true`   | Boolean                  | Debug-Protokolle für Konvertierungen ausgeben                          |
 
-Das Konfigurationsformular enthält die obigen Kontrollkästchen, ein Dropdown für das Ausgabeformat und drei Zahlenfelder; Entwürfe liegen im Komponentenzustand und werden erst beim Klick auf „Speichern" geschrieben; „Standard wiederherstellen" setzt die Werte der Tabelle zurück.
+> 💡 **Formularverhalten:** Entwürfe liegen im Komponentenzustand; erst der Klick auf „Speichern" schreibt die Einstellungen. „Standard wiederherstellen" setzt die Werte der obigen Tabelle zurück.
 
 ## 9. Grenzen und nicht unterstützte Fälle
 
@@ -105,7 +120,7 @@ Das Konfigurationsformular enthält die obigen Kontrollkästchen, ein Dropdown f
 - **BMP / DIB**: unterstützt Headerlängen 12/40/52/56/64/108/124, Bittiefen 1/4/8/16/24/32, Kompression BI_RGB / RLE8 / RLE4 / BITFIELDS / ALPHABITFIELDS, eingebettetes JPEG/PNG und Bitmaps von oben nach unten; Bilder über 64 Mi Pixel werden vor der Speicherzuweisung abgelehnt. Ein 32-Bit-Alphakanal mit ausschließlich Nullen wird als opak behandelt.
 - **ICO / CUR**: nur Icons mit einem PNG-Eintrag werden unterstützt (der größte nach Fläche); reine DIB-Icons und Cursor nicht.
 - **Native Formate**: PNG, JPEG, WebP und GIF mit zur Realität passender Deklaration werden nie neu kodiert.
-- **Größenvergleich**: Fotos sind mit JPEG/WebP etwa 82 % kleiner; UI-Screenshots sind mit PNG oft kleiner. Siehe [Messungen der Ausgabeformate](output-formats.md).
+- **Größenvergleich**: Fotos sind mit JPEG/WebP etwa 82 % kleiner; UI-Screenshots sind mit PNG oft kleiner. Siehe [Messwerte der Ausgabeformate](output-formats.md).
 
 ## 10. Designprinzipien
 

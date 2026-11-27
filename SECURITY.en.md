@@ -2,12 +2,14 @@
 
 ## Supported versions
 
-| Version | Supported                                  |
-| ------- | ------------------------------------------ |
-| 0.2.x   | Yes — current release line                 |
-| 0.1.x   | No — upgrade to 0.2.x, which supersedes it |
+| Version         | Supported                          |
+| --------------- | ---------------------------------- |
+| 0.6.x           | Yes — current release line         |
+| 0.5.x and older | No — upgrade to the latest release |
 
 The plugin is pre-1.0, so security fixes land in a new patch release of the current minor version rather than being backported to older lines.
+
+> 🔒 **Please report vulnerabilities privately.** Use GitHub's private vulnerability reporting (repository **Security** tab → **Report a vulnerability**); do not disclose exploit details in a public issue.
 
 ## Reporting a vulnerability
 

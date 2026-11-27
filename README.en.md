@@ -4,14 +4,32 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/dsh-paste-image.svg)](https://www.npmjs.com/package/dsh-paste-image)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+[![version](https://img.shields.io/badge/version-0.6.1-blue.svg)](CHANGELOG.md)
 
 [简体中文](docs/DETAIL.zh.md) · [English](docs/DETAIL.en.md) · [Español](docs/DETAIL.es.md) · [Français](docs/DETAIL.fr.md) · [Deutsch](docs/DETAIL.de.md) · [Русский](docs/DETAIL.ru.md) · [Português](docs/DETAIL.pt.md)
 
 Paste or drop almost any image into DeepSeek Harness — even when the clipboard says `image/xpm` or lies about the MIME type.
 
+| Current version | Default output | Runtime dependencies | Node requirement |
+| --------------- | -------------- | -------------------- | ---------------- |
+| 0.6.1           | WebP           | None                 | ≥ 20             |
+
+> 📌 **In one sentence:** bytes beat labels — sniff the real format, re-encode it in a whitelisted format (WebP by default) inside the renderer, then hand it back to the native attachment channel.
+
+## Quick navigation
+
+| What you want               | Where to go                                                                                                                             |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Understand the problem      | [Why this exists](#why-this-exists) · [How it works](#how-it-works) · [Supported formats](#supported-formats)                           |
+| Install and use it          | [Install](#install) · [Verify it works](#verify-it-works) · [Configuration](#configuration)                                             |
+| Dig into the details        | [Limitations](#limitations) · [Performance](#performance) · [Compatibility](#compatibility) · [Implementation](docs/en/how-it-works.md) |
+| Troubleshoot and contribute | [Security and privacy](#security-and-privacy) · [Troubleshooting](docs/en/troubleshooting.md) · [Contributing](CONTRIBUTING.en.md)      |
+
 ## Why this exists
 
-The DSH desktop client (Electron/Chromium) accepts exactly four attachment types: `image/png`, `image/jpeg`, `image/webp` and `image/gif`. Anything else is rejected with a red error that lists only PNG, JPG, WebP and GIF.
+The DSH desktop client (Electron/Chromium) accepts exactly four attachment types: `image/png`, `image/jpeg`, `image/webp` and `image/gif`. Anything else is rejected with a red error:
+
+> ⚠️ **Host message:** Only PNG, JPG, WebP and GIF are supported
 
 That whitelist breaks two things that happen all the time on Linux:
 
@@ -21,6 +39,17 @@ That whitelist breaks two things that happen all the time on Linux:
 `dsh-paste-image` handles both cases inside the renderer: it looks at the actual bytes, decodes what the clipboard really contains, re-encodes it in the selected output format (WebP by default), and hands the result back to the normal attachment channel.
 
 ## How it works
+
+```mermaid
+flowchart LR
+  A["paste / drop"] --> B["sniff the real bytes"]
+  B --> C{"native format and declaration agrees?"}
+  C -- yes --> D["pass through untouched"]
+  C -- no --> E["decode -> canvas"]
+  E --> F["re-encode (WebP by default)"]
+  D --> G["synthetic drop rerouted into the composer"]
+  F --> G
+```
 
 1. **Capture.** `install()` registers `paste` and `drop` listeners on `document` in the capture phase, so the plugin sees the event before the composer does.
 2. **Sniff.** `handle()` reads the `File` objects from `clipboardData` or `dataTransfer`, and `sniff()` identifies the real format from magic bytes — not from the declared MIME type.
@@ -57,7 +86,7 @@ A file is considered at all when its MIME type starts with `image/` or its name 
 dsh plugin --profile <profile> add dsh-paste-image
 ```
 
-The package ships prebuilt — renderer bundle, host entry, loader patch, display metadata and documentation — so the install pulls it straight from the npm registry.
+The package ships prebuilt — renderer bundle, host entry, loader patch, display metadata and multilingual documentation — so the install pulls it straight from the npm registry. You can also install straight from GitHub to bypass the registry:
 
 ```bash
 dsh plugin --profile <profile> add github:pengtang1024/dsh-paste-image
@@ -69,13 +98,15 @@ For local development, point the profile at your checkout:
 dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 ```
 
-Replace `<profile>` with the profile your app runs. **Reload the page after installing** (`Ctrl+R`, or `Cmd+R` on macOS). The client module is only injected when the renderer loads, so a freshly installed plugin intercepts nothing until you reload.
+Replace `<profile>` with the profile your app actually runs.
+
+> 🔄 **Reload the page after installing** (`Ctrl+R`, or `Cmd+R` on macOS): the client module is injected only when the renderer loads, so a freshly installed plugin intercepts nothing until you reload.
 
 **Host requirements:** DSH must satisfy the `engines.dsh` range declared in the package (0.2.0-rc.2 and later 0.2.x versions, before 0.4.0) and Node >= 20; per-release compatibility is declared in `dsh.compatibility.dshReleases`. On an unsupported DSH version the plugin is not loaded, and the plugin detail page says so.
 
 ## Verify it works
 
-Run the repository checks:
+Run the repository checks first:
 
 ```bash
 cd dsh-paste-image
@@ -83,7 +114,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the Node test suite: magic-byte sniffing, candidate detection, every BMP variant, the BMP-labelled-PNG conversion, headerless DIBs, native pass-through, the settings page and its runtime settings, and the display metadata shipped for each language. `npm run check` syntax-checks `client.js` and `lib/index.js`.
+`npm test` runs the Node test suite: magic-byte sniffing, candidate detection, every BMP variant, the conversion of BMP bytes declared as PNG, headerless DIBs, native pass-through, the settings page and its runtime settings, and the display metadata shipped for each language. `npm run check` syntax-checks `client.js` and `lib/index.js`.
 
 Then check the real flow:
 
@@ -114,7 +145,7 @@ The plugin's settings now live under **Settings → Paste any image**, which ope
 | Convert ICO / CUR    | On      | When off, icons are not converted and go to the native channel untouched                                              |
 | Log conversions      | On      | When off, the `[dsh-paste-image] ...` `console.debug` lines are not printed                                           |
 
-Only **Save** writes and applies the values; edits stay an in-page draft and are discarded when you leave the page. **Restore defaults** writes every default in the table back and applies them immediately too. Number inputs are rounded and clamped to their range (clearing a field does not overwrite the stored value with 0).
+> 💡 **How changes take effect:** only **Save** writes and applies the values; edits stay an in-page draft and are discarded when you leave the page. **Restore defaults** writes every default in the table back and applies them immediately too. Number inputs are rounded and clamped to their range (clearing a field does not overwrite the stored value with 0).
 
 WebP is the default output: it keeps transparency while staying small. PNG is lossless; JPEG produces smaller files but composites transparent pixels onto white before encoding. When the browser cannot encode the selected format, the plugin falls back to the type it actually produced, and to PNG when that type is unrecognised — the format table above still describes the default WebP output unless you switch formats.
 
@@ -167,7 +198,7 @@ The plugin targets the renderer APIs modern Chromium/Electron provides: `File`/`
 | `DataTransfer` / `DragEvent` | `handle()` returns before claiming the event or calling `preventDefault()`, so the browser's native paste/drop path is untouched       |
 | `[data-composer-card]`       | `handle()` returns as soon as the target is absent: it does not claim, does not call `preventDefault()`, and native paste stays intact |
 
-File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 90 tests (41 client/locale + 21 compatibility + 28 settings page/runtime settings) covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP-labelled PNG, the 8-file limit, non-image pass-through, the four fallbacks above, and the settings page's registration contract and behaviour. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
+File-like objects without `slice()`/`size` cannot read just a header and fall back to the original full-read path. CI runs the full suite on Node 20, 22 and 24 plus a `bench/bench.mjs --quick` smoke job; there are currently 102 tests covering headerless DIBs, 1/4/8/16/24/32-bit BMP, RLE4/RLE8, BITFIELDS, OS/2 core headers, TIFF/HEIC/AVIF sniffing, MIME aliases, BMP bytes declared as PNG, the 8-file limit, non-image pass-through, the four fallbacks above, and the settings page's registration contract and behaviour. Per-format platform differences and browser codec dependencies are in [format support](docs/en/formats.md).
 
 ## Security and privacy
 
@@ -184,7 +215,7 @@ The plugin ships display metadata for every language the DSH interface supports 
 
 ## Documentation
 
-- [How it works](docs/en/how-it-works.md) — event flow, decoder internals and a function-by-function code map.
+- [Implementation details](docs/en/how-it-works.md) — event flow, decoder internals and a function-by-function code map.
 - [Format support](docs/en/formats.md) — decision pipeline, format matrix, BMP variants and the checklist for adding a format.
 - [Output format measurements](docs/en/output-formats.md) — PNG / JPEG / WebP sizes and encode times, broken down by content type.
 - [Troubleshooting](docs/en/troubleshooting.md) — common failures and how to read the logs.

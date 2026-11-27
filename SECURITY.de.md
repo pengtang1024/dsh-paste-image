@@ -2,12 +2,14 @@
 
 ## Unterstützte Versionen
 
-| Version | Unterstützt                                                        |
-| ------- | ------------------------------------------------------------------ |
-| 0.2.x   | Ja — aktuelle Release-Linie                                        |
-| 0.1.x   | Nein — bitte auf 0.2.x aktualisieren, das Letztere ersetzt Erstere |
+| Version         | Unterstützt                                        |
+| --------------- | -------------------------------------------------- |
+| 0.6.x           | Ja — aktuelle Release-Linie                        |
+| 0.5.x und älter | Nein — bitte auf die neueste Version aktualisieren |
 
 Das Plugin hat noch keine Version 1.0 veröffentlicht; Sicherheitskorrekturen werden daher mit einer neuen Patch-Version der aktuellen Minor-Version veröffentlicht und nicht auf ältere Versionslinien zurückportiert.
+
+> 🔒 **Bitte melden Sie Schwachstellen vertraulich.** Nutzen Sie die private Schwachstellenmeldung von GitHub (Reiter **Security** des Repositories → **Report a vulnerability**); geben Sie keine Details zur Ausnutzung in öffentlichen Issues bekannt.
 
 ## Schwachstellen melden
 

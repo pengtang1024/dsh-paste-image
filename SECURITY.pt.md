@@ -2,12 +2,14 @@
 
 ## Versões suportadas
 
-| Versão | É suportada                                                 |
-| ------ | ----------------------------------------------------------- |
-| 0.2.x  | Sim — linha de lançamento atual                             |
-| 0.1.x  | Não — atualize para 0.2.x, que substituiu a versão anterior |
+| Versão             | É suportada                               |
+| ------------------ | ----------------------------------------- |
+| 0.6.x              | Sim — linha de lançamento atual           |
+| 0.5.x e anteriores | Não — atualize para a versão mais recente |
 
 O plugin ainda não lançou a versão 1.0; portanto, as correções de segurança são publicadas em uma nova versão de patch da versão minor atual, e não são portadas para linhas de versão mais antigas.
+
+> 🔒 **Relate vulnerabilidades em particular.** Use o relatório privado de vulnerabilidades do GitHub (aba **Security** do repositório → **Report a vulnerability**); não divulgue detalhes de exploração em uma issue pública.
 
 ## Como relatar vulnerabilidades
 
@@ -17,7 +19,7 @@ Um bom relatório deve incluir:
 
 - A versão do DSH e como o plugin foi instalado.
 - O sistema operacional e a sessão da área de trabalho.
-- O formato ou decodificador afetado (XPM, BMP, detecção por sondagem, caminho de redrop).
+- O formato ou decodificador afetado (XPM, BMP, detecção por bytes mágicos, caminho de redirecionamento).
 - Um material mínimo de reprodução: o arquivo ou os bytes exatos, e os passos para reproduzir.
 - A saída do Console no nível Verbose, incluindo todas as linhas `[dsh-paste-image]`.
 

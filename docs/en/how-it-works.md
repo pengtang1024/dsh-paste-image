@@ -2,6 +2,8 @@
 
 This document walks through `client.js` top to bottom. Line references point into the current file; the code map at the end is a quick index.
 
+> 🔍 **Navigation tip:** the 13 sections follow the event lifecycle; for function-level lookup, jump straight to the [code map](#code-map).
+
 ```text
 paste / drop (capture phase)
         |
@@ -32,6 +34,23 @@ paste / drop (capture phase)
         |
         v
   reroute(files) -> synthetic DragEvent('drop') on [data-composer-card]
+```
+
+```mermaid
+flowchart LR
+  subgraph Capture and dispatch
+    A["paste / drop"] --> B["handle() pre-checks"]
+  end
+  subgraph Per-file processing
+    C["sniff() magic bytes"] --> D{"native and declaration agrees?"}
+    D -- yes --> E["pass through untouched"]
+    D -- no --> F["toCanvas() decode"]
+    F --> G["canvasOf() clamp long side <= 4096"]
+    G --> H["encodeCanvas() encode by output format"]
+  end
+  B --> C
+  E --> I["reroute() synthetic drop"]
+  H --> I
 ```
 
 ## 1. Capture phase
@@ -307,7 +326,7 @@ The runtime settings object sits at the top of the file ([`client.js:29-132`](..
 Three consumers each read one slice:
 
 - [`canvasOf()`](../../client.js#L658-L667) uses `settings.maxSide` to compute the scale, which affects converted images only.
-- [`normalize()`](../../client.js#L788-L828) checks `conversionAllowed(kind)` as soon as the header has been sniffed; a disabled format returns `null`, the original file is handed to the composer untouched and the full bytes are never read. The BMP-labelled-PNG case goes through the same check, so turning BMP conversion off passes it through as well. When conversion is needed, it picks the output encoding from `settings.outputFormat` and `settings.quality`.
+- [`normalize()`](../../client.js#L788-L828) checks `conversionAllowed(kind)` as soon as the header has been sniffed; a disabled format returns `null`, the original file is handed to the composer untouched and the full bytes are never read. BMP bytes declared as PNG go through the same check, so turning BMP conversion off passes them through as well. When conversion is needed, it picks the output encoding from `settings.outputFormat` and `settings.quality`.
 - [`handle()`](../../client.js#L871-L915) checks `settings.enabled` first and returns when it is off; `settings.maxFiles` then decides whether the whole batch goes to the native path, and `settings.logConversions` gates the log lines.
 
 Output encoding is defined by `OUTPUT_FORMATS` ([`client.js:8-12`](../../client.js#L8-L12)): `png` → `image/png` (lossless, no quality argument), `jpeg` → `image/jpeg`, and `webp` → `image/webp`. JPEG has no alpha channel, so `normalize()` first runs [`flattenOnWhite()`](../../client.js#L725-L734) to composite the canvas onto an opaque white background, keeping transparent pixels from turning black; PNG is lossless and WebP keeps transparency. [`encodeCanvas()`](../../client.js#L706-L722) then calls `canvas.toBlob(callback, mime)` — PNG uses two arguments, while JPEG/WebP receive `quality` as the third; without `toBlob`, [`dataUrlBlob()`](../../client.js#L694-L702) goes through `toDataURL()` with the same MIME and quality and decodes the base64 payload.
@@ -316,7 +335,7 @@ The final type follows what the browser actually encoded: [`encodedMime()`](../.
 
 The page is registered inside the module loader factory: after `slots.inject('plugins.row.config', ...)` it calls `slots.register({ name: 'plugins.row.config', key: 'dsh-paste-image#paste-image', locale: NS })`, with `NS = 'dsh-paste-image:settings'` ([`client.js:1276-1277`](../../client.js#L1276-L1277)). `Page` returns a one-line summary (including the current output format) when `view === 'summary'`; otherwise it renders the form: six checkboxes (enabled, the XPM/BMP-DIB/SVG/ICO-CUR conversion switches, logging), one output-format select (PNG / JPEG / WebP), three number inputs (file count, long edge, quality — 0.1–1 in 0.01 steps, disabled while PNG is selected), Save and Restore defaults. The form draft lives in `React.useState` and only Save calls `applySettings()`; `ctx.locale.register()` registers the Chinese and English dictionaries, and every style uses `--dsw-alias-*` variables. Node tests have no `window`, so the factory never runs and `require('react')` stays inside it instead of loading at the top level.
 
-The measured size impact of these settings is covered in the [output format measurements](output-formats.md): JPEG/WebP shrink photos by about 82%, while UI screenshots are often smaller as PNG.
+> 📊 **Measured data:** the size impact of these settings is covered separately in the [output-format measurements](output-formats.md): JPEG/WebP shrink photos by about 82%, while UI screenshots are often smaller as PNG.
 
 ## Code map
 

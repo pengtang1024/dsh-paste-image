@@ -2,6 +2,8 @@
 
 Thanks for helping. This is a small, dependency-free browser plugin; the bar is "change one thing, test it, keep it small".
 
+> 🧭 **Contribution route:** set up → try a local install → commit tests with the change → add a format/translation when needed → format to the code style → open a PR via Git Flow.
+
 ## Requirements
 
 - Node.js 20 or newer. `package.json` declares `"engines": { "node": ">=20" }`.
@@ -27,16 +29,16 @@ Reload the DSH window after installing. In current DSH builds a `file:` install 
 
 ## Project layout
 
-| Path                    | Purpose                                                                                                                                                                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `client.js`             | All renderer logic: event capture, sniffing, decoding, PNG re-encoding and rerouting.                                                                                                                                                           |
-| `lib/index.js`          | Host half. Intentionally empty (`export function apply() {}`); everything happens in the renderer.                                                                                                                                              |
-| `cordis.patch.yml`      | Loader entry that mounts the plugin.                                                                                                                                                                                                            |
-| `locale/`               | Display metadata for the eight languages the DSH interface ships: title, description and the detail document shown in Plugin Manager.                                                                                                           |
-| `README*.md`            | English README plus one full translation per supported language; each `meta.detail` points at its own translation.                                                                                                                              |
-| `tests/client.test.mjs` | `node:test` suite; runs `client.js` in a `vm` context with a minimal DOM stub.                                                                                                                                                                  |
-| `tests/helpers/dom.mjs` | The stub: fake canvas and image data, BMP builders, and the globals `client.js` expects.                                                                                                                                                        |
-| `docs/`                 | Chinese user documentation; English mirrors live in [`docs/en/`](docs/en/): [how it works](docs/en/how-it-works.md), [format support](docs/en/formats.md), [troubleshooting](docs/en/troubleshooting.md) and [releasing](docs/en/releasing.md). |
+| Path                    | Purpose                                                                                                                                                                                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client.js`             | All renderer logic: event capture, sniffing, decoding, re-encoding in the selected output format and rerouting.                                                                                                                                           |
+| `lib/index.js`          | Host half. Intentionally empty (`export function apply() {}`); everything happens in the renderer.                                                                                                                                                        |
+| `cordis.patch.yml`      | Loader entry that mounts the plugin.                                                                                                                                                                                                                      |
+| `locale/`               | Display metadata for the seven languages the DSH interface ships: title, description and the detail document shown in Plugin Manager.                                                                                                                     |
+| `README*.md`            | Chinese source README, plus one full translation for each of the other six languages; each `meta.detail` points at the README for its own language.                                                                                                       |
+| `tests/client.test.mjs` | `node:test` suite; runs `client.js` in a `vm` context with a minimal DOM stub.                                                                                                                                                                            |
+| `tests/helpers/dom.mjs` | The stub: fake canvas and image data, BMP builders, and the globals `client.js` expects.                                                                                                                                                                  |
+| `docs/`                 | Chinese user documentation; English mirrors live in [`docs/en/`](docs/en/): [implementation details](docs/en/how-it-works.md), [format support](docs/en/formats.md), [troubleshooting](docs/en/troubleshooting.md) and [releasing](docs/en/releasing.md). |
 
 ## Tests come with the change
 
@@ -59,16 +61,16 @@ Format work touches more than the decoder. The full checklist lives in [docs/en/
 
 ## Translations
 
-The plugin ships display metadata and READMEs in every language the DSH interface supports: English (`en`), Simplified Chinese (`zh`), Japanese (`ja`), Spanish (`es`), French (`fr`), German (`de`), Russian (`ru`) and Portuguese (`pt`). English is the source of truth; every other file is a full translation of `README.md`.
+The plugin ships display metadata and READMEs in all seven languages the DSH interface supports: Simplified Chinese (`zh`, the source language), English (`en`), Spanish (`es`), French (`fr`), German (`de`), Russian (`ru`) and Portuguese (`pt`). `README.md` is the Chinese source document, `README.en.md` the English translation, and the other languages use `README.<language>.md`.
 
-When you change a user-visible fact in `README.md` — a format, a limit, an install step, a version number — update all eight translations in the same pull request. A translation does not need to be perfect prose, but it must not change meaning, add claims, or drop a limitation.
+When you change a user-visible fact — a format, a limit, an install step, a version number — update all seven languages in the same change. A translation does not need to be perfect prose, but it must not change meaning, add claims, or drop a limitation.
 
-What to update:
+Files to update:
 
-1. `README.<language>.md` — the full translation. Keep the eight-language switcher line, badges, code fences, commands, paths, URLs and inline code identical to English; translate prose, headings and table headers/cells.
-2. `locale/<language>.json` — `meta.title` (3–80 characters), `meta.description` (over 40 characters, same facts and limits as `locale/en.json`) and `meta.detail`, which must name that language's README (`README.md` for English, `README.<language>.md` otherwise).
+1. Each `README.<language>.md` — the full translation. Keep the seven-language switcher line, badges, code fences, commands, paths, URLs and inline code structurally identical to the Chinese source; translate prose, headings and table text.
+2. `locale/<language>.json` — `meta.title` (3–80 characters), `meta.description` (over 40 characters, with the same facts and limits as `locale/zh.json`) and `meta.detail`, which must point at that language's README (`README.md` for Chinese, `README.en.md` for English, `README.<language>.md` otherwise).
 
-To add a language, first check that the DSH interface ships it; a locale file nobody can select is dead weight. Then add `README.<language>.md`, `locale/<language>.json`, include the language in the switcher line of every README, and extend `LOCALES` in `tests/locale.test.mjs`. The suite fails when a locale file, detail document or cross-README link is missing, or when a relative link in any README or doc points at a file that does not exist.
+To add a language, first check that the DSH interface ships it; a locale file nobody can select is dead weight. Then add that language's README and `locale/<language>.json`, include the language in the switcher line of every README, and extend `LOCALES` in `tests/locale.test.mjs`. The suite fails when a locale file, detail document or cross-README link is missing, or when a relative link in any README or doc points at a file that does not exist.
 
 ## Style
 
@@ -138,7 +140,7 @@ You can then check signatures with `git verify-tag v<version>` or `git log --sho
 2. Follow the [branch model](#branch-model) above and branch from `develop`: `feat/...`, `fix/...` or `docs/...`, using kebab-case names.
 3. Keep commits focused and follow the [naming and commit conventions](#naming-and-commit-conventions) above.
 4. In the description, cover what changed, why, and how you verified it — paste the commands and the relevant output. For event-path changes, describe the manual paste/drop check.
-5. CI runs `node --check` on both entry files, `npx prettier@3 --check .` and `npm test` on Node 20 and 22. Keep all three green.
+5. CI runs `node --check` on both entry files, `npx prettier@3 --check .` and `npm test` on Node 20, 22 and 24. Keep all three green.
 6. Do not bump the version or edit `CHANGELOG.md` in a feature pull request; releases are cut by the maintainer.
 7. Do not commit generated files, binaries or editor state.
 

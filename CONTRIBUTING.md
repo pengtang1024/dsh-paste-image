@@ -2,6 +2,8 @@
 
 感谢你的帮助。这是一个小巧、零依赖的浏览器插件，门槛就一句话：改一件事，测一遍，保持精简。
 
+> 🧭 **贡献路线：** 环境准备 → 本地试装 → 测试随改动提交 → 视情况新增格式/翻译 → 按代码风格格式化 → 走 Git Flow 开 PR。
+
 ## 环境要求
 
 - Node.js 20 或更高版本。`package.json` 中声明了 `"engines": { "node": ">=20" }`。
@@ -32,8 +34,8 @@ dsh plugin --profile <profile> add file:/absolute/path/to/dsh-paste-image
 | `client.js`             | 全部渲染进程逻辑：事件捕获、嗅探、解码、PNG 重编码与回投。                                                                                                                 |
 | `lib/index.js`          | 宿主部分。故意留空（`export function apply() {}`）；一切都发生在渲染进程。                                                                                                 |
 | `cordis.patch.yml`      | 挂载插件的加载器入口。                                                                                                                                                     |
-| `locale/`               | DSH 界面所支持的八种语言的展示元数据：标题、描述，以及插件管理器中显示的详情文档。                                                                                         |
-| `README*.md`            | 中文源 README，以及其余七种语言的完整翻译；每个 `meta.detail` 指向自己语言的那份 README。                                                                                  |
+| `locale/`               | DSH 界面所支持的七种语言的展示元数据：标题、描述，以及插件管理器中显示的详情文档。                                                                                         |
+| `README*.md`            | 中文源 README，以及其余六种语言的完整翻译；每个 `meta.detail` 指向自己语言的那份 README。                                                                                  |
 | `tests/client.test.mjs` | `node:test` 测试套件；在带最小 DOM 桩的 `vm` 上下文中运行 `client.js`。                                                                                                    |
 | `tests/helpers/dom.mjs` | 桩实现：假的画布与图像数据、BMP 构造器，以及 `client.js` 期望的全局对象。                                                                                                  |
 | `docs/`                 | 中文用户文档，英文镜像在 `docs/en/`：[实现原理](docs/how-it-works.md)、[格式支持](docs/formats.md)、[常见问题](docs/troubleshooting.md) 与 [发版流程](docs/releasing.md)。 |
@@ -59,13 +61,13 @@ npm run check
 
 ## 翻译
 
-插件为 DSH 界面支持的每种语言提供展示元数据和 README：简体中文（`zh`，源语言）、英语（`en`）、日语（`ja`）、西班牙语（`es`）、法语（`fr`）、德语（`de`）、俄语（`ru`）、葡萄牙语（`pt`）。`README.md` 是中文源文档，`README.en.md` 是英文翻译，其余为 `README.<language>.md`。
+插件为 DSH 界面支持的每种语言提供展示元数据和 README：简体中文（`zh`，源语言）、英语（`en`）、西班牙语（`es`）、法语（`fr`）、德语（`de`）、俄语（`ru`）、葡萄牙语（`pt`）。`README.md` 是中文源文档，`README.en.md` 是英文翻译，其余为 `README.<language>.md`。
 
-当你改动某个用户可见的事实时——格式、限制、安装步骤、版本号——要在同一次改动里更新全部八种语言。翻译不要求文笔完美，但不得改变含义、添加说法或漏掉限制。
+当你改动某个用户可见的事实时——格式、限制、安装步骤、版本号——要在同一次改动里更新全部七种语言。翻译不要求文笔完美，但不得改变含义、添加说法或漏掉限制。
 
 要更新的文件：
 
-1. 各语言 README —— 完整译文。八语言切换行、徽章、代码围栏、命令、路径、URL 与行内代码必须与中文源保持结构一致；翻译正文、标题与表格文字。
+1. 各语言 README —— 完整译文。七语言切换行、徽章、代码围栏、命令、路径、URL 与行内代码必须与中文源保持结构一致；翻译正文、标题与表格文字。
 2. `locale/<language>.json` —— `meta.title`（3–80 个字符）、`meta.description`（超过 40 个字符，事实与限制同 `locale/zh.json`），以及 `meta.detail`，它必须指向该语言的 README（中文为 `README.md`，英文为 `README.en.md`，其余为 `README.<language>.md`）。
 
 新增一种语言时，先确认 DSH 界面确实支持它；没人能选到的 locale 文件只是白占位置。然后添加该语言的 README 与 `locale/<language>.json`，把它加进每个 README 的切换行，并扩展 `tests/locale.test.mjs` 里的 `LOCALES`。缺少 locale 文件、详情文档或跨 README 链接时，测试会失败；README 或文档里出现指向不存在文件的相对链接时也会失败。
@@ -137,7 +139,7 @@ printf '<principal> %s\n' "$(cat /home/pt/.ssh/id_ed25519_github_docker_panel.pu
 2. 按上面的[分支模型](#分支模型)从 `develop` 拉分支：`feat/...`、`fix/...` 或 `docs/...`，并使用 kebab-case 命名。
 3. 保持提交聚焦，提交信息遵循上面的[命名与提交约定](#命名与提交约定)。
 4. 在描述里说明改了什么、为什么改、如何验证——贴出命令和相关输出。涉及事件路径的改动，要描述手工粘贴/拖放验证。
-5. CI 会在 Node 20 和 22 上对两个入口文件运行 `node --check`、`npx prettier@3 --check .` 和 `npm test`。三项都要保持通过。
+5. CI 会在 Node 20、22 和 24 上对两个入口文件运行 `node --check`、`npx prettier@3 --check .` 和 `npm test`。三项都要保持通过。
 6. 功能类拉取请求里不要改版本号，也不要改 `CHANGELOG.md`；发版由维护者执行。
 7. 不要提交生成文件、二进制文件或编辑器状态。
 

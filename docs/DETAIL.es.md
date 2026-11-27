@@ -2,6 +2,8 @@
 
 Esta página explica cómo dsh-paste-image introduce casi cualquier imagen —incluso una cuyo tipo está mal etiquetado— en el compositor de DeepSeek Harness al pegarla o arrastrarla. Se basa en [`how-it-works.md`](how-it-works.md) y refleja la implementación actual: salida PNG / JPEG / WebP, interruptores de conversión por formato y ajustes guardados en el `localStorage` del navegador.
 
+> 📖 **Propósito:** esta página es una visión general del flujo orientada al usuario; el mapa del código función por función con referencias a líneas está en [Cómo funciona](how-it-works.md).
+
 ## Resumen del flujo
 
 ```text
@@ -32,6 +34,19 @@ pegar / arrastrar (fase de captura)
   new File(name.<ext>, tipo tomado del blob.type real)
         v
   reroute(files) -> DragEvent('drop') sintético en [data-composer-card]
+```
+
+```mermaid
+flowchart TD
+  A["pegar / arrastrar"] --> B{"¿Hay candidatos de imagen?"}
+  B -- No --> Z["ruta nativa"]
+  B -- Sí --> C["detectar bytes mágicos"]
+  C --> D{"¿Nativo y declaración coherente / interruptor apagado?"}
+  D -- Sí --> E["pasar sin cambios"]
+  D -- No --> F["decodificar → canvas (lado largo ≤ 4096)"]
+  F --> G["codificar al formato de salida (WebP por defecto)"]
+  G --> H["drop sintético redirigido"]
+  E --> H
 ```
 
 ## 1. Fase de captura
@@ -96,7 +111,7 @@ Los ajustes solo viven en el `localStorage` del navegador (clave `dsh-paste-imag
 | `convertIco`     | `true`            | booleano                | Si convertir ICO / CUR                                                    |
 | `logConversions` | `true`            | booleano                | Si emitir registros de depuración de conversiones                         |
 
-El formulario de configuración contiene las casillas anteriores, un desplegable de formato de salida y tres entradas numéricas; los borradores viven en el estado del componente y solo se escriben al pulsar "Guardar"; "Restaurar valores predeterminados" vuelve a los valores de la tabla.
+> 💡 **Comportamiento del formulario:** los borradores viven en el estado del componente; solo al pulsar «Guardar» se escriben los ajustes. «Restaurar valores predeterminados» vuelve a los valores de la tabla.
 
 ## 9. Límites y casos no compatibles
 
